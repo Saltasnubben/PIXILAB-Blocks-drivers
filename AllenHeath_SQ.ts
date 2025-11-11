@@ -177,6 +177,8 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	@Meta.parameter("Channel number (1-48)")
 	@Meta.parameter("Level in dB (-85 to +10)")
 	public setChannelLevel(channel: number, levelDB: number): void {
+		console.warn("AllenHeath_SQ: setChannelLevel called with channel:", channel, "level:", levelDB);
+
 		if (channel < 1 || channel > 48) {
 			console.warn("Channel must be between 1 and 48");
 			return;
@@ -187,15 +189,17 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			return;
 		}
 
-		// Convert dB to NRPN value (0-16383)
-		// Linear scale: -85dB = 0, +10dB = 16383
-		const nrpnValue = Math.round(((levelDB + 85) / 95) * 16383);
-
-		// NRPN MSB and LSB for channel fader
-		// Input channels: NRPN MSB = 0, LSB = channel (0-47)
-		const nrpnMSB = 0;
+		// NRPN for channel level: MSB = 0x4F (79), LSB = 0x00-0x2F (0-47 for channels 1-48)
+		const nrpnMSB = 0x4F;
 		const nrpnLSB = channel - 1;
 
+		// Convert dB to 14-bit value (0-16383)
+		// -85dB = 0, +10dB = 16383
+		const range = 10 - (-85); // 95 dB range
+		const normalizedLevel = (levelDB - (-85)) / range;
+		const nrpnValue = Math.round(normalizedLevel * 16383);
+
+		console.warn("AllenHeath_SQ: Sending channel level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 		this.channelLevels[channel] = levelDB;

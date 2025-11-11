@@ -201,6 +201,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Set channel fader level in dB
 		 */
 		AllenHeath_SQ.prototype.setChannelLevel = function (channel, levelDB) {
+			console.warn("AllenHeath_SQ: setChannelLevel called with channel:", channel, "level:", levelDB);
+
 			if (channel < 1 || channel > 48) {
 				console.warn("Channel must be between 1 and 48");
 				return;
@@ -211,15 +213,17 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				return;
 			}
 
-			// Convert dB to NRPN value (0-16383)
-			// Linear scale: -85dB = 0, +10dB = 16383
-			var nrpnValue = Math.round(((levelDB + 85) / 95) * 16383);
-
-			// NRPN MSB and LSB for channel fader
-			// Input channels: NRPN MSB = 0, LSB = channel (0-47)
-			var nrpnMSB = 0;
+			// NRPN for channel level: MSB = 0x4F (79), LSB = 0x00-0x2F (0-47 for channels 1-48)
+			var nrpnMSB = 0x4F;
 			var nrpnLSB = channel - 1;
 
+			// Convert dB to 14-bit value (0-16383)
+			// -85dB = 0, +10dB = 16383
+			var range = 10 - (-85); // 95 dB range
+			var normalizedLevel = (levelDB - (-85)) / range;
+			var nrpnValue = Math.round(normalizedLevel * 16383);
+
+			console.warn("AllenHeath_SQ: Sending channel level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 			this.channelLevels[channel] = levelDB;
