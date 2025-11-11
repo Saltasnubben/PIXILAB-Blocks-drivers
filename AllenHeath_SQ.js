@@ -159,20 +159,28 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				return;
 			}
 
+			console.warn("AllenHeath_SQ: Recalling scene", sceneNumber);
+
 			// Convert scene number to MIDI format
 			// SQ counts from 1, MIDI from 0
 			var midiScene = sceneNumber - 1;
 			var bank = Math.floor(midiScene / 128);
 			var program = midiScene % 128;
 
-			// Bank Select MSB (CC 0)
-			this.sendMIDI([0xB0 | this.midiChannel, 0x00, bank]);
+			console.warn("AllenHeath_SQ: Scene MIDI values - bank:", bank, "program:", program);
 
-			// Bank Select LSB (CC 32)
-			this.sendMIDI([0xB0 | this.midiChannel, 0x20, 0x00]);
+			// Send all messages in one packet like PacketSender does
+			// Bank Select MSB (CC 0) + Program Change
+			var bankSelectMSB = [0xB0 | this.midiChannel, 0x00, bank];
+			var programChange = [0xC0 | this.midiChannel, program];
 
-			// Program Change
-			this.sendMIDI([0xC0 | this.midiChannel, program]);
+			// Combine into single message
+			var combined = bankSelectMSB.concat(programChange);
+
+			console.warn("AllenHeath_SQ: Sending MIDI bytes:",
+				combined.map(function(b) { return '0x' + b.toString(16).toUpperCase(); }).join(' '));
+
+			this.sendMIDI(combined);
 
 			this.currentScene = sceneNumber;
 			this.changed("scene");
@@ -312,15 +320,18 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 */
 		AllenHeath_SQ.prototype.sendMIDI = function (bytes) {
 			try {
+				console.warn("AllenHeath_SQ: sendMIDI called with", bytes.length, "bytes");
 				// Convert numbers to string of bytes for sending
 				var data = '';
 				for (var _i = 0, bytes_1 = bytes; _i < bytes_1.length; _i++) {
 					var byte = bytes_1[_i];
 					data += String.fromCharCode(byte & 0xFF);
 				}
+				console.warn("AllenHeath_SQ: Sending via socket.sendText, connected:", this.socket.connected);
 				this.socket.sendText(data);
+				console.warn("AllenHeath_SQ: sendText completed");
 			} catch (error) {
-				console.error("Failed to send MIDI data:", error);
+				console.error("AllenHeath_SQ: Failed to send MIDI data:", error);
 			}
 		};
 
