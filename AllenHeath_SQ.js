@@ -44,7 +44,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 	if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 
-define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], function (require, exports, Driver_1, Meta) {
+define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], function (require, exports, Driver_1, Metadata_1) {
 	"use strict";
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.AllenHeath_SQ = void 0;
@@ -452,83 +452,83 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		};
 
 		__decorate([
-			Meta.property("Current scene number (1-500)"),
-			Meta.min(1),
-			Meta.max(500),
+			(0, Metadata_1.property)("Current scene number (1-500)"),
+			(0, Metadata_1.min)(1),
+			(0, Metadata_1.max)(500),
 			__metadata("design:type", Number),
 			__metadata("design:paramtypes", [Number])
 		], AllenHeath_SQ.prototype, "scene", null);
 
 		__decorate([
-			Meta.property("MIDI channel (1-16, must match console setting)"),
-			Meta.min(1),
-			Meta.max(16),
+			(0, Metadata_1.property)("MIDI channel (1-16, must match console setting)"),
+			(0, Metadata_1.min)(1),
+			(0, Metadata_1.max)(16),
 			__metadata("design:type", Number),
 			__metadata("design:paramtypes", [Number])
 		], AllenHeath_SQ.prototype, "midiCh", null);
 
 		__decorate([
-			Meta.callable("Recall a scene"),
-			Meta.parameter("Scene number (1-500)"),
+			(0, Metadata_1.callable)("Recall a scene"),
+			(0, Metadata_1.parameter)("Scene number (1-500)"),
 			__metadata("design:type", Function),
 			__metadata("design:paramtypes", [Number]),
 			__metadata("design:returntype", void 0)
 		], AllenHeath_SQ.prototype, "recallScene", null);
 
 		__decorate([
-			Meta.callable("Set channel fader level"),
-			Meta.parameter("Channel number (1-48)"),
-			Meta.parameter("Level in dB (-85 to +10)"),
+			(0, Metadata_1.callable)("Set channel fader level"),
+			(0, Metadata_1.parameter)("Channel number (1-48)"),
+			(0, Metadata_1.parameter)("Level in dB (-85 to +10)"),
 			__metadata("design:type", Function),
 			__metadata("design:paramtypes", [Number, Number]),
 			__metadata("design:returntype", void 0)
 		], AllenHeath_SQ.prototype, "setChannelLevel", null);
 
 		__decorate([
-			Meta.callable("Get channel fader level"),
-			Meta.parameter("Channel number (1-48)"),
+			(0, Metadata_1.callable)("Get channel fader level"),
+			(0, Metadata_1.parameter)("Channel number (1-48)"),
 			__metadata("design:type", Function),
 			__metadata("design:paramtypes", [Number]),
 			__metadata("design:returntype", Number)
 		], AllenHeath_SQ.prototype, "getChannelLevel", null);
 
 		__decorate([
-			Meta.callable("Set channel mute"),
-			Meta.parameter("Channel number (1-48)"),
-			Meta.parameter("Mute state (true = muted)"),
+			(0, Metadata_1.callable)("Set channel mute"),
+			(0, Metadata_1.parameter)("Channel number (1-48)"),
+			(0, Metadata_1.parameter)("Mute state (true = muted)"),
 			__metadata("design:type", Function),
 			__metadata("design:paramtypes", [Number, Boolean]),
 			__metadata("design:returntype", void 0)
 		], AllenHeath_SQ.prototype, "setChannelMute", null);
 
 		__decorate([
-			Meta.callable("Get channel mute state"),
-			Meta.parameter("Channel number (1-48)"),
+			(0, Metadata_1.callable)("Get channel mute state"),
+			(0, Metadata_1.parameter)("Channel number (1-48)"),
 			__metadata("design:type", Function),
 			__metadata("design:paramtypes", [Number]),
 			__metadata("design:returntype", Boolean)
 		], AllenHeath_SQ.prototype, "getChannelMute", null);
 
 		__decorate([
-			Meta.callable("Toggle channel mute"),
-			Meta.parameter("Channel number (1-48)"),
+			(0, Metadata_1.callable)("Toggle channel mute"),
+			(0, Metadata_1.parameter)("Channel number (1-48)"),
 			__metadata("design:type", Function),
 			__metadata("design:paramtypes", [Number]),
 			__metadata("design:returntype", void 0)
 		], AllenHeath_SQ.prototype, "toggleChannelMute", null);
 
 		__decorate([
-			Meta.callable("Fade channel level"),
-			Meta.parameter("Channel number (1-48)"),
-			Meta.parameter("Target level in dB (-85 to +10)"),
-			Meta.parameter("Fade time in seconds"),
+			(0, Metadata_1.callable)("Fade channel level"),
+			(0, Metadata_1.parameter)("Channel number (1-48)"),
+			(0, Metadata_1.parameter)("Target level in dB (-85 to +10)"),
+			(0, Metadata_1.parameter)("Fade time in seconds"),
 			__metadata("design:type", Function),
 			__metadata("design:paramtypes", [Number, Number, Number]),
 			__metadata("design:returntype", void 0)
 		], AllenHeath_SQ.prototype, "fadeChannel", null);
 
 		AllenHeath_SQ = __decorate([
-			Meta.driver('NetworkTCP', { port: 51325 }),
+			(0, Metadata_1.driver)('NetworkTCP', { port: 51325 }),
 			__metadata("design:paramtypes", [Object])
 		], AllenHeath_SQ);
 
