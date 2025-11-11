@@ -151,7 +151,10 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		const combined = bankSelectMSB.concat(programChange);
 
 		console.warn("AllenHeath_SQ: Sending MIDI bytes:",
-			combined.map(b => '0x' + b.toString(16).toUpperCase()).join(' '));
+			combined.map(b => {
+				const hex = b.toString(16).toUpperCase();
+				return '0x' + (hex.length === 1 ? '0' + hex : hex);
+			}).join(' '));
 
 		this.sendMIDI(combined);
 
@@ -309,11 +312,19 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private sendMIDI(bytes: number[]): void {
 		try {
 			console.warn("AllenHeath_SQ: sendMIDI called with", bytes.length, "bytes");
+			console.warn("AllenHeath_SQ: Raw byte values:", bytes.join(', '));
+
 			// Convert numbers to string of bytes for sending
 			let data = '';
+			const charCodes: number[] = [];
 			for (const byte of bytes) {
-				data += String.fromCharCode(byte & 0xFF);
+				const maskedByte = byte & 0xFF;
+				data += String.fromCharCode(maskedByte);
+				charCodes.push(maskedByte);
 			}
+
+			console.warn("AllenHeath_SQ: Char codes being sent:", charCodes.join(', '));
+			console.warn("AllenHeath_SQ: Data string length:", data.length);
 			console.warn("AllenHeath_SQ: Sending via socket.sendText, connected:", this.socket.connected);
 			this.socket.sendText(data);
 			console.warn("AllenHeath_SQ: sendText completed");

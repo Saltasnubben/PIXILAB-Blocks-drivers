@@ -178,7 +178,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			var combined = bankSelectMSB.concat(programChange);
 
 			console.warn("AllenHeath_SQ: Sending MIDI bytes:",
-				combined.map(function(b) { return '0x' + b.toString(16).toUpperCase(); }).join(' '));
+				combined.map(function(b) {
+					var hex = b.toString(16).toUpperCase();
+					return '0x' + (hex.length === 1 ? '0' + hex : hex);
+				}).join(' '));
 
 			this.sendMIDI(combined);
 
@@ -321,12 +324,20 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		AllenHeath_SQ.prototype.sendMIDI = function (bytes) {
 			try {
 				console.warn("AllenHeath_SQ: sendMIDI called with", bytes.length, "bytes");
+				console.warn("AllenHeath_SQ: Raw byte values:", bytes.join(', '));
+
 				// Convert numbers to string of bytes for sending
 				var data = '';
+				var charCodes = [];
 				for (var _i = 0, bytes_1 = bytes; _i < bytes_1.length; _i++) {
 					var byte = bytes_1[_i];
-					data += String.fromCharCode(byte & 0xFF);
+					var maskedByte = byte & 0xFF;
+					data += String.fromCharCode(maskedByte);
+					charCodes.push(maskedByte);
 				}
+
+				console.warn("AllenHeath_SQ: Char codes being sent:", charCodes.join(', '));
+				console.warn("AllenHeath_SQ: Data string length:", data.length);
 				console.warn("AllenHeath_SQ: Sending via socket.sendText, connected:", this.socket.connected);
 				this.socket.sendText(data);
 				console.warn("AllenHeath_SQ: sendText completed");
