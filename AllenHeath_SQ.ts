@@ -214,6 +214,8 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	@Meta.parameter("Channel number (1-48)")
 	@Meta.parameter("Mute state (true = muted)")
 	public setChannelMute(channel: number, mute: boolean): void {
+		console.warn("AllenHeath_SQ: setChannelMute called with channel:", channel, "type:", typeof channel, "mute:", mute, "type:", typeof mute);
+
 		if (channel < 1 || channel > 48) {
 			console.warn("Channel must be between 1 and 48");
 			return;
@@ -224,6 +226,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		const nrpnLSB = channel - 1;
 		const nrpnValue = mute ? 16383 : 0; // 16383 = muted, 0 = unmuted
 
+		console.warn("AllenHeath_SQ: Sending mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 		this.channelMutes[channel] = mute;
