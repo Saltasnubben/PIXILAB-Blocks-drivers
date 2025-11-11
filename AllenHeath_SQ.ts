@@ -32,6 +32,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private currentScene: number = 1;
 	private channelLevels: {[channel: number]: number} = {}; // Channel -> level in dB
 	private channelMutes: {[channel: number]: boolean} = {}; // Channel -> mute state
+	private dcaMutes: {[dca: number]: boolean} = {}; // DCA -> mute state
 
 	// NRPN state machine for parsing incoming messages
 	private nrpnMSB: number = -1;
@@ -50,6 +51,11 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		for (let i = 1; i <= 48; i++) {
 			this.channelLevels[i] = -85; // Default to minimum
 			this.channelMutes[i] = false;
+		}
+
+		// Initialize DCA mute states
+		for (let i = 1; i <= 8; i++) {
+			this.dcaMutes[i] = false;
 		}
 
 		console.warn("AllenHeath_SQ: Subscribing to connection events");
@@ -254,6 +260,55 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	public toggleChannelMute(channel: number): void {
 		const currentMute = this.getChannelMute(channel);
 		this.setChannelMute(channel, !currentMute);
+	}
+
+	/**
+	 * Set DCA mute state
+	 */
+	@Meta.callable("Set DCA mute")
+	@Meta.parameter("DCA number (1-8)")
+	@Meta.parameter("Mute state (true = muted)")
+	public setDCAMute(dca: number, mute: boolean): void {
+		console.warn("AllenHeath_SQ: setDCAMute called with DCA:", dca, "type:", typeof dca, "mute:", mute, "type:", typeof mute);
+
+		if (dca < 1 || dca > 8) {
+			console.warn("DCA must be between 1 and 8");
+			return;
+		}
+
+		// NRPN for DCA mute: MSB = 2, LSB = DCA (0-7)
+		const nrpnMSB = 2;
+		const nrpnLSB = dca - 1;
+		const nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
+
+		console.warn("AllenHeath_SQ: Sending DCA mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+		this.dcaMutes[dca] = mute;
+		this.changed(`dca${dca}Mute`);
+	}
+
+	/**
+	 * Get DCA mute state
+	 */
+	@Meta.callable("Get DCA mute state")
+	@Meta.parameter("DCA number (1-8)")
+	public getDCAMute(dca: number): boolean {
+		if (dca < 1 || dca > 8) {
+			console.warn("DCA must be between 1 and 8");
+			return false;
+		}
+		return this.dcaMutes[dca] !== undefined ? this.dcaMutes[dca] : false;
+	}
+
+	/**
+	 * Toggle DCA mute
+	 */
+	@Meta.callable("Toggle DCA mute")
+	@Meta.parameter("DCA number (1-8)")
+	public toggleDCAMute(dca: number): void {
+		const currentMute = this.getDCAMute(dca);
+		this.setDCAMute(dca, !currentMute);
 	}
 
 	/**

@@ -63,6 +63,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			_this.currentScene = 1;
 			_this.channelLevels = {}; // Channel -> level in dB
 			_this.channelMutes = {}; // Channel -> mute state
+			_this.dcaMutes = {}; // DCA -> mute state
 
 			// NRPN state machine for parsing incoming messages
 			_this.nrpnMSB = -1;
@@ -77,6 +78,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			for (var i = 1; i <= 48; i++) {
 				_this.channelLevels[i] = -85; // Default to minimum
 				_this.channelMutes[i] = false;
+			}
+
+			// Initialize DCA mute states
+			for (var i = 1; i <= 8; i++) {
+				_this.dcaMutes[i] = false;
 			}
 
 			console.warn("AllenHeath_SQ: Subscribing to connection events");
@@ -269,6 +275,48 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		AllenHeath_SQ.prototype.toggleChannelMute = function (channel) {
 			var currentMute = this.getChannelMute(channel);
 			this.setChannelMute(channel, !currentMute);
+		};
+
+		/**
+		 * Set DCA mute state
+		 */
+		AllenHeath_SQ.prototype.setDCAMute = function (dca, mute) {
+			console.warn("AllenHeath_SQ: setDCAMute called with DCA:", dca, "type:", typeof dca, "mute:", mute, "type:", typeof mute);
+
+			if (dca < 1 || dca > 8) {
+				console.warn("DCA must be between 1 and 8");
+				return;
+			}
+
+			// NRPN for DCA mute: MSB = 2, LSB = DCA (0-7)
+			var nrpnMSB = 2;
+			var nrpnLSB = dca - 1;
+			var nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
+
+			console.warn("AllenHeath_SQ: Sending DCA mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+			this.dcaMutes[dca] = mute;
+			this.changed("dca" + dca + "Mute");
+		};
+
+		/**
+		 * Get DCA mute state
+		 */
+		AllenHeath_SQ.prototype.getDCAMute = function (dca) {
+			if (dca < 1 || dca > 8) {
+				console.warn("DCA must be between 1 and 8");
+				return false;
+			}
+			return this.dcaMutes[dca] !== undefined ? this.dcaMutes[dca] : false;
+		};
+
+		/**
+		 * Toggle DCA mute
+		 */
+		AllenHeath_SQ.prototype.toggleDCAMute = function (dca) {
+			var currentMute = this.getDCAMute(dca);
+			this.setDCAMute(dca, !currentMute);
 		};
 
 		/**
@@ -539,6 +587,31 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			__metadata("design:paramtypes", [Number]),
 			__metadata("design:returntype", void 0)
 		], AllenHeath_SQ.prototype, "toggleChannelMute", null);
+
+		__decorate([
+			(0, Metadata_1.callable)("Set DCA mute"),
+			(0, Metadata_1.parameter)("DCA number (1-8)"),
+			(0, Metadata_1.parameter)("Mute state (true = muted)"),
+			__metadata("design:type", Function),
+			__metadata("design:paramtypes", [Number, Boolean]),
+			__metadata("design:returntype", void 0)
+		], AllenHeath_SQ.prototype, "setDCAMute", null);
+
+		__decorate([
+			(0, Metadata_1.callable)("Get DCA mute state"),
+			(0, Metadata_1.parameter)("DCA number (1-8)"),
+			__metadata("design:type", Function),
+			__metadata("design:paramtypes", [Number]),
+			__metadata("design:returntype", Boolean)
+		], AllenHeath_SQ.prototype, "getDCAMute", null);
+
+		__decorate([
+			(0, Metadata_1.callable)("Toggle DCA mute"),
+			(0, Metadata_1.parameter)("DCA number (1-8)"),
+			__metadata("design:type", Function),
+			__metadata("design:paramtypes", [Number]),
+			__metadata("design:returntype", void 0)
+		], AllenHeath_SQ.prototype, "toggleDCAMute", null);
 
 		__decorate([
 			(0, Metadata_1.callable)("Fade channel level"),
