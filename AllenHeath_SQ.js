@@ -326,21 +326,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				console.warn("AllenHeath_SQ: sendMIDI called with", bytes.length, "bytes");
 				console.warn("AllenHeath_SQ: Raw byte values:", bytes.join(', '));
 
-				// Convert numbers to string of bytes for sending
-				var data = '';
-				var charCodes = [];
-				for (var _i = 0, bytes_1 = bytes; _i < bytes_1.length; _i++) {
-					var byte = bytes_1[_i];
-					var maskedByte = byte & 0xFF;
-					data += String.fromCharCode(maskedByte);
-					charCodes.push(maskedByte);
-				}
-
-				console.warn("AllenHeath_SQ: Char codes being sent:", charCodes.join(', '));
-				console.warn("AllenHeath_SQ: Data string length:", data.length);
-				console.warn("AllenHeath_SQ: Sending via socket.sendText, connected:", this.socket.connected);
-				this.socket.sendText(data);
-				console.warn("AllenHeath_SQ: sendText completed");
+				console.warn("AllenHeath_SQ: Sending via socket.sendBytes, connected:", this.socket.connected);
+				this.socket.sendBytes(bytes);
+				console.warn("AllenHeath_SQ: sendBytes completed");
 			} catch (error) {
 				console.error("AllenHeath_SQ: Failed to send MIDI data:", error);
 			}
