@@ -221,10 +221,10 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			return;
 		}
 
-		// NRPN for channel mute: MSB = 1, LSB = channel (0-47)
-		const nrpnMSB = 1;
+		// NRPN for channel mute: MSB = 0, LSB = channel (0-47)
+		const nrpnMSB = 0;
 		const nrpnLSB = channel - 1;
-		const nrpnValue = mute ? 16383 : 0; // 16383 = muted, 0 = unmuted
+		const nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
 
 		console.warn("AllenHeath_SQ: Sending mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);

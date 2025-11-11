@@ -240,10 +240,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				return;
 			}
 
-			// NRPN for channel mute: MSB = 1, LSB = channel (0-47)
-			var nrpnMSB = 1;
+			// NRPN for channel mute: MSB = 0, LSB = channel (0-47)
+			var nrpnMSB = 0;
 			var nrpnLSB = channel - 1;
-			var nrpnValue = mute ? 16383 : 0; // 16383 = muted, 0 = unmuted
+			var nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
 
 			console.warn("AllenHeath_SQ: Sending mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
