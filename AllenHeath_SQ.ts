@@ -363,39 +363,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	}
 
 	/**
-	 * Fade channel to a specific level over time
-	 */
-	@Meta.callable("Fade channel level")
-	@Meta.parameter("Channel number (1-48)")
-	@Meta.parameter("Target level in dB (-85 to +10)")
-	@Meta.parameter("Fade time in seconds")
-	public fadeChannel(channel: number, targetDB: number, fadeSeconds: number): void {
-		if (channel < 1 || channel > 48) {
-			console.warn("Channel must be between 1 and 48");
-			return;
-		}
-
-		const startLevel = this.getChannelLevel(channel);
-		const steps = Math.max(10, Math.floor(fadeSeconds * 10)); // 10 updates per second
-		const stepSize = (targetDB - startLevel) / steps;
-		const stepDelay = (fadeSeconds * 1000) / steps;
-
-		let currentStep = 0;
-
-		const fadeInterval = setInterval(() => {
-			currentStep++;
-			const newLevel = startLevel + (stepSize * currentStep);
-
-			if (currentStep >= steps) {
-				this.setChannelLevel(channel, targetDB);
-				clearInterval(fadeInterval);
-			} else {
-				this.setChannelLevel(channel, newLevel);
-			}
-		}, stepDelay);
-	}
-
-	/**
 	 * Send NRPN (Non-Registered Parameter Number) message
 	 */
 	private sendNRPN(nrpnMSB: number, nrpnLSB: number, value: number): void {

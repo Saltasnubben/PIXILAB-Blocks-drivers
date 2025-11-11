@@ -366,36 +366,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		};
 
 		/**
-		 * Fade channel to a specific level over time
-		 */
-		AllenHeath_SQ.prototype.fadeChannel = function (channel, targetDB, fadeSeconds) {
-			var _this = this;
-			if (channel < 1 || channel > 48) {
-				console.warn("Channel must be between 1 and 48");
-				return;
-			}
-
-			var startLevel = this.getChannelLevel(channel);
-			var steps = Math.max(10, Math.floor(fadeSeconds * 10)); // 10 updates per second
-			var stepSize = (targetDB - startLevel) / steps;
-			var stepDelay = (fadeSeconds * 1000) / steps;
-
-			var currentStep = 0;
-
-			var fadeInterval = setInterval(function () {
-				currentStep++;
-				var newLevel = startLevel + (stepSize * currentStep);
-
-				if (currentStep >= steps) {
-					_this.setChannelLevel(channel, targetDB);
-					clearInterval(fadeInterval);
-				} else {
-					_this.setChannelLevel(channel, newLevel);
-				}
-			}, stepDelay);
-		};
-
-		/**
 		 * Send NRPN (Non-Registered Parameter Number) message
 		 */
 		AllenHeath_SQ.prototype.sendNRPN = function (nrpnMSB, nrpnLSB, value) {
@@ -675,16 +645,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			__metadata("design:paramtypes", [Number]),
 			__metadata("design:returntype", Number)
 		], AllenHeath_SQ.prototype, "getDCALevel", null);
-
-		__decorate([
-			(0, Metadata_1.callable)("Fade channel level"),
-			(0, Metadata_1.parameter)("Channel number (1-48)"),
-			(0, Metadata_1.parameter)("Target level in dB (-85 to +10)"),
-			(0, Metadata_1.parameter)("Fade time in seconds"),
-			__metadata("design:type", Function),
-			__metadata("design:paramtypes", [Number, Number, Number]),
-			__metadata("design:returntype", void 0)
-		], AllenHeath_SQ.prototype, "fadeChannel", null);
 
 		AllenHeath_SQ = __decorate([
 			(0, Metadata_1.driver)('NetworkTCP', { port: 51325 }),
