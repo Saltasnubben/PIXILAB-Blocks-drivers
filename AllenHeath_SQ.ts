@@ -44,6 +44,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 	constructor(private socket: NetworkTCP) {
 		super(socket);
+		console.warn("AllenHeath_SQ: Constructor started");
 
 		// Initialize default channel states
 		for (let i = 1; i <= 48; i++) {
@@ -51,8 +52,10 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			this.channelMutes.set(i, false);
 		}
 
+		console.warn("AllenHeath_SQ: Subscribing to connection events");
 		// Subscribe to connection events
 		socket.subscribe('connect', (sender, message) => {
+			console.warn("AllenHeath_SQ: Connect event fired, socket.connected:", socket.connected);
 			if (socket.connected) {
 				this.onConnected();
 			}
@@ -60,23 +63,28 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		socket.subscribe('textReceived', (sender, message) => {
 			// message IS the text directly, not an object with .text property
+			console.warn("AllenHeath_SQ: textReceived event, data length:", message.length);
 			this.onDataReceived(message);
 		});
 
 		// Enable automatic connection management
+		console.warn("AllenHeath_SQ: Calling socket.autoConnect()");
 		socket.autoConnect();
 
 		// If already connected when driver loads, initialize now
+		console.warn("AllenHeath_SQ: Checking if already connected, socket.connected:", socket.connected);
 		if (socket.connected) {
+			console.warn("AllenHeath_SQ: Already connected at startup");
 			this.onConnected();
 		}
+		console.warn("AllenHeath_SQ: Constructor completed");
 	}
 
 	/**
 	 * Called when connection is established
 	 */
 	private onConnected(): void {
-		console.log("Connected to Allen & Heath SQ console");
+		console.warn("AllenHeath_SQ: onConnected() called - Connected to Allen & Heath SQ console");
 	}
 
 	/**

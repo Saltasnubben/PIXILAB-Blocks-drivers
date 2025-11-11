@@ -55,6 +55,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		function AllenHeath_SQ(socket) {
 			var _this = _super.call(this, socket) || this;
 			_this.socket = socket;
+			console.warn("AllenHeath_SQ: Constructor started");
 
 			_this.midiChannel = 0; // MIDI channel 1 (0-indexed)
 
@@ -78,8 +79,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				_this.channelMutes.set(i, false);
 			}
 
+			console.warn("AllenHeath_SQ: Subscribing to connection events");
 			// Subscribe to connection events
 			socket.subscribe('connect', function (sender, message) {
+				console.warn("AllenHeath_SQ: Connect event fired, socket.connected:", socket.connected);
 				if (socket.connected) {
 					_this.onConnected();
 				}
@@ -87,16 +90,21 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			socket.subscribe('textReceived', function (sender, message) {
 				// message IS the text directly, not an object with .text property
+				console.warn("AllenHeath_SQ: textReceived event, data length:", message.length);
 				_this.onDataReceived(message);
 			});
 
 			// Enable automatic connection management
+			console.warn("AllenHeath_SQ: Calling socket.autoConnect()");
 			socket.autoConnect();
 
 			// If already connected when driver loads, initialize now
+			console.warn("AllenHeath_SQ: Checking if already connected, socket.connected:", socket.connected);
 			if (socket.connected) {
+				console.warn("AllenHeath_SQ: Already connected at startup");
 				_this.onConnected();
 			}
+			console.warn("AllenHeath_SQ: Constructor completed");
 
 			return _this;
 		}
@@ -105,7 +113,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Called when connection is established
 		 */
 		AllenHeath_SQ.prototype.onConnected = function () {
-			console.log("Connected to Allen & Heath SQ console");
+			console.warn("AllenHeath_SQ: onConnected() called - Connected to Allen & Heath SQ console");
 		};
 
 		Object.defineProperty(AllenHeath_SQ.prototype, "scene", {
