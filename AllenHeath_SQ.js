@@ -49,7 +49,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.AllenHeath_SQ = void 0;
 
-	var AllenHeath_SQ = /** @class */ (function (_super) {
+	var AllenHeath_SQ = exports.AllenHeath_SQ = /** @class */ (function (_super) {
 		__extends(AllenHeath_SQ, _super);
 
 		function AllenHeath_SQ(socket) {
@@ -534,6 +534,4 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 		return AllenHeath_SQ;
 	}(Driver_1.Driver));
-
-	exports.AllenHeath_SQ = AllenHeath_SQ;
 });
