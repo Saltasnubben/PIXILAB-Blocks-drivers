@@ -53,20 +53,23 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		// Subscribe to connection events
 		socket.subscribe('connect', (sender, message) => {
-			this.onConnected();
+			if (socket.connected) {
+				this.onConnected();
+			}
 		});
 
 		socket.subscribe('textReceived', (sender, message) => {
-			// Handle raw bytes (MIDI is binary protocol)
-			this.onDataReceived(message.text);
+			// message IS the text directly, not an object with .text property
+			this.onDataReceived(message);
 		});
 
-		socket.subscribe('bytesReceived', (sender, message) => {
-			// Handle binary MIDI data
-			if (message.rawData) {
-				this.onBytesReceived(message.rawData);
-			}
-		});
+		// Enable automatic connection management
+		socket.autoConnect();
+
+		// If already connected when driver loads, initialize now
+		if (socket.connected) {
+			this.onConnected();
+		}
 	}
 
 	/**
@@ -303,20 +306,13 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	/**
 	 * Handle received text data (MIDI is binary, received as text)
 	 */
-	private onDataReceived(data: string): void {
-		// Convert text to byte array
-		for (let i = 0; i < data.length; i++) {
-			const byte = data.charCodeAt(i) & 0xFF;
-			this.processMIDIByte(byte);
-		}
-	}
+	private onDataReceived(data: any): void {
+		// Convert data to string if needed
+		const text = typeof data === 'string' ? data : String(data);
 
-	/**
-	 * Handle received binary data
-	 */
-	private onBytesReceived(data: ArrayBuffer): void {
-		const bytes = new Uint8Array(data);
-		for (const byte of bytes) {
+		// Convert text to byte array
+		for (let i = 0; i < text.length; i++) {
+			const byte = text.charCodeAt(i) & 0xFF;
 			this.processMIDIByte(byte);
 		}
 	}
