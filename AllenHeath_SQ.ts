@@ -51,11 +51,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			this.channelMutes.set(i, false);
 		}
 
-		// Configure socket for binary data
-		socket.autoConnect(true);
-		socket.enableWakeOnLAN();
-
-		// Request initial state after connection
+		// Subscribe to connection events
 		socket.subscribe('connect', (sender, message) => {
 			this.onConnected();
 		});

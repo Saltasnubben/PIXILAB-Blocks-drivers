@@ -78,11 +78,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				_this.channelMutes.set(i, false);
 			}
 
-			// Configure socket for binary data
-			socket.autoConnect(true);
-			socket.enableWakeOnLAN();
-
-			// Request initial state after connection
+			// Subscribe to connection events
 			socket.subscribe('connect', function (sender, message) {
 				_this.onConnected();
 			});
