@@ -61,8 +61,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			// Current state tracking
 			_this.currentScene = 1;
-			_this.channelLevels = new Map(); // Channel -> level in dB
-			_this.channelMutes = new Map(); // Channel -> mute state
+			_this.channelLevels = {}; // Channel -> level in dB
+			_this.channelMutes = {}; // Channel -> mute state
 
 			// NRPN state machine for parsing incoming messages
 			_this.nrpnMSB = -1;
@@ -75,8 +75,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			// Initialize default channel states
 			for (var i = 1; i <= 48; i++) {
-				_this.channelLevels.set(i, -85); // Default to minimum
-				_this.channelMutes.set(i, false);
+				_this.channelLevels[i] = -85; // Default to minimum
+				_this.channelMutes[i] = false;
 			}
 
 			console.warn("AllenHeath_SQ: Subscribing to connection events");
@@ -203,7 +203,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
-			this.channelLevels.set(channel, levelDB);
+			this.channelLevels[channel] = levelDB;
 			this.changed("ch" + channel + "Level");
 		};
 
@@ -215,7 +215,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				console.warn("Channel must be between 1 and 48");
 				return -85;
 			}
-			return this.channelLevels.get(channel) || -85;
+			return this.channelLevels[channel] !== undefined ? this.channelLevels[channel] : -85;
 		};
 
 		/**
@@ -234,7 +234,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
-			this.channelMutes.set(channel, mute);
+			this.channelMutes[channel] = mute;
 			this.changed("ch" + channel + "Mute");
 		};
 
@@ -246,7 +246,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				console.warn("Channel must be between 1 and 48");
 				return false;
 			}
-			return this.channelMutes.get(channel) || false;
+			return this.channelMutes[channel] !== undefined ? this.channelMutes[channel] : false;
 		};
 
 		/**
@@ -432,14 +432,14 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
 				var channel = this.nrpnLSB + 1;
 				var levelDB = ((nrpnValue / 16383) * 95) - 85;
-				this.channelLevels.set(channel, levelDB);
+				this.channelLevels[channel] = levelDB;
 				this.changed("ch" + channel + "Level");
 			}
 			// Channel mute: MSB = 1, LSB = channel (0-47)
 			else if (this.nrpnMSB === 1 && this.nrpnLSB < 48) {
 				var channel = this.nrpnLSB + 1;
 				var muted = nrpnValue > 8000; // Threshold for mute
-				this.channelMutes.set(channel, muted);
+				this.channelMutes[channel] = muted;
 				this.changed("ch" + channel + "Mute");
 			}
 

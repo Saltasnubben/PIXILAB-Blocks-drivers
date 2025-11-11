@@ -30,8 +30,8 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 	// Current state tracking
 	private currentScene: number = 1;
-	private channelLevels: Map<number, number> = new Map(); // Channel -> level in dB
-	private channelMutes: Map<number, boolean> = new Map(); // Channel -> mute state
+	private channelLevels: {[channel: number]: number} = {}; // Channel -> level in dB
+	private channelMutes: {[channel: number]: boolean} = {}; // Channel -> mute state
 
 	// NRPN state machine for parsing incoming messages
 	private nrpnMSB: number = -1;
@@ -48,8 +48,8 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		// Initialize default channel states
 		for (let i = 1; i <= 48; i++) {
-			this.channelLevels.set(i, -85); // Default to minimum
-			this.channelMutes.set(i, false);
+			this.channelLevels[i] = -85; // Default to minimum
+			this.channelMutes[i] = false;
 		}
 
 		console.warn("AllenHeath_SQ: Subscribing to connection events");
@@ -179,7 +179,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
-		this.channelLevels.set(channel, levelDB);
+		this.channelLevels[channel] = levelDB;
 		this.changed(`ch${channel}Level`);
 	}
 
@@ -193,7 +193,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			console.warn("Channel must be between 1 and 48");
 			return -85;
 		}
-		return this.channelLevels.get(channel) || -85;
+		return this.channelLevels[channel] !== undefined ? this.channelLevels[channel] : -85;
 	}
 
 	/**
@@ -215,7 +215,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
-		this.channelMutes.set(channel, mute);
+		this.channelMutes[channel] = mute;
 		this.changed(`ch${channel}Mute`);
 	}
 
@@ -229,7 +229,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			console.warn("Channel must be between 1 and 48");
 			return false;
 		}
-		return this.channelMutes.get(channel) || false;
+		return this.channelMutes[channel] !== undefined ? this.channelMutes[channel] : false;
 	}
 
 	/**
@@ -419,14 +419,14 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
 			const channel = this.nrpnLSB + 1;
 			const levelDB = ((nrpnValue / 16383) * 95) - 85;
-			this.channelLevels.set(channel, levelDB);
+			this.channelLevels[channel] = levelDB;
 			this.changed(`ch${channel}Level`);
 		}
 		// Channel mute: MSB = 1, LSB = channel (0-47)
 		else if (this.nrpnMSB === 1 && this.nrpnLSB < 48) {
 			const channel = this.nrpnLSB + 1;
 			const muted = nrpnValue > 8000; // Threshold for mute
-			this.channelMutes.set(channel, muted);
+			this.channelMutes[channel] = muted;
 			this.changed(`ch${channel}Mute`);
 		}
 
