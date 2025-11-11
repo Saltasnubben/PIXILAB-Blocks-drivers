@@ -63,6 +63,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			_this.currentScene = 1;
 			_this.channelLevels = {}; // Channel -> level in dB
 			_this.channelMutes = {}; // Channel -> mute state
+			_this.dcaLevels = {}; // DCA -> level in dB
 			_this.dcaMutes = {}; // DCA -> mute state
 
 			// NRPN state machine for parsing incoming messages
@@ -80,8 +81,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				_this.channelMutes[i] = false;
 			}
 
-			// Initialize DCA mute states
+			// Initialize DCA states
 			for (var i = 1; i <= 8; i++) {
+				_this.dcaLevels[i] = -85; // Default to minimum
 				_this.dcaMutes[i] = false;
 			}
 
@@ -317,6 +319,50 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		AllenHeath_SQ.prototype.toggleDCAMute = function (dca) {
 			var currentMute = this.getDCAMute(dca);
 			this.setDCAMute(dca, !currentMute);
+		};
+
+		/**
+		 * Set DCA fader level in dB
+		 */
+		AllenHeath_SQ.prototype.setDCALevel = function (dca, levelDB) {
+			console.warn("AllenHeath_SQ: setDCALevel called with DCA:", dca, "level:", levelDB);
+
+			if (dca < 1 || dca > 8) {
+				console.warn("DCA must be between 1 and 8");
+				return;
+			}
+
+			if (levelDB < -85 || levelDB > 10) {
+				console.warn("Level must be between -85 and +10 dB");
+				return;
+			}
+
+			// NRPN for DCA level: MSB = 0x4F (79), LSB = 0x20-0x27 (32-39 for DCA 1-8)
+			var nrpnMSB = 0x4F;
+			var nrpnLSB = 0x20 + (dca - 1);
+
+			// Convert dB to 14-bit value (0-16383)
+			// -85dB = 0, +10dB = 16383
+			var range = 10 - (-85); // 95 dB range
+			var normalizedLevel = (levelDB - (-85)) / range;
+			var nrpnValue = Math.round(normalizedLevel * 16383);
+
+			console.warn("AllenHeath_SQ: Sending DCA level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+			this.dcaLevels[dca] = levelDB;
+			this.changed("dca" + dca + "Level");
+		};
+
+		/**
+		 * Get DCA fader level in dB
+		 */
+		AllenHeath_SQ.prototype.getDCALevel = function (dca) {
+			if (dca < 1 || dca > 8) {
+				console.warn("DCA must be between 1 and 8");
+				return -85;
+			}
+			return this.dcaLevels[dca] !== undefined ? this.dcaLevels[dca] : -85;
 		};
 
 		/**
@@ -612,6 +658,23 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			__metadata("design:paramtypes", [Number]),
 			__metadata("design:returntype", void 0)
 		], AllenHeath_SQ.prototype, "toggleDCAMute", null);
+
+		__decorate([
+			(0, Metadata_1.callable)("Set DCA fader level"),
+			(0, Metadata_1.parameter)("DCA number (1-8)"),
+			(0, Metadata_1.parameter)("Level in dB (-85 to +10)"),
+			__metadata("design:type", Function),
+			__metadata("design:paramtypes", [Number, Number]),
+			__metadata("design:returntype", void 0)
+		], AllenHeath_SQ.prototype, "setDCALevel", null);
+
+		__decorate([
+			(0, Metadata_1.callable)("Get DCA fader level"),
+			(0, Metadata_1.parameter)("DCA number (1-8)"),
+			__metadata("design:type", Function),
+			__metadata("design:paramtypes", [Number]),
+			__metadata("design:returntype", Number)
+		], AllenHeath_SQ.prototype, "getDCALevel", null);
 
 		__decorate([
 			(0, Metadata_1.callable)("Fade channel level"),

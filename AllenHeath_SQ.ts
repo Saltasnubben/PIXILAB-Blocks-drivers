@@ -32,6 +32,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private currentScene: number = 1;
 	private channelLevels: {[channel: number]: number} = {}; // Channel -> level in dB
 	private channelMutes: {[channel: number]: boolean} = {}; // Channel -> mute state
+	private dcaLevels: {[dca: number]: number} = {}; // DCA -> level in dB
 	private dcaMutes: {[dca: number]: boolean} = {}; // DCA -> mute state
 
 	// NRPN state machine for parsing incoming messages
@@ -53,8 +54,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			this.channelMutes[i] = false;
 		}
 
-		// Initialize DCA mute states
+		// Initialize DCA states
 		for (let i = 1; i <= 8; i++) {
+			this.dcaLevels[i] = -85; // Default to minimum
 			this.dcaMutes[i] = false;
 		}
 
@@ -309,6 +311,55 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	public toggleDCAMute(dca: number): void {
 		const currentMute = this.getDCAMute(dca);
 		this.setDCAMute(dca, !currentMute);
+	}
+
+	/**
+	 * Set DCA fader level in dB
+	 */
+	@Meta.callable("Set DCA fader level")
+	@Meta.parameter("DCA number (1-8)")
+	@Meta.parameter("Level in dB (-85 to +10)")
+	public setDCALevel(dca: number, levelDB: number): void {
+		console.warn("AllenHeath_SQ: setDCALevel called with DCA:", dca, "level:", levelDB);
+
+		if (dca < 1 || dca > 8) {
+			console.warn("DCA must be between 1 and 8");
+			return;
+		}
+
+		if (levelDB < -85 || levelDB > 10) {
+			console.warn("Level must be between -85 and +10 dB");
+			return;
+		}
+
+		// NRPN for DCA level: MSB = 0x4F (79), LSB = 0x20-0x27 (32-39 for DCA 1-8)
+		const nrpnMSB = 0x4F;
+		const nrpnLSB = 0x20 + (dca - 1);
+
+		// Convert dB to 14-bit value (0-16383)
+		// -85dB = 0, +10dB = 16383
+		const range = 10 - (-85); // 95 dB range
+		const normalizedLevel = (levelDB - (-85)) / range;
+		const nrpnValue = Math.round(normalizedLevel * 16383);
+
+		console.warn("AllenHeath_SQ: Sending DCA level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+		this.dcaLevels[dca] = levelDB;
+		this.changed(`dca${dca}Level`);
+	}
+
+	/**
+	 * Get DCA fader level in dB
+	 */
+	@Meta.callable("Get DCA fader level")
+	@Meta.parameter("DCA number (1-8)")
+	public getDCALevel(dca: number): number {
+		if (dca < 1 || dca > 8) {
+			console.warn("DCA must be between 1 and 8");
+			return -85;
+		}
+		return this.dcaLevels[dca] !== undefined ? this.dcaLevels[dca] : -85;
 	}
 
 	/**
