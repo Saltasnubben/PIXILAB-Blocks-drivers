@@ -296,17 +296,19 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		const dataMSB = (value >> 7) & 0x7F;
 		const dataLSB = value & 0x7F;
 
-		// NRPN MSB (CC 99)
-		this.sendMIDI([0xB0 | this.midiChannel, 0x63, nrpnMSB & 0x7F]);
+		// Combine all 4 NRPN messages into a single packet
+		const nrpnMessages = [
+			// NRPN MSB (CC 99)
+			0xB0 | this.midiChannel, 0x63, nrpnMSB & 0x7F,
+			// NRPN LSB (CC 98)
+			0xB0 | this.midiChannel, 0x62, nrpnLSB & 0x7F,
+			// Data Entry MSB (CC 6)
+			0xB0 | this.midiChannel, 0x06, dataMSB,
+			// Data Entry LSB (CC 38)
+			0xB0 | this.midiChannel, 0x26, dataLSB
+		];
 
-		// NRPN LSB (CC 98)
-		this.sendMIDI([0xB0 | this.midiChannel, 0x62, nrpnLSB & 0x7F]);
-
-		// Data Entry MSB (CC 6)
-		this.sendMIDI([0xB0 | this.midiChannel, 0x06, dataMSB]);
-
-		// Data Entry LSB (CC 38)
-		this.sendMIDI([0xB0 | this.midiChannel, 0x26, dataLSB]);
+		this.sendMIDI(nrpnMessages);
 	}
 
 	/**
