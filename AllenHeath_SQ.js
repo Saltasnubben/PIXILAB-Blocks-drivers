@@ -96,10 +96,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				}
 			});
 
-			socket.subscribe('textReceived', function (sender, message) {
-				// message IS the text directly, not an object with .text property
-				console.warn("AllenHeath_SQ: textReceived event, data length:", message.length);
-				_this.onDataReceived(message);
+			// Subscribe to binary data for MIDI messages
+			socket.subscribe('bytesReceived', function (sender, message) {
+				console.warn("AllenHeath_SQ: bytesReceived event, data length:", message.rawData.length);
+				_this.onDataReceived(message.rawData);
 			});
 
 			// Enable automatic connection management
@@ -1201,16 +1201,17 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		};
 
 		/**
-		 * Handle received text data (MIDI is binary, received as text)
+		 * Handle received binary MIDI data
 		 */
 		AllenHeath_SQ.prototype.onDataReceived = function (data) {
-			// Convert data to string if needed
-			var text = typeof data === 'string' ? data : String(data);
+			console.warn("AllenHeath_SQ: onDataReceived called, data type:", typeof data, "length:", data ? data.length : 'null');
 
-			// Convert text to byte array
-			for (var i = 0; i < text.length; i++) {
-				var byte = text.charCodeAt(i) & 0xFF;
-				this.processMIDIByte(byte);
+			// Process each byte in the received data
+			if (data && data.length) {
+				for (var i = 0; i < data.length; i++) {
+					var byte = data[i] & 0xFF;
+					this.processMIDIByte(byte);
+				}
 			}
 		};
 

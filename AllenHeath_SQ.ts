@@ -69,10 +69,10 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			}
 		});
 
-		socket.subscribe('textReceived', (sender, message) => {
-			// message IS the text directly, not an object with .text property
-			console.warn("AllenHeath_SQ: textReceived event, data length:", message.length);
-			this.onDataReceived(message);
+		// Subscribe to binary data for MIDI messages
+		socket.subscribe('bytesReceived', (sender, message) => {
+			console.warn("AllenHeath_SQ: bytesReceived event, data length:", message.rawData.length);
+			this.onDataReceived(message.rawData);
 		});
 
 		// Enable automatic connection management
@@ -972,16 +972,17 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	}
 
 	/**
-	 * Handle received text data (MIDI is binary, received as text)
+	 * Handle received binary MIDI data
 	 */
 	private onDataReceived(data: any): void {
-		// Convert data to string if needed
-		const text = typeof data === 'string' ? data : String(data);
+		console.warn("AllenHeath_SQ: onDataReceived called, data type:", typeof data, "length:", data ? data.length : 'null');
 
-		// Convert text to byte array
-		for (let i = 0; i < text.length; i++) {
-			const byte = text.charCodeAt(i) & 0xFF;
-			this.processMIDIByte(byte);
+		// Process each byte in the received data
+		if (data && data.length) {
+			for (let i = 0; i < data.length; i++) {
+				const byte = data[i] & 0xFF;
+				this.processMIDIByte(byte);
+			}
 		}
 	}
 
