@@ -1177,6 +1177,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		AllenHeath_SQ.prototype.onDataReceived = function (data) {
 			// Process each byte in the received data
 			if (data && data.length) {
+				console.warn("RECEIVED " + data.length + " bytes from desk: " +
+					Array.from(data).map(function(b) { return "0x" + ((b & 0xFF).toString(16).padStart(2, '0').toUpperCase()); }).join(' '));
 				for (var i = 0; i < data.length; i++) {
 					var byte = data[i] & 0xFF;
 					this.processMIDIByte(byte);

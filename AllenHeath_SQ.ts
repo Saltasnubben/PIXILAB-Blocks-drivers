@@ -947,6 +947,8 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private onDataReceived(data: any): void {
 		// Process each byte in the received data
 		if (data && data.length) {
+			console.warn("RECEIVED " + data.length + " bytes from desk: " +
+				Array.from(data).map((b: any) => "0x" + ((b & 0xFF).toString(16).padStart(2, '0').toUpperCase())).join(' '));
 			for (let i = 0; i < data.length; i++) {
 				const byte = data[i] & 0xFF;
 				this.processMIDIByte(byte);
