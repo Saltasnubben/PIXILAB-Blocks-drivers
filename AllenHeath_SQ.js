@@ -99,6 +99,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				_this.onDataReceived(message.rawData);
 			});
 
+			// Also try text mode to debug
+			socket.subscribe('textReceived', function (sender, message) {
+				console.warn("RECEIVED TEXT: " + message.text);
+			});
+
 			// Enable automatic connection management
 			socket.autoConnect();
 

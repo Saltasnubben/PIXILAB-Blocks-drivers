@@ -71,6 +71,11 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			this.onDataReceived(message.rawData);
 		});
 
+		// Also try text mode to debug
+		socket.subscribe('textReceived', (sender, message) => {
+			console.warn("RECEIVED TEXT: " + message.text);
+		});
+
 		// Enable automatic connection management
 		socket.autoConnect();
 
