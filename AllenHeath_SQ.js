@@ -1089,6 +1089,82 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             return this.dcaLevels[dca] !== undefined ? this.dcaLevels[dca] : -85;
         };
         /**
+         * Set Main LR output level in dB
+         */
+        AllenHeath_SQ.prototype.setLRLevel = function (levelDB) {
+            if (levelDB < -85 || levelDB > 10) {
+                console.warn("Level must be between -85 and +10 dB");
+                return;
+            }
+            // NRPN for Main LR level: MSB = 0x4F (79), LSB = 0x30 (48)
+            var nrpnMSB = 0x4F;
+            var nrpnLSB = 0x30;
+            // Convert dB to 14-bit value (0-16383)
+            // -85dB = 0, +10dB = 16383
+            var range = 10 - (-85); // 95 dB range
+            var normalizedLevel = (levelDB - (-85)) / range;
+            var nrpnValue = Math.round(normalizedLevel * 16383);
+            console.info("Set Main LR level to " + levelDB.toFixed(1) + " dB");
+            this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+            this.lrLevel = levelDB;
+            this.changed('lrOutputLevel');
+        };
+        /**
+         * Set Main LR output mute state
+         */
+        AllenHeath_SQ.prototype.setLRMute = function (mute) {
+            // NRPN for Main LR mute: MSB = 1, LSB = 0x30 (48)
+            var nrpnMSB = 1;
+            var nrpnLSB = 0x30;
+            var nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
+            console.info("Set Main LR mute to " + mute);
+            this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+            this.lrMute = mute;
+            this.changed('lrOutputMute');
+        };
+        /**
+         * Set Mix/AUX output level in dB
+         */
+        AllenHeath_SQ.prototype.setMixLevel = function (mix, levelDB) {
+            if (mix < 1 || mix > 12) {
+                console.warn("Mix must be between 1 and 12");
+                return;
+            }
+            if (levelDB < -85 || levelDB > 10) {
+                console.warn("Level must be between -85 and +10 dB");
+                return;
+            }
+            // NRPN for Mix level: MSB = 0x4F (79), LSB = 0x31-0x3C (49-60 for Mix 1-12)
+            var nrpnMSB = 0x4F;
+            var nrpnLSB = 0x30 + mix;
+            // Convert dB to 14-bit value (0-16383)
+            // -85dB = 0, +10dB = 16383
+            var range = 10 - (-85); // 95 dB range
+            var normalizedLevel = (levelDB - (-85)) / range;
+            var nrpnValue = Math.round(normalizedLevel * 16383);
+            console.info("Set Mix " + mix + " level to " + levelDB.toFixed(1) + " dB");
+            this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+            this.mixLevels[mix] = levelDB;
+            this.changed("mix" + mix + "Level");
+        };
+        /**
+         * Set Mix/AUX output mute state
+         */
+        AllenHeath_SQ.prototype.setMixMute = function (mix, mute) {
+            if (mix < 1 || mix > 12) {
+                console.warn("Mix must be between 1 and 12");
+                return;
+            }
+            // NRPN for Mix mute: MSB = 1, LSB = 0x31-0x3C (49-60 for Mix 1-12)
+            var nrpnMSB = 1;
+            var nrpnLSB = 0x30 + mix;
+            var nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
+            console.info("Set Mix " + mix + " mute to " + mute);
+            this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+            this.mixMutes[mix] = mute;
+            this.changed("mix" + mix + "Mute");
+        };
+        /**
          * Send NRPN (Non-Registered Parameter Number) message
          */
         AllenHeath_SQ.prototype.sendNRPN = function (nrpnMSB, nrpnLSB, value) {
@@ -1212,7 +1288,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 return;
             }
             var nrpnValue = (this.nrpnDataMSB << 7) | this.nrpnDataLSB;
-            // Channel/DCA fader levels: MSB = 0x4F (79)
+            // Channel/DCA/Mix/LR fader levels: MSB = 0x4F (79)
             if (this.nrpnMSB === 0x4F) {
                 // Channel levels: LSB = 0-47 for channels 1-48
                 if (this.nrpnLSB < 48) {
@@ -1230,6 +1306,21 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     this.dcaLevels[dca] = levelDB;
                     this.changed("dca".concat(dca, "Level"));
                 }
+                // Main LR level: LSB = 0x30 (48)
+                else if (this.nrpnLSB === 0x30) {
+                    var levelDB = ((nrpnValue / 16383) * 95) - 85;
+                    console.info("Main LR level feedback: " + levelDB.toFixed(1) + " dB");
+                    this.lrLevel = levelDB;
+                    this.changed('lrOutputLevel');
+                }
+                // Mix levels: LSB = 0x31-0x3C (49-60) for Mix 1-12
+                else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
+                    var mix = this.nrpnLSB - 0x30;
+                    var levelDB = ((nrpnValue / 16383) * 95) - 85;
+                    console.info("Mix " + mix + " level feedback: " + levelDB.toFixed(1) + " dB");
+                    this.mixLevels[mix] = levelDB;
+                    this.changed("mix" + mix + "Level");
+                }
             }
             // Channel mutes: MSB = 0, LSB = channel (0-47)
             else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
@@ -1238,6 +1329,24 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 console.info("Channel " + channel + " mute feedback: " + muted);
                 this.channelMutes[channel] = muted;
                 this.changed("ch".concat(channel, "Mute"));
+            }
+            // Main LR and Mix mutes: MSB = 1
+            else if (this.nrpnMSB === 1) {
+                // Main LR mute: LSB = 0x30 (48)
+                if (this.nrpnLSB === 0x30) {
+                    var muted = nrpnValue > 0;
+                    console.info("Main LR mute feedback: " + muted);
+                    this.lrMute = muted;
+                    this.changed('lrOutputMute');
+                }
+                // Mix mutes: LSB = 0x31-0x3C (49-60) for Mix 1-12
+                else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
+                    var mix = this.nrpnLSB - 0x30;
+                    var muted = nrpnValue > 0;
+                    console.info("Mix " + mix + " mute feedback: " + muted);
+                    this.mixMutes[mix] = muted;
+                    this.changed("mix" + mix + "Mute");
+                }
             }
             // DCA mutes: MSB = 2, LSB = DCA (0-7)
             else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
@@ -2028,6 +2137,36 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", Number)
         ], AllenHeath_SQ.prototype, "getDCALevel", null);
+        __decorate([
+            Metadata_1.callable("Set Main LR output level"),
+            Metadata_1.parameter("Level in dB (-85 to +10)"),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Number]),
+            __metadata("design:returntype", void 0)
+        ], AllenHeath_SQ.prototype, "setLRLevel", null);
+        __decorate([
+            Metadata_1.callable("Set Main LR output mute"),
+            Metadata_1.parameter("Mute state (true = muted)"),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Boolean]),
+            __metadata("design:returntype", void 0)
+        ], AllenHeath_SQ.prototype, "setLRMute", null);
+        __decorate([
+            Metadata_1.callable("Set Mix/AUX output level"),
+            Metadata_1.parameter("Mix number (1-12)"),
+            Metadata_1.parameter("Level in dB (-85 to +10)"),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Number, Number]),
+            __metadata("design:returntype", void 0)
+        ], AllenHeath_SQ.prototype, "setMixLevel", null);
+        __decorate([
+            Metadata_1.callable("Set Mix/AUX output mute"),
+            Metadata_1.parameter("Mix number (1-12)"),
+            Metadata_1.parameter("Mute state (true = muted)"),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Number, Boolean]),
+            __metadata("design:returntype", void 0)
+        ], AllenHeath_SQ.prototype, "setMixMute", null);
         AllenHeath_SQ = __decorate([
             Metadata_1.driver('NetworkTCP', { port: 51325 }),
             __metadata("design:paramtypes", [Object])

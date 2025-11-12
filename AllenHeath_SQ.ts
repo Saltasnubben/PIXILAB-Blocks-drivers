@@ -1187,6 +1187,110 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	}
 
 	/**
+	 * Set Main LR output level in dB
+	 */
+	@Meta.callable("Set Main LR output level")
+	@Meta.parameter("Level in dB (-85 to +10)")
+	public setLRLevel(levelDB: number): void {
+		if (levelDB < -85 || levelDB > 10) {
+			console.warn("Level must be between -85 and +10 dB");
+			return;
+		}
+
+		// NRPN for Main LR level: MSB = 0x4F (79), LSB = 0x30 (48)
+		const nrpnMSB = 0x4F;
+		const nrpnLSB = 0x30;
+
+		// Convert dB to 14-bit value (0-16383)
+		// -85dB = 0, +10dB = 16383
+		const range = 10 - (-85); // 95 dB range
+		const normalizedLevel = (levelDB - (-85)) / range;
+		const nrpnValue = Math.round(normalizedLevel * 16383);
+
+		console.info(`Set Main LR level to ${levelDB.toFixed(1)} dB`);
+		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+		this.lrLevel = levelDB;
+		this.changed('lrOutputLevel');
+	}
+
+	/**
+	 * Set Main LR output mute state
+	 */
+	@Meta.callable("Set Main LR output mute")
+	@Meta.parameter("Mute state (true = muted)")
+	public setLRMute(mute: boolean): void {
+		// NRPN for Main LR mute: MSB = 1, LSB = 0x30 (48)
+		const nrpnMSB = 1;
+		const nrpnLSB = 0x30;
+		const nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
+
+		console.info("Set Main LR mute to " + mute);
+		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+		this.lrMute = mute;
+		this.changed('lrOutputMute');
+	}
+
+	/**
+	 * Set Mix/AUX output level in dB
+	 */
+	@Meta.callable("Set Mix/AUX output level")
+	@Meta.parameter("Mix number (1-12)")
+	@Meta.parameter("Level in dB (-85 to +10)")
+	public setMixLevel(mix: number, levelDB: number): void {
+		if (mix < 1 || mix > 12) {
+			console.warn("Mix must be between 1 and 12");
+			return;
+		}
+
+		if (levelDB < -85 || levelDB > 10) {
+			console.warn("Level must be between -85 and +10 dB");
+			return;
+		}
+
+		// NRPN for Mix level: MSB = 0x4F (79), LSB = 0x31-0x3C (49-60 for Mix 1-12)
+		const nrpnMSB = 0x4F;
+		const nrpnLSB = 0x30 + mix;
+
+		// Convert dB to 14-bit value (0-16383)
+		// -85dB = 0, +10dB = 16383
+		const range = 10 - (-85); // 95 dB range
+		const normalizedLevel = (levelDB - (-85)) / range;
+		const nrpnValue = Math.round(normalizedLevel * 16383);
+
+		console.info(`Set Mix ${mix} level to ${levelDB.toFixed(1)} dB`);
+		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+		this.mixLevels[mix] = levelDB;
+		this.changed(`mix${mix}Level`);
+	}
+
+	/**
+	 * Set Mix/AUX output mute state
+	 */
+	@Meta.callable("Set Mix/AUX output mute")
+	@Meta.parameter("Mix number (1-12)")
+	@Meta.parameter("Mute state (true = muted)")
+	public setMixMute(mix: number, mute: boolean): void {
+		if (mix < 1 || mix > 12) {
+			console.warn("Mix must be between 1 and 12");
+			return;
+		}
+
+		// NRPN for Mix mute: MSB = 1, LSB = 0x31-0x3C (49-60 for Mix 1-12)
+		const nrpnMSB = 1;
+		const nrpnLSB = 0x30 + mix;
+		const nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
+
+		console.info("Set Mix " + mix + " mute to " + mute);
+		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
+
+		this.mixMutes[mix] = mute;
+		this.changed(`mix${mix}Mute`);
+	}
+
+	/**
 	 * Send NRPN (Non-Registered Parameter Number) message
 	 */
 	private sendNRPN(nrpnMSB: number, nrpnLSB: number, value: number): void {
@@ -1322,7 +1426,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		const nrpnValue = (this.nrpnDataMSB << 7) | this.nrpnDataLSB;
 
-		// Channel/DCA fader levels: MSB = 0x4F (79)
+		// Channel/DCA/Mix/LR fader levels: MSB = 0x4F (79)
 		if (this.nrpnMSB === 0x4F) {
 			// Channel levels: LSB = 0-47 for channels 1-48
 			if (this.nrpnLSB < 48) {
@@ -1340,6 +1444,21 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 				this.dcaLevels[dca] = levelDB;
 				this.changed(`dca${dca}Level`);
 			}
+			// Main LR level: LSB = 0x30 (48)
+			else if (this.nrpnLSB === 0x30) {
+				const levelDB = ((nrpnValue / 16383) * 95) - 85;
+				console.info("Main LR level feedback: " + levelDB.toFixed(1) + " dB");
+				this.lrLevel = levelDB;
+				this.changed('lrOutputLevel');
+			}
+			// Mix levels: LSB = 0x31-0x3C (49-60) for Mix 1-12
+			else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
+				const mix = this.nrpnLSB - 0x30;
+				const levelDB = ((nrpnValue / 16383) * 95) - 85;
+				console.info("Mix " + mix + " level feedback: " + levelDB.toFixed(1) + " dB");
+				this.mixLevels[mix] = levelDB;
+				this.changed(`mix${mix}Level`);
+			}
 		}
 		// Channel mutes: MSB = 0, LSB = channel (0-47)
 		else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
@@ -1348,6 +1467,24 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			console.info("Channel " + channel + " mute feedback: " + muted);
 			this.channelMutes[channel] = muted;
 			this.changed(`ch${channel}Mute`);
+		}
+		// Main LR and Mix mutes: MSB = 1
+		else if (this.nrpnMSB === 1) {
+			// Main LR mute: LSB = 0x30 (48)
+			if (this.nrpnLSB === 0x30) {
+				const muted = nrpnValue > 0;
+				console.info("Main LR mute feedback: " + muted);
+				this.lrMute = muted;
+				this.changed('lrOutputMute');
+			}
+			// Mix mutes: LSB = 0x31-0x3C (49-60) for Mix 1-12
+			else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
+				const mix = this.nrpnLSB - 0x30;
+				const muted = nrpnValue > 0;
+				console.info("Mix " + mix + " mute feedback: " + muted);
+				this.mixMutes[mix] = muted;
+				this.changed(`mix${mix}Mute`);
+			}
 		}
 		// DCA mutes: MSB = 2, LSB = DCA (0-7)
 		else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
