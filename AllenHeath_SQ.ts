@@ -46,7 +46,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 	constructor(private socket: NetworkTCP) {
 		super(socket);
-		console.warn("AllenHeath_SQ: Constructor started");
 
 		// Initialize default channel states
 		for (let i = 1; i <= 48; i++) {
@@ -60,10 +59,8 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			this.dcaMutes[i] = false;
 		}
 
-		console.warn("AllenHeath_SQ: Subscribing to connection events");
 		// Subscribe to connection events
 		socket.subscribe('connect', (sender, message) => {
-			console.warn("AllenHeath_SQ: Connect event fired, socket.connected:", socket.connected);
 			if (socket.connected) {
 				this.onConnected();
 			}
@@ -71,28 +68,23 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		// Subscribe to binary data for MIDI messages
 		socket.subscribe('bytesReceived', (sender, message) => {
-			console.warn("AllenHeath_SQ: bytesReceived event, data length:", message.rawData.length);
 			this.onDataReceived(message.rawData);
 		});
 
 		// Enable automatic connection management
-		console.warn("AllenHeath_SQ: Calling socket.autoConnect()");
 		socket.autoConnect();
 
 		// If already connected when driver loads, initialize now
-		console.warn("AllenHeath_SQ: Checking if already connected, socket.connected:", socket.connected);
 		if (socket.connected) {
-			console.warn("AllenHeath_SQ: Already connected at startup");
 			this.onConnected();
 		}
-		console.warn("AllenHeath_SQ: Constructor completed");
 	}
 
 	/**
 	 * Called when connection is established
 	 */
 	private onConnected(): void {
-		console.warn("AllenHeath_SQ: onConnected() called - Connected to Allen & Heath SQ console");
+		console.info("Connected to Allen & Heath SQ console");
 	}
 
 	/**
@@ -707,15 +699,11 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			return;
 		}
 
-		console.warn("AllenHeath_SQ: Recalling scene", sceneNumber);
-
 		// Convert scene number to MIDI format
 		// SQ counts from 1, MIDI from 0
 		const midiScene = sceneNumber - 1;
 		const bank = Math.floor(midiScene / 128);
 		const program = midiScene % 128;
-
-		console.warn("AllenHeath_SQ: Scene MIDI values - bank:", bank, "program:", program);
 
 		// Send all messages in one packet like PacketSender does
 		// Bank Select MSB (CC 0) + Program Change
@@ -725,12 +713,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		// Combine into single message
 		const combined = bankSelectMSB.concat(programChange);
 
-		console.warn("AllenHeath_SQ: Sending MIDI bytes:",
-			combined.map(b => {
-				const hex = b.toString(16).toUpperCase();
-				return '0x' + (hex.length === 1 ? '0' + hex : hex);
-			}).join(' '));
-
+		console.info("Recall scene " + sceneNumber);
 		this.sendMIDI(combined);
 
 		this.currentScene = sceneNumber;
@@ -744,8 +727,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	@Meta.parameter("Channel number (1-48)")
 	@Meta.parameter("Level in dB (-85 to +10)")
 	public setChannelLevel(channel: number, levelDB: number): void {
-		console.warn("AllenHeath_SQ: setChannelLevel called with channel:", channel, "level:", levelDB);
-
 		if (channel < 1 || channel > 48) {
 			console.warn("Channel must be between 1 and 48");
 			return;
@@ -766,7 +747,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		const normalizedLevel = (levelDB - (-85)) / range;
 		const nrpnValue = Math.round(normalizedLevel * 16383);
 
-		console.warn("AllenHeath_SQ: Sending channel level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+		console.info(`Set channel ${channel} level to ${levelDB.toFixed(1)} dB`);
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 		this.channelLevels[channel] = levelDB;
@@ -793,8 +774,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	@Meta.parameter("Channel number (1-48)")
 	@Meta.parameter("Mute state (true = muted)")
 	public setChannelMute(channel: number, mute: boolean): void {
-		console.warn("AllenHeath_SQ: setChannelMute called with channel:", channel, "type:", typeof channel, "mute:", mute, "type:", typeof mute);
-
 		if (channel < 1 || channel > 48) {
 			console.warn("Channel must be between 1 and 48");
 			return;
@@ -805,7 +784,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		const nrpnLSB = channel - 1;
 		const nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
 
-		console.warn("AllenHeath_SQ: Sending mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+		console.info("Set channel " + channel + " mute to " + mute);
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 		this.channelMutes[channel] = mute;
@@ -842,8 +821,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	@Meta.parameter("DCA number (1-8)")
 	@Meta.parameter("Mute state (true = muted)")
 	public setDCAMute(dca: number, mute: boolean): void {
-		console.warn("AllenHeath_SQ: setDCAMute called with DCA:", dca, "type:", typeof dca, "mute:", mute, "type:", typeof mute);
-
 		if (dca < 1 || dca > 8) {
 			console.warn("DCA must be between 1 and 8");
 			return;
@@ -854,7 +831,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		const nrpnLSB = dca - 1;
 		const nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
 
-		console.warn("AllenHeath_SQ: Sending DCA mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+		console.info("Set DCA " + dca + " mute to " + mute);
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 		this.dcaMutes[dca] = mute;
@@ -891,8 +868,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	@Meta.parameter("DCA number (1-8)")
 	@Meta.parameter("Level in dB (-85 to +10)")
 	public setDCALevel(dca: number, levelDB: number): void {
-		console.warn("AllenHeath_SQ: setDCALevel called with DCA:", dca, "level:", levelDB);
-
 		if (dca < 1 || dca > 8) {
 			console.warn("DCA must be between 1 and 8");
 			return;
@@ -913,7 +888,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		const normalizedLevel = (levelDB - (-85)) / range;
 		const nrpnValue = Math.round(normalizedLevel * 16383);
 
-		console.warn("AllenHeath_SQ: Sending DCA level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+		console.info("Set DCA " + dca + " level to " + levelDB.toFixed(1) + " dB");
 		this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 		this.dcaLevels[dca] = levelDB;
@@ -960,14 +935,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	 */
 	private sendMIDI(bytes: number[]): void {
 		try {
-			console.warn("AllenHeath_SQ: sendMIDI called with", bytes.length, "bytes");
-			console.warn("AllenHeath_SQ: Raw byte values:", bytes.join(', '));
-
-			console.warn("AllenHeath_SQ: Sending via socket.sendBytes, connected:", this.socket.connected);
 			this.socket.sendBytes(bytes);
-			console.warn("AllenHeath_SQ: sendBytes completed");
 		} catch (error) {
-			console.error("AllenHeath_SQ: Failed to send MIDI data:", error);
+			console.error("Failed to send MIDI data:", error);
 		}
 	}
 
@@ -975,8 +945,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	 * Handle received binary MIDI data
 	 */
 	private onDataReceived(data: any): void {
-		console.warn("AllenHeath_SQ: onDataReceived called, data type:", typeof data, "length:", data ? data.length : 'null');
-
 		// Process each byte in the received data
 		if (data && data.length) {
 			for (let i = 0; i < data.length; i++) {
@@ -1076,15 +1044,13 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 		const nrpnValue = (this.nrpnDataMSB << 7) | this.nrpnDataLSB;
 
-		console.warn("AllenHeath_SQ: Processing NRPN - MSB:", this.nrpnMSB, "LSB:", this.nrpnLSB, "Value:", nrpnValue);
-
 		// Channel/DCA fader levels: MSB = 0x4F (79)
 		if (this.nrpnMSB === 0x4F) {
 			// Channel levels: LSB = 0-47 for channels 1-48
 			if (this.nrpnLSB < 48) {
 				const channel = this.nrpnLSB + 1;
 				const levelDB = ((nrpnValue / 16383) * 95) - 85;
-				console.warn("AllenHeath_SQ: Channel", channel, "level feedback:", levelDB.toFixed(1), "dB");
+				console.info("Channel " + channel + " level feedback: " + levelDB.toFixed(1) + " dB");
 				this.channelLevels[channel] = levelDB;
 				this.changed(`ch${channel}Level`);
 			}
@@ -1092,7 +1058,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
 				const dca = this.nrpnLSB - 0x20 + 1;
 				const levelDB = ((nrpnValue / 16383) * 95) - 85;
-				console.warn("AllenHeath_SQ: DCA", dca, "level feedback:", levelDB.toFixed(1), "dB");
+				console.info("DCA " + dca + " level feedback: " + levelDB.toFixed(1) + " dB");
 				this.dcaLevels[dca] = levelDB;
 				this.changed(`dca${dca}Level`);
 			}
@@ -1101,7 +1067,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
 			const channel = this.nrpnLSB + 1;
 			const muted = nrpnValue > 0;
-			console.warn("AllenHeath_SQ: Channel", channel, "mute feedback:", muted);
+			console.info("Channel " + channel + " mute feedback: " + muted);
 			this.channelMutes[channel] = muted;
 			this.changed(`ch${channel}Mute`);
 		}
@@ -1109,7 +1075,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
 			const dca = this.nrpnLSB + 1;
 			const muted = nrpnValue > 0;
-			console.warn("AllenHeath_SQ: DCA", dca, "mute feedback:", muted);
+			console.info("DCA " + dca + " mute feedback: " + muted);
 			this.dcaMutes[dca] = muted;
 			this.changed(`dca${dca}Mute`);
 		}

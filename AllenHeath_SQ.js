@@ -87,10 +87,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				_this.dcaMutes[i] = false;
 			}
 
-			console.warn("AllenHeath_SQ: Subscribing to connection events");
 			// Subscribe to connection events
 			socket.subscribe('connect', function (sender, message) {
-				console.warn("AllenHeath_SQ: Connect event fired, socket.connected:", socket.connected);
 				if (socket.connected) {
 					_this.onConnected();
 				}
@@ -98,21 +96,16 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			// Subscribe to binary data for MIDI messages
 			socket.subscribe('bytesReceived', function (sender, message) {
-				console.warn("AllenHeath_SQ: bytesReceived event, data length:", message.rawData.length);
 				_this.onDataReceived(message.rawData);
 			});
 
 			// Enable automatic connection management
-			console.warn("AllenHeath_SQ: Calling socket.autoConnect()");
 			socket.autoConnect();
 
 			// If already connected when driver loads, initialize now
-			console.warn("AllenHeath_SQ: Checking if already connected, socket.connected:", socket.connected);
 			if (socket.connected) {
-				console.warn("AllenHeath_SQ: Already connected at startup");
 				_this.onConnected();
 			}
-			console.warn("AllenHeath_SQ: Constructor completed");
 
 			return _this;
 		}
@@ -121,7 +114,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Called when connection is established
 		 */
 		AllenHeath_SQ.prototype.onConnected = function () {
-			console.warn("AllenHeath_SQ: onConnected() called - Connected to Allen & Heath SQ console");
+			console.info("Connected to Allen & Heath SQ console");
 		};
 
 		Object.defineProperty(AllenHeath_SQ.prototype, "scene", {
@@ -960,15 +953,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				return;
 			}
 
-			console.warn("AllenHeath_SQ: Recalling scene", sceneNumber);
-
 			// Convert scene number to MIDI format
 			// SQ counts from 1, MIDI from 0
 			var midiScene = sceneNumber - 1;
 			var bank = Math.floor(midiScene / 128);
 			var program = midiScene % 128;
-
-			console.warn("AllenHeath_SQ: Scene MIDI values - bank:", bank, "program:", program);
 
 			// Send all messages in one packet like PacketSender does
 			// Bank Select MSB (CC 0) + Program Change
@@ -978,12 +967,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			// Combine into single message
 			var combined = bankSelectMSB.concat(programChange);
 
-			console.warn("AllenHeath_SQ: Sending MIDI bytes:",
-				combined.map(function(b) {
-					var hex = b.toString(16).toUpperCase();
-					return '0x' + (hex.length === 1 ? '0' + hex : hex);
-				}).join(' '));
-
+			console.info("Recall scene " + sceneNumber);
 			this.sendMIDI(combined);
 
 			this.currentScene = sceneNumber;
@@ -994,8 +978,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Set channel fader level in dB
 		 */
 		AllenHeath_SQ.prototype.setChannelLevel = function (channel, levelDB) {
-			console.warn("AllenHeath_SQ: setChannelLevel called with channel:", channel, "level:", levelDB);
-
 			if (channel < 1 || channel > 48) {
 				console.warn("Channel must be between 1 and 48");
 				return;
@@ -1016,7 +998,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			var normalizedLevel = (levelDB - (-85)) / range;
 			var nrpnValue = Math.round(normalizedLevel * 16383);
 
-			console.warn("AllenHeath_SQ: Sending channel level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+			console.info("Set channel " + channel + " level to " + levelDB.toFixed(1) + " dB");
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 			this.channelLevels[channel] = levelDB;
@@ -1038,8 +1020,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Set channel mute state
 		 */
 		AllenHeath_SQ.prototype.setChannelMute = function (channel, mute) {
-			console.warn("AllenHeath_SQ: setChannelMute called with channel:", channel, "type:", typeof channel, "mute:", mute, "type:", typeof mute);
-
 			if (channel < 1 || channel > 48) {
 				console.warn("Channel must be between 1 and 48");
 				return;
@@ -1050,7 +1030,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			var nrpnLSB = channel - 1;
 			var nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
 
-			console.warn("AllenHeath_SQ: Sending mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+			console.info("Set channel " + channel + " mute to " + mute);
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 			this.channelMutes[channel] = mute;
@@ -1080,8 +1060,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Set DCA mute state
 		 */
 		AllenHeath_SQ.prototype.setDCAMute = function (dca, mute) {
-			console.warn("AllenHeath_SQ: setDCAMute called with DCA:", dca, "type:", typeof dca, "mute:", mute, "type:", typeof mute);
-
 			if (dca < 1 || dca > 8) {
 				console.warn("DCA must be between 1 and 8");
 				return;
@@ -1092,7 +1070,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			var nrpnLSB = dca - 1;
 			var nrpnValue = mute ? 1 : 0; // 1 = muted, 0 = unmuted
 
-			console.warn("AllenHeath_SQ: Sending DCA mute NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+			console.info("Set DCA " + dca + " mute to " + mute);
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 			this.dcaMutes[dca] = mute;
@@ -1122,8 +1100,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Set DCA fader level in dB
 		 */
 		AllenHeath_SQ.prototype.setDCALevel = function (dca, levelDB) {
-			console.warn("AllenHeath_SQ: setDCALevel called with DCA:", dca, "level:", levelDB);
-
 			if (dca < 1 || dca > 8) {
 				console.warn("DCA must be between 1 and 8");
 				return;
@@ -1144,7 +1120,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			var normalizedLevel = (levelDB - (-85)) / range;
 			var nrpnValue = Math.round(normalizedLevel * 16383);
 
-			console.warn("AllenHeath_SQ: Sending DCA level NRPN - MSB:", nrpnMSB, "LSB:", nrpnLSB, "Value:", nrpnValue);
+			console.info("Set DCA " + dca + " level to " + levelDB.toFixed(1) + " dB");
 			this.sendNRPN(nrpnMSB, nrpnLSB, nrpnValue);
 
 			this.dcaLevels[dca] = levelDB;
@@ -1189,14 +1165,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 */
 		AllenHeath_SQ.prototype.sendMIDI = function (bytes) {
 			try {
-				console.warn("AllenHeath_SQ: sendMIDI called with", bytes.length, "bytes");
-				console.warn("AllenHeath_SQ: Raw byte values:", bytes.join(', '));
-
-				console.warn("AllenHeath_SQ: Sending via socket.sendBytes, connected:", this.socket.connected);
 				this.socket.sendBytes(bytes);
-				console.warn("AllenHeath_SQ: sendBytes completed");
 			} catch (error) {
-				console.error("AllenHeath_SQ: Failed to send MIDI data:", error);
+				console.error("Failed to send MIDI data:", error);
 			}
 		};
 
@@ -1204,8 +1175,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		 * Handle received binary MIDI data
 		 */
 		AllenHeath_SQ.prototype.onDataReceived = function (data) {
-			console.warn("AllenHeath_SQ: onDataReceived called, data type:", typeof data, "length:", data ? data.length : 'null');
-
 			// Process each byte in the received data
 			if (data && data.length) {
 				for (var i = 0; i < data.length; i++) {
@@ -1305,15 +1274,13 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			var nrpnValue = (this.nrpnDataMSB << 7) | this.nrpnDataLSB;
 
-			console.warn("AllenHeath_SQ: Processing NRPN - MSB:", this.nrpnMSB, "LSB:", this.nrpnLSB, "Value:", nrpnValue);
-
 			// Channel/DCA fader levels: MSB = 0x4F (79)
 			if (this.nrpnMSB === 0x4F) {
 				// Channel levels: LSB = 0-47 for channels 1-48
 				if (this.nrpnLSB < 48) {
 					var channel = this.nrpnLSB + 1;
 					var levelDB = ((nrpnValue / 16383) * 95) - 85;
-					console.warn("AllenHeath_SQ: Channel", channel, "level feedback:", levelDB.toFixed(1), "dB");
+					console.info("Channel " + channel + " level feedback: " + levelDB.toFixed(1) + " dB");
 					this.channelLevels[channel] = levelDB;
 					this.changed("ch" + channel + "Level");
 				}
@@ -1321,7 +1288,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 				else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
 					var dca = this.nrpnLSB - 0x20 + 1;
 					var levelDB = ((nrpnValue / 16383) * 95) - 85;
-					console.warn("AllenHeath_SQ: DCA", dca, "level feedback:", levelDB.toFixed(1), "dB");
+					console.info("DCA " + dca + " level feedback: " + levelDB.toFixed(1) + " dB");
 					this.dcaLevels[dca] = levelDB;
 					this.changed("dca" + dca + "Level");
 				}
@@ -1330,7 +1297,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
 				var channel = this.nrpnLSB + 1;
 				var muted = nrpnValue > 0;
-				console.warn("AllenHeath_SQ: Channel", channel, "mute feedback:", muted);
+				console.info("Channel " + channel + " mute feedback: " + muted);
 				this.channelMutes[channel] = muted;
 				this.changed("ch" + channel + "Mute");
 			}
@@ -1338,7 +1305,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
 				var dca = this.nrpnLSB + 1;
 				var muted = nrpnValue > 0;
-				console.warn("AllenHeath_SQ: DCA", dca, "mute feedback:", muted);
+				console.info("DCA " + dca + " mute feedback: " + muted);
 				this.dcaMutes[dca] = muted;
 				this.changed("dca" + dca + "Mute");
 			}
