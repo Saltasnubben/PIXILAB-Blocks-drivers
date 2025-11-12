@@ -42,7 +42,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib/Metadata"], function (require, exports, Network_1, Driver_1, Meta) {
+define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], function (require, exports, Driver_1, Metadata_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AllenHeath_SQ = void 0;
@@ -1261,777 +1261,776 @@ define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib
             // For now, just update if it's in the current bank
             console.log("Program change received:", program);
         };
-        var _a;
         __decorate([
-            Meta.property("Current scene number (1-500)"),
-            Meta.min(1),
-            Meta.max(500),
+            Metadata_1.property("Current scene number (1-500)"),
+            Metadata_1.min(1),
+            Metadata_1.max(500),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "scene", null);
         __decorate([
-            Meta.property("MIDI channel (1-16, must match console setting)"),
-            Meta.min(1),
-            Meta.max(16),
+            Metadata_1.property("MIDI channel (1-16, must match console setting)"),
+            Metadata_1.min(1),
+            Metadata_1.max(16),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "midiCh", null);
         __decorate([
-            Meta.property("DCA 1 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 1 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca1Level", null);
         __decorate([
-            Meta.property("DCA 2 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 2 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca2Level", null);
         __decorate([
-            Meta.property("DCA 3 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 3 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca3Level", null);
         __decorate([
-            Meta.property("DCA 4 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 4 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca4Level", null);
         __decorate([
-            Meta.property("DCA 5 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 5 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca5Level", null);
         __decorate([
-            Meta.property("DCA 6 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 6 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca6Level", null);
         __decorate([
-            Meta.property("DCA 7 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 7 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca7Level", null);
         __decorate([
-            Meta.property("DCA 8 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("DCA 8 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "dca8Level", null);
         __decorate([
-            Meta.property("DCA 1 mute state"),
+            Metadata_1.property("DCA 1 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca1Mute", null);
         __decorate([
-            Meta.property("DCA 2 mute state"),
+            Metadata_1.property("DCA 2 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca2Mute", null);
         __decorate([
-            Meta.property("DCA 3 mute state"),
+            Metadata_1.property("DCA 3 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca3Mute", null);
         __decorate([
-            Meta.property("DCA 4 mute state"),
+            Metadata_1.property("DCA 4 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca4Mute", null);
         __decorate([
-            Meta.property("DCA 5 mute state"),
+            Metadata_1.property("DCA 5 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca5Mute", null);
         __decorate([
-            Meta.property("DCA 6 mute state"),
+            Metadata_1.property("DCA 6 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca6Mute", null);
         __decorate([
-            Meta.property("DCA 7 mute state"),
+            Metadata_1.property("DCA 7 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca7Mute", null);
         __decorate([
-            Meta.property("DCA 8 mute state"),
+            Metadata_1.property("DCA 8 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "dca8Mute", null);
         __decorate([
-            Meta.property("Channel 1 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 1 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch1Level", null);
         __decorate([
-            Meta.property("Channel 2 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 2 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch2Level", null);
         __decorate([
-            Meta.property("Channel 3 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 3 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch3Level", null);
         __decorate([
-            Meta.property("Channel 4 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 4 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch4Level", null);
         __decorate([
-            Meta.property("Channel 5 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 5 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch5Level", null);
         __decorate([
-            Meta.property("Channel 6 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 6 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch6Level", null);
         __decorate([
-            Meta.property("Channel 7 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 7 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch7Level", null);
         __decorate([
-            Meta.property("Channel 8 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 8 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch8Level", null);
         __decorate([
-            Meta.property("Channel 9 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 9 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch9Level", null);
         __decorate([
-            Meta.property("Channel 10 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 10 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch10Level", null);
         __decorate([
-            Meta.property("Channel 11 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 11 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch11Level", null);
         __decorate([
-            Meta.property("Channel 12 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 12 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch12Level", null);
         __decorate([
-            Meta.property("Channel 13 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 13 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch13Level", null);
         __decorate([
-            Meta.property("Channel 14 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 14 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch14Level", null);
         __decorate([
-            Meta.property("Channel 15 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 15 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch15Level", null);
         __decorate([
-            Meta.property("Channel 16 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 16 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch16Level", null);
         __decorate([
-            Meta.property("Channel 17 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 17 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch17Level", null);
         __decorate([
-            Meta.property("Channel 18 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 18 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch18Level", null);
         __decorate([
-            Meta.property("Channel 19 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 19 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch19Level", null);
         __decorate([
-            Meta.property("Channel 20 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 20 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch20Level", null);
         __decorate([
-            Meta.property("Channel 21 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 21 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch21Level", null);
         __decorate([
-            Meta.property("Channel 22 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 22 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch22Level", null);
         __decorate([
-            Meta.property("Channel 23 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 23 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch23Level", null);
         __decorate([
-            Meta.property("Channel 24 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 24 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch24Level", null);
         __decorate([
-            Meta.property("Channel 25 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 25 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch25Level", null);
         __decorate([
-            Meta.property("Channel 26 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 26 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch26Level", null);
         __decorate([
-            Meta.property("Channel 27 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 27 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch27Level", null);
         __decorate([
-            Meta.property("Channel 28 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 28 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch28Level", null);
         __decorate([
-            Meta.property("Channel 29 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 29 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch29Level", null);
         __decorate([
-            Meta.property("Channel 30 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 30 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch30Level", null);
         __decorate([
-            Meta.property("Channel 31 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 31 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch31Level", null);
         __decorate([
-            Meta.property("Channel 32 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 32 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch32Level", null);
         __decorate([
-            Meta.property("Channel 33 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 33 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch33Level", null);
         __decorate([
-            Meta.property("Channel 34 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 34 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch34Level", null);
         __decorate([
-            Meta.property("Channel 35 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 35 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch35Level", null);
         __decorate([
-            Meta.property("Channel 36 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 36 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch36Level", null);
         __decorate([
-            Meta.property("Channel 37 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 37 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch37Level", null);
         __decorate([
-            Meta.property("Channel 38 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 38 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch38Level", null);
         __decorate([
-            Meta.property("Channel 39 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 39 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch39Level", null);
         __decorate([
-            Meta.property("Channel 40 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 40 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch40Level", null);
         __decorate([
-            Meta.property("Channel 41 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 41 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch41Level", null);
         __decorate([
-            Meta.property("Channel 42 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 42 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch42Level", null);
         __decorate([
-            Meta.property("Channel 43 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 43 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch43Level", null);
         __decorate([
-            Meta.property("Channel 44 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 44 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch44Level", null);
         __decorate([
-            Meta.property("Channel 45 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 45 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch45Level", null);
         __decorate([
-            Meta.property("Channel 46 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 46 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch46Level", null);
         __decorate([
-            Meta.property("Channel 47 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 47 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch47Level", null);
         __decorate([
-            Meta.property("Channel 48 fader level (-85 to +10 dB)"),
-            Meta.min(-85),
-            Meta.max(10),
+            Metadata_1.property("Channel 48 fader level (-85 to +10 dB)"),
+            Metadata_1.min(-85),
+            Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "ch48Level", null);
         __decorate([
-            Meta.property("Channel 1 mute state"),
+            Metadata_1.property("Channel 1 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch1Mute", null);
         __decorate([
-            Meta.property("Channel 2 mute state"),
+            Metadata_1.property("Channel 2 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch2Mute", null);
         __decorate([
-            Meta.property("Channel 3 mute state"),
+            Metadata_1.property("Channel 3 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch3Mute", null);
         __decorate([
-            Meta.property("Channel 4 mute state"),
+            Metadata_1.property("Channel 4 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch4Mute", null);
         __decorate([
-            Meta.property("Channel 5 mute state"),
+            Metadata_1.property("Channel 5 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch5Mute", null);
         __decorate([
-            Meta.property("Channel 6 mute state"),
+            Metadata_1.property("Channel 6 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch6Mute", null);
         __decorate([
-            Meta.property("Channel 7 mute state"),
+            Metadata_1.property("Channel 7 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch7Mute", null);
         __decorate([
-            Meta.property("Channel 8 mute state"),
+            Metadata_1.property("Channel 8 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch8Mute", null);
         __decorate([
-            Meta.property("Channel 9 mute state"),
+            Metadata_1.property("Channel 9 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch9Mute", null);
         __decorate([
-            Meta.property("Channel 10 mute state"),
+            Metadata_1.property("Channel 10 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch10Mute", null);
         __decorate([
-            Meta.property("Channel 11 mute state"),
+            Metadata_1.property("Channel 11 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch11Mute", null);
         __decorate([
-            Meta.property("Channel 12 mute state"),
+            Metadata_1.property("Channel 12 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch12Mute", null);
         __decorate([
-            Meta.property("Channel 13 mute state"),
+            Metadata_1.property("Channel 13 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch13Mute", null);
         __decorate([
-            Meta.property("Channel 14 mute state"),
+            Metadata_1.property("Channel 14 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch14Mute", null);
         __decorate([
-            Meta.property("Channel 15 mute state"),
+            Metadata_1.property("Channel 15 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch15Mute", null);
         __decorate([
-            Meta.property("Channel 16 mute state"),
+            Metadata_1.property("Channel 16 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch16Mute", null);
         __decorate([
-            Meta.property("Channel 17 mute state"),
+            Metadata_1.property("Channel 17 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch17Mute", null);
         __decorate([
-            Meta.property("Channel 18 mute state"),
+            Metadata_1.property("Channel 18 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch18Mute", null);
         __decorate([
-            Meta.property("Channel 19 mute state"),
+            Metadata_1.property("Channel 19 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch19Mute", null);
         __decorate([
-            Meta.property("Channel 20 mute state"),
+            Metadata_1.property("Channel 20 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch20Mute", null);
         __decorate([
-            Meta.property("Channel 21 mute state"),
+            Metadata_1.property("Channel 21 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch21Mute", null);
         __decorate([
-            Meta.property("Channel 22 mute state"),
+            Metadata_1.property("Channel 22 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch22Mute", null);
         __decorate([
-            Meta.property("Channel 23 mute state"),
+            Metadata_1.property("Channel 23 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch23Mute", null);
         __decorate([
-            Meta.property("Channel 24 mute state"),
+            Metadata_1.property("Channel 24 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch24Mute", null);
         __decorate([
-            Meta.property("Channel 25 mute state"),
+            Metadata_1.property("Channel 25 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch25Mute", null);
         __decorate([
-            Meta.property("Channel 26 mute state"),
+            Metadata_1.property("Channel 26 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch26Mute", null);
         __decorate([
-            Meta.property("Channel 27 mute state"),
+            Metadata_1.property("Channel 27 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch27Mute", null);
         __decorate([
-            Meta.property("Channel 28 mute state"),
+            Metadata_1.property("Channel 28 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch28Mute", null);
         __decorate([
-            Meta.property("Channel 29 mute state"),
+            Metadata_1.property("Channel 29 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch29Mute", null);
         __decorate([
-            Meta.property("Channel 30 mute state"),
+            Metadata_1.property("Channel 30 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch30Mute", null);
         __decorate([
-            Meta.property("Channel 31 mute state"),
+            Metadata_1.property("Channel 31 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch31Mute", null);
         __decorate([
-            Meta.property("Channel 32 mute state"),
+            Metadata_1.property("Channel 32 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch32Mute", null);
         __decorate([
-            Meta.property("Channel 33 mute state"),
+            Metadata_1.property("Channel 33 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch33Mute", null);
         __decorate([
-            Meta.property("Channel 34 mute state"),
+            Metadata_1.property("Channel 34 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch34Mute", null);
         __decorate([
-            Meta.property("Channel 35 mute state"),
+            Metadata_1.property("Channel 35 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch35Mute", null);
         __decorate([
-            Meta.property("Channel 36 mute state"),
+            Metadata_1.property("Channel 36 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch36Mute", null);
         __decorate([
-            Meta.property("Channel 37 mute state"),
+            Metadata_1.property("Channel 37 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch37Mute", null);
         __decorate([
-            Meta.property("Channel 38 mute state"),
+            Metadata_1.property("Channel 38 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch38Mute", null);
         __decorate([
-            Meta.property("Channel 39 mute state"),
+            Metadata_1.property("Channel 39 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch39Mute", null);
         __decorate([
-            Meta.property("Channel 40 mute state"),
+            Metadata_1.property("Channel 40 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch40Mute", null);
         __decorate([
-            Meta.property("Channel 41 mute state"),
+            Metadata_1.property("Channel 41 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch41Mute", null);
         __decorate([
-            Meta.property("Channel 42 mute state"),
+            Metadata_1.property("Channel 42 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch42Mute", null);
         __decorate([
-            Meta.property("Channel 43 mute state"),
+            Metadata_1.property("Channel 43 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch43Mute", null);
         __decorate([
-            Meta.property("Channel 44 mute state"),
+            Metadata_1.property("Channel 44 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch44Mute", null);
         __decorate([
-            Meta.property("Channel 45 mute state"),
+            Metadata_1.property("Channel 45 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch45Mute", null);
         __decorate([
-            Meta.property("Channel 46 mute state"),
+            Metadata_1.property("Channel 46 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch46Mute", null);
         __decorate([
-            Meta.property("Channel 47 mute state"),
+            Metadata_1.property("Channel 47 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch47Mute", null);
         __decorate([
-            Meta.property("Channel 48 mute state"),
+            Metadata_1.property("Channel 48 mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "ch48Mute", null);
         __decorate([
-            Meta.callable("Recall a scene"),
-            Meta.parameter("Scene number (1-500)"),
+            Metadata_1.callable("Recall a scene"),
+            Metadata_1.parameter("Scene number (1-500)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "recallScene", null);
         __decorate([
-            Meta.callable("Set channel fader level"),
-            Meta.parameter("Channel number (1-48)"),
-            Meta.parameter("Level in dB (-85 to +10)"),
+            Metadata_1.callable("Set channel fader level"),
+            Metadata_1.parameter("Channel number (1-48)"),
+            Metadata_1.parameter("Level in dB (-85 to +10)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number, Number]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "setChannelLevel", null);
         __decorate([
-            Meta.callable("Get channel fader level"),
-            Meta.parameter("Channel number (1-48)"),
+            Metadata_1.callable("Get channel fader level"),
+            Metadata_1.parameter("Channel number (1-48)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", Number)
         ], AllenHeath_SQ.prototype, "getChannelLevel", null);
         __decorate([
-            Meta.callable("Set channel mute"),
-            Meta.parameter("Channel number (1-48)"),
-            Meta.parameter("Mute state (true = muted)"),
+            Metadata_1.callable("Set channel mute"),
+            Metadata_1.parameter("Channel number (1-48)"),
+            Metadata_1.parameter("Mute state (true = muted)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number, Boolean]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "setChannelMute", null);
         __decorate([
-            Meta.callable("Get channel mute state"),
-            Meta.parameter("Channel number (1-48)"),
+            Metadata_1.callable("Get channel mute state"),
+            Metadata_1.parameter("Channel number (1-48)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", Boolean)
         ], AllenHeath_SQ.prototype, "getChannelMute", null);
         __decorate([
-            Meta.callable("Toggle channel mute"),
-            Meta.parameter("Channel number (1-48)"),
+            Metadata_1.callable("Toggle channel mute"),
+            Metadata_1.parameter("Channel number (1-48)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "toggleChannelMute", null);
         __decorate([
-            Meta.callable("Set DCA mute"),
-            Meta.parameter("DCA number (1-8)"),
-            Meta.parameter("Mute state (true = muted)"),
+            Metadata_1.callable("Set DCA mute"),
+            Metadata_1.parameter("DCA number (1-8)"),
+            Metadata_1.parameter("Mute state (true = muted)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number, Boolean]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "setDCAMute", null);
         __decorate([
-            Meta.callable("Get DCA mute state"),
-            Meta.parameter("DCA number (1-8)"),
+            Metadata_1.callable("Get DCA mute state"),
+            Metadata_1.parameter("DCA number (1-8)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", Boolean)
         ], AllenHeath_SQ.prototype, "getDCAMute", null);
         __decorate([
-            Meta.callable("Toggle DCA mute"),
-            Meta.parameter("DCA number (1-8)"),
+            Metadata_1.callable("Toggle DCA mute"),
+            Metadata_1.parameter("DCA number (1-8)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "toggleDCAMute", null);
         __decorate([
-            Meta.callable("Set DCA fader level"),
-            Meta.parameter("DCA number (1-8)"),
-            Meta.parameter("Level in dB (-85 to +10)"),
+            Metadata_1.callable("Set DCA fader level"),
+            Metadata_1.parameter("DCA number (1-8)"),
+            Metadata_1.parameter("Level in dB (-85 to +10)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number, Number]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "setDCALevel", null);
         __decorate([
-            Meta.callable("Get DCA fader level"),
-            Meta.parameter("DCA number (1-8)"),
+            Metadata_1.callable("Get DCA fader level"),
+            Metadata_1.parameter("DCA number (1-8)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", Number)
         ], AllenHeath_SQ.prototype, "getDCALevel", null);
         AllenHeath_SQ = __decorate([
-            Meta.driver('NetworkTCP', { port: 51325 }),
-            __metadata("design:paramtypes", [typeof (_a = typeof Network_1.NetworkTCP !== "undefined" && Network_1.NetworkTCP) === "function" ? _a : Object])
+            Metadata_1.driver('NetworkTCP', { port: 51325 }),
+            __metadata("design:paramtypes", [Object])
         ], AllenHeath_SQ);
         return AllenHeath_SQ;
     }(Driver_1.Driver));
