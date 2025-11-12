@@ -2220,7 +2220,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		], AllenHeath_SQ.prototype, "getDCALevel", null);
 
 		AllenHeath_SQ = __decorate([
-			(0, Metadata_1.driver)('NetworkTCP', { port: 51325, rawBytes: true }),
+			(0, Metadata_1.driver)('NetworkTCP', { port: 51325 }),
 			__metadata("design:paramtypes", [Object])
 		], AllenHeath_SQ);
 
