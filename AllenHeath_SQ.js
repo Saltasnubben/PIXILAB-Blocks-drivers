@@ -1305,19 +1305,42 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 
 			var nrpnValue = (this.nrpnDataMSB << 7) | this.nrpnDataLSB;
 
-			// Input channel fader: MSB = 0, LSB = channel (0-47)
-			if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
-				var channel = this.nrpnLSB + 1;
-				var levelDB = ((nrpnValue / 16383) * 95) - 85;
-				this.channelLevels[channel] = levelDB;
-				this.changed("ch" + channel + "Level");
+			console.warn("AllenHeath_SQ: Processing NRPN - MSB:", this.nrpnMSB, "LSB:", this.nrpnLSB, "Value:", nrpnValue);
+
+			// Channel/DCA fader levels: MSB = 0x4F (79)
+			if (this.nrpnMSB === 0x4F) {
+				// Channel levels: LSB = 0-47 for channels 1-48
+				if (this.nrpnLSB < 48) {
+					var channel = this.nrpnLSB + 1;
+					var levelDB = ((nrpnValue / 16383) * 95) - 85;
+					console.warn("AllenHeath_SQ: Channel", channel, "level feedback:", levelDB.toFixed(1), "dB");
+					this.channelLevels[channel] = levelDB;
+					this.changed("ch" + channel + "Level");
+				}
+				// DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
+				else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
+					var dca = this.nrpnLSB - 0x20 + 1;
+					var levelDB = ((nrpnValue / 16383) * 95) - 85;
+					console.warn("AllenHeath_SQ: DCA", dca, "level feedback:", levelDB.toFixed(1), "dB");
+					this.dcaLevels[dca] = levelDB;
+					this.changed("dca" + dca + "Level");
+				}
 			}
-			// Channel mute: MSB = 1, LSB = channel (0-47)
-			else if (this.nrpnMSB === 1 && this.nrpnLSB < 48) {
+			// Channel mutes: MSB = 0, LSB = channel (0-47)
+			else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
 				var channel = this.nrpnLSB + 1;
-				var muted = nrpnValue > 8000; // Threshold for mute
+				var muted = nrpnValue > 0;
+				console.warn("AllenHeath_SQ: Channel", channel, "mute feedback:", muted);
 				this.channelMutes[channel] = muted;
 				this.changed("ch" + channel + "Mute");
+			}
+			// DCA mutes: MSB = 2, LSB = DCA (0-7)
+			else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
+				var dca = this.nrpnLSB + 1;
+				var muted = nrpnValue > 0;
+				console.warn("AllenHeath_SQ: DCA", dca, "mute feedback:", muted);
+				this.dcaMutes[dca] = muted;
+				this.changed("dca" + dca + "Mute");
 			}
 
 			// Reset NRPN state
