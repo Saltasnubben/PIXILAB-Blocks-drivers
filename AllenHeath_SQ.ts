@@ -44,6 +44,13 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	// Receive buffer for MIDI messages
 	private receiveBuffer: number[] = [];
 
+	// Polling configuration
+	private pollInterval: number = 2000; // Poll every 2 seconds
+	private pollTimer: any = null;
+	private pollChannels: number[] = [1, 2, 3, 4]; // Channels to poll for feedback
+	private pollDCAs: number[] = [1, 2]; // DCAs to poll for feedback
+	private currentPollIndex: number = 0;
+
 	constructor(private socket: NetworkTCP) {
 		super(socket);
 
@@ -71,9 +78,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			this.onDataReceived(message.rawData);
 		});
 
-		// Also try text mode to debug
-		socket.subscribe('textReceived', (sender, message) => {
-			console.warn("RECEIVED TEXT: " + message.text);
+		// Subscribe to disconnection events
+		socket.subscribe('finish', () => {
+			this.stopPolling();
 		});
 
 		// Enable automatic connection management
@@ -90,6 +97,125 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	 */
 	private onConnected(): void {
 		console.info("Connected to Allen & Heath SQ console");
+		this.startPolling();
+	}
+
+	/**
+	 * Start polling for feedback from the desk
+	 */
+	private startPolling(): void {
+		this.stopPolling(); // Clear any existing timer
+		console.info("Starting polling for desk feedback");
+		this.pollNext();
+	}
+
+	/**
+	 * Stop polling
+	 */
+	private stopPolling(): void {
+		if (this.pollTimer) {
+			this.pollTimer.cancel();
+			this.pollTimer = null;
+		}
+	}
+
+	/**
+	 * Poll the next item in rotation
+	 */
+	private pollNext(): void {
+		if (!this.socket.connected) {
+			return;
+		}
+
+		// Alternate between polling channels and DCAs
+		const totalItems = this.pollChannels.length + this.pollDCAs.length;
+		if (totalItems === 0) {
+			// Nothing to poll, just reschedule
+			this.pollTimer = wait(this.pollInterval);
+			this.pollTimer.then(() => this.pollNext());
+			return;
+		}
+
+		const index = this.currentPollIndex % totalItems;
+
+		if (index < this.pollChannels.length) {
+			// Poll a channel
+			const channel = this.pollChannels[index];
+			this.queryChannelMute(channel);
+			this.queryChannelLevel(channel);
+		} else {
+			// Poll a DCA
+			const dcaIndex = index - this.pollChannels.length;
+			const dca = this.pollDCAs[dcaIndex];
+			this.queryDCAMute(dca);
+			this.queryDCALevel(dca);
+		}
+
+		this.currentPollIndex++;
+
+		// Schedule next poll
+		this.pollTimer = wait(this.pollInterval);
+		this.pollTimer.then(() => this.pollNext());
+	}
+
+	/**
+	 * Query the current mute state of a channel
+	 */
+	private queryChannelMute(channel: number): void {
+		if (channel < 1 || channel > 48) return;
+
+		// Send NRPN query: MSB=0, LSB=channel-1, then Data Increment
+		const query = [
+			0xB0 | this.midiChannel, 0x63, 0x00,  // NRPN MSB = 0
+			0xB0 | this.midiChannel, 0x62, channel - 1,  // NRPN LSB = channel
+			0xB0 | this.midiChannel, 0x60, 0x7F   // Data Increment
+		];
+		this.sendMIDI(query);
+	}
+
+	/**
+	 * Query the current level of a channel
+	 */
+	private queryChannelLevel(channel: number): void {
+		if (channel < 1 || channel > 48) return;
+
+		// Send NRPN query: MSB=0x4F, LSB=channel-1, then Data Increment
+		const query = [
+			0xB0 | this.midiChannel, 0x63, 0x4F,  // NRPN MSB = 0x4F
+			0xB0 | this.midiChannel, 0x62, channel - 1,  // NRPN LSB = channel
+			0xB0 | this.midiChannel, 0x60, 0x7F   // Data Increment
+		];
+		this.sendMIDI(query);
+	}
+
+	/**
+	 * Query the current mute state of a DCA
+	 */
+	private queryDCAMute(dca: number): void {
+		if (dca < 1 || dca > 8) return;
+
+		// Send NRPN query: MSB=2, LSB=dca-1, then Data Increment
+		const query = [
+			0xB0 | this.midiChannel, 0x63, 0x02,  // NRPN MSB = 2
+			0xB0 | this.midiChannel, 0x62, dca - 1,  // NRPN LSB = dca
+			0xB0 | this.midiChannel, 0x60, 0x7F   // Data Increment
+		];
+		this.sendMIDI(query);
+	}
+
+	/**
+	 * Query the current level of a DCA
+	 */
+	private queryDCALevel(dca: number): void {
+		if (dca < 1 || dca > 8) return;
+
+		// Send NRPN query: MSB=0x4F, LSB=0x20+dca-1, then Data Increment
+		const query = [
+			0xB0 | this.midiChannel, 0x63, 0x4F,  // NRPN MSB = 0x4F
+			0xB0 | this.midiChannel, 0x62, 0x20 + (dca - 1),  // NRPN LSB = 0x20+dca
+			0xB0 | this.midiChannel, 0x60, 0x7F   // Data Increment
+		];
+		this.sendMIDI(query);
 	}
 
 	/**
@@ -952,8 +1078,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private onDataReceived(data: any): void {
 		// Process each byte in the received data
 		if (data && data.length) {
-			console.warn("RECEIVED " + data.length + " bytes from desk: " +
-				Array.from(data).map((b: any) => "0x" + ((b & 0xFF).toString(16).padStart(2, '0').toUpperCase())).join(' '));
 			for (let i = 0; i < data.length; i++) {
 				const byte = data[i] & 0xFF;
 				this.processMIDIByte(byte);
