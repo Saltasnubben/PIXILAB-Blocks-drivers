@@ -36,6 +36,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.mSignal2 = false;
             _this.mSignal3 = false;
             _this.mSignal4 = false;
+            _this.mAudioVolume = 50;
+            _this.mAudioMute = false;
             _this.receiveBuffer = '';
             
             console.warn("KramerSWT: Driver initialized");
@@ -73,6 +75,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             console.warn("KramerSWT: Connected - querying initial state");
             // Query current routing state
             this.queryRouting();
+            // Query all signal states
+            this.queryAllSignals();
         };
         
         Object.defineProperty(KramerSWT.prototype, "input", {
@@ -128,9 +132,45 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             enumerable: false,
             configurable: true
         });
-        
+
+        Object.defineProperty(KramerSWT.prototype, "audioVolume", {
+            get: function () {
+                return this.mAudioVolume;
+            },
+            set: function (value) {
+                if (value >= 0 && value <= 100) {
+                    this.mAudioVolume = value;
+                    this.sendCmd('#AUD-LVL 1,' + value + '\r');
+                }
+            },
+            enumerable: false,
+            configurable: true
+        });
+
+        Object.defineProperty(KramerSWT.prototype, "audioMute", {
+            get: function () {
+                return this.mAudioMute;
+            },
+            set: function (value) {
+                this.mAudioMute = value;
+                this.sendCmd('#AUD-MUTE 1,' + (value ? 1 : 0) + '\r');
+            },
+            enumerable: false,
+            configurable: true
+        });
+
         KramerSWT.prototype.identify = function () {
             this.sendCmd('#IDV\r');
+        };
+
+        KramerSWT.prototype.volumeUp = function () {
+            var newVol = Math.min(100, this.mAudioVolume + 5);
+            this.audioVolume = newVol;
+        };
+
+        KramerSWT.prototype.volumeDown = function () {
+            var newVol = Math.max(0, this.mAudioVolume - 5);
+            this.audioVolume = newVol;
         };
         
         KramerSWT.prototype.queryRouting = function () {
@@ -241,11 +281,31 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     var inp = parseInt(m[1]);
                     var sig = m[2] === '1';
                     console.warn("KramerSWT: Input " + inp + " signal:", sig);
-                    
+
                     if (inp === 1) { this.mSignal1 = sig; this.changed('signal1'); }
                     else if (inp === 2) { this.mSignal2 = sig; this.changed('signal2'); }
                     else if (inp === 3) { this.mSignal3 = sig; this.changed('signal3'); }
                     else if (inp === 4) { this.mSignal4 = sig; this.changed('signal4'); }
+                }
+            }
+            else if (data.startsWith('AUD-LVL ')) {
+                var m = data.match(/AUD-LVL (\d+),(\d+)/);
+                if (m && m[1] === '1') {
+                    var vol = parseInt(m[2]);
+                    if (vol >= 0 && vol <= 100) {
+                        console.warn("KramerSWT: Audio volume is:", vol);
+                        this.mAudioVolume = vol;
+                        this.changed('audioVolume');
+                    }
+                }
+            }
+            else if (data.startsWith('AUD-MUTE ')) {
+                var m = data.match(/AUD-MUTE (\d+),(\d+)/);
+                if (m && m[1] === '1') {
+                    var muted = m[2] === '1';
+                    console.warn("KramerSWT: Audio mute is:", muted);
+                    this.mAudioMute = muted;
+                    this.changed('audioMute');
                 }
             }
         };
@@ -287,13 +347,41 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [])
         ], KramerSWT.prototype, "connected", null);
-        
+
+        __decorate([
+            (0, Metadata_1.property)("Audio volume level (0-100)"),
+            (0, Metadata_1.min)(0),
+            (0, Metadata_1.max)(100),
+            __metadata("design:type", Number),
+            __metadata("design:paramtypes", [Number])
+        ], KramerSWT.prototype, "audioVolume", null);
+
+        __decorate([
+            (0, Metadata_1.property)("Audio mute"),
+            __metadata("design:type", Boolean),
+            __metadata("design:paramtypes", [Boolean])
+        ], KramerSWT.prototype, "audioMute", null);
+
         __decorate([
             (0, Metadata_1.callable)("Flash LEDs"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", []),
             __metadata("design:returntype", void 0)
         ], KramerSWT.prototype, "identify", null);
+
+        __decorate([
+            (0, Metadata_1.callable)("Volume up"),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
+        ], KramerSWT.prototype, "volumeUp", null);
+
+        __decorate([
+            (0, Metadata_1.callable)("Volume down"),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
+        ], KramerSWT.prototype, "volumeDown", null);
         
         __decorate([
             (0, Metadata_1.callable)("Query routing"),

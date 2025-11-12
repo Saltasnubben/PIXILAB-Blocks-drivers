@@ -17,6 +17,8 @@ export class KramerSWT extends Driver<NetworkTCP> {
     private mSignal2: boolean = false;
     private mSignal3: boolean = false;
     private mSignal4: boolean = false;
+    private mAudioVolume: number = 50;
+    private mAudioMute: boolean = false;
     private receiveBuffer: string = '';
 
     public constructor(private socket: NetworkTCP) {
@@ -55,6 +57,8 @@ export class KramerSWT extends Driver<NetworkTCP> {
         console.warn("KramerSWT: Connected - querying initial state");
         // Query current routing state
         this.queryRouting();
+        // Query all signal states
+        this.queryAllSignals();
     }
 
     @property("Current input")
@@ -96,9 +100,45 @@ export class KramerSWT extends Driver<NetworkTCP> {
         return this.socket.connected;
     }
 
+    @property("Audio volume level (0-100)")
+    @min(0)
+    @max(100)
+    public set audioVolume(value: number) {
+        if (value >= 0 && value <= 100) {
+            this.mAudioVolume = value;
+            this.sendCmd(`#AUD-LVL 1,${value}\r`);
+        }
+    }
+
+    public get audioVolume(): number {
+        return this.mAudioVolume;
+    }
+
+    @property("Audio mute")
+    public set audioMute(value: boolean) {
+        this.mAudioMute = value;
+        this.sendCmd(`#AUD-MUTE 1,${value ? 1 : 0}\r`);
+    }
+
+    public get audioMute(): boolean {
+        return this.mAudioMute;
+    }
+
     @callable("Flash LEDs")
     public identify(): void {
         this.sendCmd('#IDV\r');
+    }
+
+    @callable("Volume up")
+    public volumeUp(): void {
+        const newVol = Math.min(100, this.mAudioVolume + 5);
+        this.audioVolume = newVol;
+    }
+
+    @callable("Volume down")
+    public volumeDown(): void {
+        const newVol = Math.max(0, this.mAudioVolume - 5);
+        this.audioVolume = newVol;
     }
 
     @callable("Query routing")
@@ -197,7 +237,7 @@ export class KramerSWT extends Driver<NetworkTCP> {
 
     private parseLine(data: string): void {
         console.warn("KramerSWT: Parsing:", data);
-        
+
         if (data.startsWith('ROUTE ')) {
             const m = data.match(/ROUTE (\d+),(\d+),(\d+)/);
             if (m && m[1] === '1' && m[2] === '1') {
@@ -215,11 +255,31 @@ export class KramerSWT extends Driver<NetworkTCP> {
                 const inp = parseInt(m[1]);
                 const sig = m[2] === '1';
                 console.warn(`KramerSWT: Input ${inp} signal:`, sig);
-                
+
                 if (inp === 1) { this.mSignal1 = sig; this.changed('signal1'); }
                 else if (inp === 2) { this.mSignal2 = sig; this.changed('signal2'); }
                 else if (inp === 3) { this.mSignal3 = sig; this.changed('signal3'); }
                 else if (inp === 4) { this.mSignal4 = sig; this.changed('signal4'); }
+            }
+        }
+        else if (data.startsWith('AUD-LVL ')) {
+            const m = data.match(/AUD-LVL (\d+),(\d+)/);
+            if (m && m[1] === '1') {
+                const vol = parseInt(m[2]);
+                if (vol >= 0 && vol <= 100) {
+                    console.warn("KramerSWT: Audio volume is:", vol);
+                    this.mAudioVolume = vol;
+                    this.changed('audioVolume');
+                }
+            }
+        }
+        else if (data.startsWith('AUD-MUTE ')) {
+            const m = data.match(/AUD-MUTE (\d+),(\d+)/);
+            if (m && m[1] === '1') {
+                const muted = m[2] === '1';
+                console.warn("KramerSWT: Audio mute is:", muted);
+                this.mAudioMute = muted;
+                this.changed('audioMute');
             }
         }
     }
