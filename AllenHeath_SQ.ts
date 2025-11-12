@@ -23,7 +23,7 @@ import {NetworkTCP} from "system/Network";
 import {Driver} from "system_lib/Driver";
 import * as Meta from "system_lib/Metadata";
 
-@Meta.driver('NetworkTCP', { port: 51325, maxFrameLength: 8192 })
+@Meta.driver('NetworkTCP', { port: 51325, rawBytes: true })
 export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 	private midiChannel: number = 0; // MIDI channel 1 (0-indexed)
