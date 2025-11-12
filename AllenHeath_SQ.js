@@ -159,6 +159,798 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 		});
 
 		/**
+// ========== DCA Level Properties ==========
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca1Level", {
+	get: function () { return this.dcaLevels[1] !== undefined ? this.dcaLevels[1] : -85; },
+	set: function (value) { this.setDCALevel(1, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca2Level", {
+	get: function () { return this.dcaLevels[2] !== undefined ? this.dcaLevels[2] : -85; },
+	set: function (value) { this.setDCALevel(2, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca3Level", {
+	get: function () { return this.dcaLevels[3] !== undefined ? this.dcaLevels[3] : -85; },
+	set: function (value) { this.setDCALevel(3, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca4Level", {
+	get: function () { return this.dcaLevels[4] !== undefined ? this.dcaLevels[4] : -85; },
+	set: function (value) { this.setDCALevel(4, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca5Level", {
+	get: function () { return this.dcaLevels[5] !== undefined ? this.dcaLevels[5] : -85; },
+	set: function (value) { this.setDCALevel(5, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca6Level", {
+	get: function () { return this.dcaLevels[6] !== undefined ? this.dcaLevels[6] : -85; },
+	set: function (value) { this.setDCALevel(6, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca7Level", {
+	get: function () { return this.dcaLevels[7] !== undefined ? this.dcaLevels[7] : -85; },
+	set: function (value) { this.setDCALevel(7, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca8Level", {
+	get: function () { return this.dcaLevels[8] !== undefined ? this.dcaLevels[8] : -85; },
+	set: function (value) { this.setDCALevel(8, value); },
+	enumerable: true,
+	configurable: true
+});
+
+// ========== DCA Mute Properties ==========
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca1Mute", {
+	get: function () { return this.dcaMutes[1] !== undefined ? this.dcaMutes[1] : false; },
+	set: function (value) { this.setDCAMute(1, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca2Mute", {
+	get: function () { return this.dcaMutes[2] !== undefined ? this.dcaMutes[2] : false; },
+	set: function (value) { this.setDCAMute(2, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca3Mute", {
+	get: function () { return this.dcaMutes[3] !== undefined ? this.dcaMutes[3] : false; },
+	set: function (value) { this.setDCAMute(3, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca4Mute", {
+	get: function () { return this.dcaMutes[4] !== undefined ? this.dcaMutes[4] : false; },
+	set: function (value) { this.setDCAMute(4, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca5Mute", {
+	get: function () { return this.dcaMutes[5] !== undefined ? this.dcaMutes[5] : false; },
+	set: function (value) { this.setDCAMute(5, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca6Mute", {
+	get: function () { return this.dcaMutes[6] !== undefined ? this.dcaMutes[6] : false; },
+	set: function (value) { this.setDCAMute(6, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca7Mute", {
+	get: function () { return this.dcaMutes[7] !== undefined ? this.dcaMutes[7] : false; },
+	set: function (value) { this.setDCAMute(7, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "dca8Mute", {
+	get: function () { return this.dcaMutes[8] !== undefined ? this.dcaMutes[8] : false; },
+	set: function (value) { this.setDCAMute(8, value); },
+	enumerable: true,
+	configurable: true
+});
+
+// ========== Channel Level Properties ==========
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch1Level", {
+	get: function () { return this.channelLevels[1] !== undefined ? this.channelLevels[1] : -85; },
+	set: function (value) { this.setChannelLevel(1, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch2Level", {
+	get: function () { return this.channelLevels[2] !== undefined ? this.channelLevels[2] : -85; },
+	set: function (value) { this.setChannelLevel(2, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch3Level", {
+	get: function () { return this.channelLevels[3] !== undefined ? this.channelLevels[3] : -85; },
+	set: function (value) { this.setChannelLevel(3, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch4Level", {
+	get: function () { return this.channelLevels[4] !== undefined ? this.channelLevels[4] : -85; },
+	set: function (value) { this.setChannelLevel(4, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch5Level", {
+	get: function () { return this.channelLevels[5] !== undefined ? this.channelLevels[5] : -85; },
+	set: function (value) { this.setChannelLevel(5, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch6Level", {
+	get: function () { return this.channelLevels[6] !== undefined ? this.channelLevels[6] : -85; },
+	set: function (value) { this.setChannelLevel(6, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch7Level", {
+	get: function () { return this.channelLevels[7] !== undefined ? this.channelLevels[7] : -85; },
+	set: function (value) { this.setChannelLevel(7, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch8Level", {
+	get: function () { return this.channelLevels[8] !== undefined ? this.channelLevels[8] : -85; },
+	set: function (value) { this.setChannelLevel(8, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch9Level", {
+	get: function () { return this.channelLevels[9] !== undefined ? this.channelLevels[9] : -85; },
+	set: function (value) { this.setChannelLevel(9, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch10Level", {
+	get: function () { return this.channelLevels[10] !== undefined ? this.channelLevels[10] : -85; },
+	set: function (value) { this.setChannelLevel(10, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch11Level", {
+	get: function () { return this.channelLevels[11] !== undefined ? this.channelLevels[11] : -85; },
+	set: function (value) { this.setChannelLevel(11, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch12Level", {
+	get: function () { return this.channelLevels[12] !== undefined ? this.channelLevels[12] : -85; },
+	set: function (value) { this.setChannelLevel(12, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch13Level", {
+	get: function () { return this.channelLevels[13] !== undefined ? this.channelLevels[13] : -85; },
+	set: function (value) { this.setChannelLevel(13, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch14Level", {
+	get: function () { return this.channelLevels[14] !== undefined ? this.channelLevels[14] : -85; },
+	set: function (value) { this.setChannelLevel(14, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch15Level", {
+	get: function () { return this.channelLevels[15] !== undefined ? this.channelLevels[15] : -85; },
+	set: function (value) { this.setChannelLevel(15, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch16Level", {
+	get: function () { return this.channelLevels[16] !== undefined ? this.channelLevels[16] : -85; },
+	set: function (value) { this.setChannelLevel(16, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch17Level", {
+	get: function () { return this.channelLevels[17] !== undefined ? this.channelLevels[17] : -85; },
+	set: function (value) { this.setChannelLevel(17, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch18Level", {
+	get: function () { return this.channelLevels[18] !== undefined ? this.channelLevels[18] : -85; },
+	set: function (value) { this.setChannelLevel(18, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch19Level", {
+	get: function () { return this.channelLevels[19] !== undefined ? this.channelLevels[19] : -85; },
+	set: function (value) { this.setChannelLevel(19, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch20Level", {
+	get: function () { return this.channelLevels[20] !== undefined ? this.channelLevels[20] : -85; },
+	set: function (value) { this.setChannelLevel(20, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch21Level", {
+	get: function () { return this.channelLevels[21] !== undefined ? this.channelLevels[21] : -85; },
+	set: function (value) { this.setChannelLevel(21, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch22Level", {
+	get: function () { return this.channelLevels[22] !== undefined ? this.channelLevels[22] : -85; },
+	set: function (value) { this.setChannelLevel(22, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch23Level", {
+	get: function () { return this.channelLevels[23] !== undefined ? this.channelLevels[23] : -85; },
+	set: function (value) { this.setChannelLevel(23, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch24Level", {
+	get: function () { return this.channelLevels[24] !== undefined ? this.channelLevels[24] : -85; },
+	set: function (value) { this.setChannelLevel(24, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch25Level", {
+	get: function () { return this.channelLevels[25] !== undefined ? this.channelLevels[25] : -85; },
+	set: function (value) { this.setChannelLevel(25, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch26Level", {
+	get: function () { return this.channelLevels[26] !== undefined ? this.channelLevels[26] : -85; },
+	set: function (value) { this.setChannelLevel(26, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch27Level", {
+	get: function () { return this.channelLevels[27] !== undefined ? this.channelLevels[27] : -85; },
+	set: function (value) { this.setChannelLevel(27, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch28Level", {
+	get: function () { return this.channelLevels[28] !== undefined ? this.channelLevels[28] : -85; },
+	set: function (value) { this.setChannelLevel(28, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch29Level", {
+	get: function () { return this.channelLevels[29] !== undefined ? this.channelLevels[29] : -85; },
+	set: function (value) { this.setChannelLevel(29, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch30Level", {
+	get: function () { return this.channelLevels[30] !== undefined ? this.channelLevels[30] : -85; },
+	set: function (value) { this.setChannelLevel(30, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch31Level", {
+	get: function () { return this.channelLevels[31] !== undefined ? this.channelLevels[31] : -85; },
+	set: function (value) { this.setChannelLevel(31, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch32Level", {
+	get: function () { return this.channelLevels[32] !== undefined ? this.channelLevels[32] : -85; },
+	set: function (value) { this.setChannelLevel(32, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch33Level", {
+	get: function () { return this.channelLevels[33] !== undefined ? this.channelLevels[33] : -85; },
+	set: function (value) { this.setChannelLevel(33, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch34Level", {
+	get: function () { return this.channelLevels[34] !== undefined ? this.channelLevels[34] : -85; },
+	set: function (value) { this.setChannelLevel(34, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch35Level", {
+	get: function () { return this.channelLevels[35] !== undefined ? this.channelLevels[35] : -85; },
+	set: function (value) { this.setChannelLevel(35, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch36Level", {
+	get: function () { return this.channelLevels[36] !== undefined ? this.channelLevels[36] : -85; },
+	set: function (value) { this.setChannelLevel(36, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch37Level", {
+	get: function () { return this.channelLevels[37] !== undefined ? this.channelLevels[37] : -85; },
+	set: function (value) { this.setChannelLevel(37, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch38Level", {
+	get: function () { return this.channelLevels[38] !== undefined ? this.channelLevels[38] : -85; },
+	set: function (value) { this.setChannelLevel(38, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch39Level", {
+	get: function () { return this.channelLevels[39] !== undefined ? this.channelLevels[39] : -85; },
+	set: function (value) { this.setChannelLevel(39, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch40Level", {
+	get: function () { return this.channelLevels[40] !== undefined ? this.channelLevels[40] : -85; },
+	set: function (value) { this.setChannelLevel(40, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch41Level", {
+	get: function () { return this.channelLevels[41] !== undefined ? this.channelLevels[41] : -85; },
+	set: function (value) { this.setChannelLevel(41, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch42Level", {
+	get: function () { return this.channelLevels[42] !== undefined ? this.channelLevels[42] : -85; },
+	set: function (value) { this.setChannelLevel(42, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch43Level", {
+	get: function () { return this.channelLevels[43] !== undefined ? this.channelLevels[43] : -85; },
+	set: function (value) { this.setChannelLevel(43, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch44Level", {
+	get: function () { return this.channelLevels[44] !== undefined ? this.channelLevels[44] : -85; },
+	set: function (value) { this.setChannelLevel(44, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch45Level", {
+	get: function () { return this.channelLevels[45] !== undefined ? this.channelLevels[45] : -85; },
+	set: function (value) { this.setChannelLevel(45, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch46Level", {
+	get: function () { return this.channelLevels[46] !== undefined ? this.channelLevels[46] : -85; },
+	set: function (value) { this.setChannelLevel(46, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch47Level", {
+	get: function () { return this.channelLevels[47] !== undefined ? this.channelLevels[47] : -85; },
+	set: function (value) { this.setChannelLevel(47, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch48Level", {
+	get: function () { return this.channelLevels[48] !== undefined ? this.channelLevels[48] : -85; },
+	set: function (value) { this.setChannelLevel(48, value); },
+	enumerable: true,
+	configurable: true
+});
+
+// ========== Channel Mute Properties ==========
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch1Mute", {
+	get: function () { return this.channelMutes[1] !== undefined ? this.channelMutes[1] : false; },
+	set: function (value) { this.setChannelMute(1, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch2Mute", {
+	get: function () { return this.channelMutes[2] !== undefined ? this.channelMutes[2] : false; },
+	set: function (value) { this.setChannelMute(2, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch3Mute", {
+	get: function () { return this.channelMutes[3] !== undefined ? this.channelMutes[3] : false; },
+	set: function (value) { this.setChannelMute(3, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch4Mute", {
+	get: function () { return this.channelMutes[4] !== undefined ? this.channelMutes[4] : false; },
+	set: function (value) { this.setChannelMute(4, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch5Mute", {
+	get: function () { return this.channelMutes[5] !== undefined ? this.channelMutes[5] : false; },
+	set: function (value) { this.setChannelMute(5, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch6Mute", {
+	get: function () { return this.channelMutes[6] !== undefined ? this.channelMutes[6] : false; },
+	set: function (value) { this.setChannelMute(6, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch7Mute", {
+	get: function () { return this.channelMutes[7] !== undefined ? this.channelMutes[7] : false; },
+	set: function (value) { this.setChannelMute(7, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch8Mute", {
+	get: function () { return this.channelMutes[8] !== undefined ? this.channelMutes[8] : false; },
+	set: function (value) { this.setChannelMute(8, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch9Mute", {
+	get: function () { return this.channelMutes[9] !== undefined ? this.channelMutes[9] : false; },
+	set: function (value) { this.setChannelMute(9, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch10Mute", {
+	get: function () { return this.channelMutes[10] !== undefined ? this.channelMutes[10] : false; },
+	set: function (value) { this.setChannelMute(10, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch11Mute", {
+	get: function () { return this.channelMutes[11] !== undefined ? this.channelMutes[11] : false; },
+	set: function (value) { this.setChannelMute(11, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch12Mute", {
+	get: function () { return this.channelMutes[12] !== undefined ? this.channelMutes[12] : false; },
+	set: function (value) { this.setChannelMute(12, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch13Mute", {
+	get: function () { return this.channelMutes[13] !== undefined ? this.channelMutes[13] : false; },
+	set: function (value) { this.setChannelMute(13, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch14Mute", {
+	get: function () { return this.channelMutes[14] !== undefined ? this.channelMutes[14] : false; },
+	set: function (value) { this.setChannelMute(14, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch15Mute", {
+	get: function () { return this.channelMutes[15] !== undefined ? this.channelMutes[15] : false; },
+	set: function (value) { this.setChannelMute(15, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch16Mute", {
+	get: function () { return this.channelMutes[16] !== undefined ? this.channelMutes[16] : false; },
+	set: function (value) { this.setChannelMute(16, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch17Mute", {
+	get: function () { return this.channelMutes[17] !== undefined ? this.channelMutes[17] : false; },
+	set: function (value) { this.setChannelMute(17, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch18Mute", {
+	get: function () { return this.channelMutes[18] !== undefined ? this.channelMutes[18] : false; },
+	set: function (value) { this.setChannelMute(18, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch19Mute", {
+	get: function () { return this.channelMutes[19] !== undefined ? this.channelMutes[19] : false; },
+	set: function (value) { this.setChannelMute(19, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch20Mute", {
+	get: function () { return this.channelMutes[20] !== undefined ? this.channelMutes[20] : false; },
+	set: function (value) { this.setChannelMute(20, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch21Mute", {
+	get: function () { return this.channelMutes[21] !== undefined ? this.channelMutes[21] : false; },
+	set: function (value) { this.setChannelMute(21, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch22Mute", {
+	get: function () { return this.channelMutes[22] !== undefined ? this.channelMutes[22] : false; },
+	set: function (value) { this.setChannelMute(22, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch23Mute", {
+	get: function () { return this.channelMutes[23] !== undefined ? this.channelMutes[23] : false; },
+	set: function (value) { this.setChannelMute(23, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch24Mute", {
+	get: function () { return this.channelMutes[24] !== undefined ? this.channelMutes[24] : false; },
+	set: function (value) { this.setChannelMute(24, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch25Mute", {
+	get: function () { return this.channelMutes[25] !== undefined ? this.channelMutes[25] : false; },
+	set: function (value) { this.setChannelMute(25, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch26Mute", {
+	get: function () { return this.channelMutes[26] !== undefined ? this.channelMutes[26] : false; },
+	set: function (value) { this.setChannelMute(26, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch27Mute", {
+	get: function () { return this.channelMutes[27] !== undefined ? this.channelMutes[27] : false; },
+	set: function (value) { this.setChannelMute(27, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch28Mute", {
+	get: function () { return this.channelMutes[28] !== undefined ? this.channelMutes[28] : false; },
+	set: function (value) { this.setChannelMute(28, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch29Mute", {
+	get: function () { return this.channelMutes[29] !== undefined ? this.channelMutes[29] : false; },
+	set: function (value) { this.setChannelMute(29, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch30Mute", {
+	get: function () { return this.channelMutes[30] !== undefined ? this.channelMutes[30] : false; },
+	set: function (value) { this.setChannelMute(30, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch31Mute", {
+	get: function () { return this.channelMutes[31] !== undefined ? this.channelMutes[31] : false; },
+	set: function (value) { this.setChannelMute(31, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch32Mute", {
+	get: function () { return this.channelMutes[32] !== undefined ? this.channelMutes[32] : false; },
+	set: function (value) { this.setChannelMute(32, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch33Mute", {
+	get: function () { return this.channelMutes[33] !== undefined ? this.channelMutes[33] : false; },
+	set: function (value) { this.setChannelMute(33, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch34Mute", {
+	get: function () { return this.channelMutes[34] !== undefined ? this.channelMutes[34] : false; },
+	set: function (value) { this.setChannelMute(34, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch35Mute", {
+	get: function () { return this.channelMutes[35] !== undefined ? this.channelMutes[35] : false; },
+	set: function (value) { this.setChannelMute(35, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch36Mute", {
+	get: function () { return this.channelMutes[36] !== undefined ? this.channelMutes[36] : false; },
+	set: function (value) { this.setChannelMute(36, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch37Mute", {
+	get: function () { return this.channelMutes[37] !== undefined ? this.channelMutes[37] : false; },
+	set: function (value) { this.setChannelMute(37, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch38Mute", {
+	get: function () { return this.channelMutes[38] !== undefined ? this.channelMutes[38] : false; },
+	set: function (value) { this.setChannelMute(38, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch39Mute", {
+	get: function () { return this.channelMutes[39] !== undefined ? this.channelMutes[39] : false; },
+	set: function (value) { this.setChannelMute(39, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch40Mute", {
+	get: function () { return this.channelMutes[40] !== undefined ? this.channelMutes[40] : false; },
+	set: function (value) { this.setChannelMute(40, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch41Mute", {
+	get: function () { return this.channelMutes[41] !== undefined ? this.channelMutes[41] : false; },
+	set: function (value) { this.setChannelMute(41, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch42Mute", {
+	get: function () { return this.channelMutes[42] !== undefined ? this.channelMutes[42] : false; },
+	set: function (value) { this.setChannelMute(42, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch43Mute", {
+	get: function () { return this.channelMutes[43] !== undefined ? this.channelMutes[43] : false; },
+	set: function (value) { this.setChannelMute(43, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch44Mute", {
+	get: function () { return this.channelMutes[44] !== undefined ? this.channelMutes[44] : false; },
+	set: function (value) { this.setChannelMute(44, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch45Mute", {
+	get: function () { return this.channelMutes[45] !== undefined ? this.channelMutes[45] : false; },
+	set: function (value) { this.setChannelMute(45, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch46Mute", {
+	get: function () { return this.channelMutes[46] !== undefined ? this.channelMutes[46] : false; },
+	set: function (value) { this.setChannelMute(46, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch47Mute", {
+	get: function () { return this.channelMutes[47] !== undefined ? this.channelMutes[47] : false; },
+	set: function (value) { this.setChannelMute(47, value); },
+	enumerable: true,
+	configurable: true
+});
+
+Object.defineProperty(AllenHeath_SQ.prototype, "ch48Mute", {
+	get: function () { return this.channelMutes[48] !== undefined ? this.channelMutes[48] : false; },
+	set: function (value) { this.setChannelMute(48, value); },
+	enumerable: true,
+	configurable: true
+});
+
 		 * Recall a scene by number (1-500)
 		 */
 		AllenHeath_SQ.prototype.recallScene = function (sceneNumber) {
@@ -557,6 +1349,791 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
 			__metadata("design:type", Number),
 			__metadata("design:paramtypes", [Number])
 		], AllenHeath_SQ.prototype, "midiCh", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 1 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca1Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 2 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca2Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 3 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca3Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 4 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca4Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 5 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca5Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 6 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca6Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 7 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca7Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 8 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "dca8Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 1 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca1Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 2 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca2Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 3 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca3Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 4 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca4Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 5 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca5Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 6 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca6Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 7 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca7Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("DCA 8 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "dca8Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 1 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch1Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 2 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch2Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 3 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch3Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 4 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch4Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 5 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch5Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 6 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch6Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 7 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch7Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 8 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch8Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 9 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch9Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 10 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch10Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 11 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch11Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 12 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch12Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 13 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch13Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 14 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch14Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 15 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch15Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 16 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch16Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 17 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch17Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 18 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch18Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 19 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch19Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 20 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch20Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 21 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch21Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 22 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch22Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 23 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch23Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 24 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch24Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 25 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch25Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 26 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch26Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 27 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch27Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 28 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch28Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 29 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch29Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 30 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch30Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 31 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch31Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 32 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch32Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 33 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch33Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 34 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch34Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 35 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch35Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 36 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch36Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 37 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch37Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 38 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch38Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 39 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch39Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 40 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch40Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 41 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch41Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 42 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch42Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 43 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch43Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 44 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch44Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 45 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch45Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 46 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch46Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 47 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch47Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 48 fader level (-85 to +10 dB)"),
+		(0, Metadata_1.min)(-85),
+		(0, Metadata_1.max)(10),
+		__metadata("design:type", Number),
+		__metadata("design:paramtypes", [Number])
+	], AllenHeath_SQ.prototype, "ch48Level", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 1 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch1Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 2 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch2Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 3 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch3Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 4 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch4Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 5 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch5Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 6 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch6Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 7 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch7Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 8 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch8Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 9 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch9Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 10 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch10Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 11 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch11Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 12 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch12Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 13 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch13Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 14 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch14Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 15 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch15Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 16 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch16Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 17 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch17Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 18 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch18Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 19 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch19Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 20 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch20Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 21 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch21Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 22 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch22Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 23 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch23Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 24 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch24Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 25 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch25Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 26 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch26Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 27 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch27Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 28 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch28Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 29 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch29Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 30 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch30Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 31 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch31Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 32 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch32Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 33 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch33Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 34 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch34Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 35 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch35Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 36 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch36Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 37 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch37Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 38 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch38Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 39 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch39Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 40 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch40Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 41 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch41Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 42 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch42Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 43 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch43Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 44 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch44Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 45 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch45Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 46 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch46Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 47 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch47Mute", null);
+
+	__decorate([
+		(0, Metadata_1.property)("Channel 48 mute state"),
+		__metadata("design:type", Boolean),
+		__metadata("design:paramtypes", [Boolean])
+	], AllenHeath_SQ.prototype, "ch48Mute", null);
+
 
 		__decorate([
 			(0, Metadata_1.callable)("Recall a scene"),
