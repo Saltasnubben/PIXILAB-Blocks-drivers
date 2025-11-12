@@ -34,6 +34,10 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private channelMutes: {[channel: number]: boolean} = {}; // Channel -> mute state
 	private dcaLevels: {[dca: number]: number} = {}; // DCA -> level in dB
 	private dcaMutes: {[dca: number]: boolean} = {}; // DCA -> mute state
+	private mixLevels: {[mix: number]: number} = {}; // Mix/AUX -> level in dB
+	private mixMutes: {[mix: number]: boolean} = {}; // Mix/AUX -> mute state
+	private lrLevel: number = -85; // Main LR level in dB
+	private lrMute: boolean = false; // Main LR mute state
 
 	// NRPN state machine for parsing incoming messages
 	private nrpnMSB: number = -1;
@@ -64,6 +68,12 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		for (let i = 1; i <= 8; i++) {
 			this.dcaLevels[i] = -85; // Default to minimum
 			this.dcaMutes[i] = false;
+		}
+
+		// Initialize Mix/AUX states
+		for (let i = 1; i <= 12; i++) {
+			this.mixLevels[i] = -85; // Default to minimum
+			this.mixMutes[i] = false;
 		}
 
 		// Subscribe to connection events
@@ -335,6 +345,143 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	@Meta.property("DCA 8 mute state")
 	public get dca8Mute(): boolean { return this.dcaMutes[8] !== undefined ? this.dcaMutes[8] : false; }
 	public set dca8Mute(value: boolean) { this.setDCAMute(8, value); }
+
+	// ========== Main LR Properties ==========
+
+	@Meta.property("Main LR output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get lrOutputLevel(): number { return this.lrLevel; }
+	public set lrOutputLevel(value: number) { this.setLRLevel(value); }
+
+	@Meta.property("Main LR output mute state")
+	public get lrOutputMute(): boolean { return this.lrMute; }
+	public set lrOutputMute(value: boolean) { this.setLRMute(value); }
+
+	// ========== Mix/AUX Output Level Properties ==========
+
+	@Meta.property("Mix 1 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix1Level(): number { return this.mixLevels[1] !== undefined ? this.mixLevels[1] : -85; }
+	public set mix1Level(value: number) { this.setMixLevel(1, value); }
+
+	@Meta.property("Mix 2 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix2Level(): number { return this.mixLevels[2] !== undefined ? this.mixLevels[2] : -85; }
+	public set mix2Level(value: number) { this.setMixLevel(2, value); }
+
+	@Meta.property("Mix 3 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix3Level(): number { return this.mixLevels[3] !== undefined ? this.mixLevels[3] : -85; }
+	public set mix3Level(value: number) { this.setMixLevel(3, value); }
+
+	@Meta.property("Mix 4 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix4Level(): number { return this.mixLevels[4] !== undefined ? this.mixLevels[4] : -85; }
+	public set mix4Level(value: number) { this.setMixLevel(4, value); }
+
+	@Meta.property("Mix 5 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix5Level(): number { return this.mixLevels[5] !== undefined ? this.mixLevels[5] : -85; }
+	public set mix5Level(value: number) { this.setMixLevel(5, value); }
+
+	@Meta.property("Mix 6 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix6Level(): number { return this.mixLevels[6] !== undefined ? this.mixLevels[6] : -85; }
+	public set mix6Level(value: number) { this.setMixLevel(6, value); }
+
+	@Meta.property("Mix 7 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix7Level(): number { return this.mixLevels[7] !== undefined ? this.mixLevels[7] : -85; }
+	public set mix7Level(value: number) { this.setMixLevel(7, value); }
+
+	@Meta.property("Mix 8 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix8Level(): number { return this.mixLevels[8] !== undefined ? this.mixLevels[8] : -85; }
+	public set mix8Level(value: number) { this.setMixLevel(8, value); }
+
+	@Meta.property("Mix 9 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix9Level(): number { return this.mixLevels[9] !== undefined ? this.mixLevels[9] : -85; }
+	public set mix9Level(value: number) { this.setMixLevel(9, value); }
+
+	@Meta.property("Mix 10 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix10Level(): number { return this.mixLevels[10] !== undefined ? this.mixLevels[10] : -85; }
+	public set mix10Level(value: number) { this.setMixLevel(10, value); }
+
+	@Meta.property("Mix 11 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix11Level(): number { return this.mixLevels[11] !== undefined ? this.mixLevels[11] : -85; }
+	public set mix11Level(value: number) { this.setMixLevel(11, value); }
+
+	@Meta.property("Mix 12 output level (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get mix12Level(): number { return this.mixLevels[12] !== undefined ? this.mixLevels[12] : -85; }
+	public set mix12Level(value: number) { this.setMixLevel(12, value); }
+
+	// ========== Mix/AUX Output Mute Properties ==========
+
+	@Meta.property("Mix 1 output mute state")
+	public get mix1Mute(): boolean { return this.mixMutes[1] !== undefined ? this.mixMutes[1] : false; }
+	public set mix1Mute(value: boolean) { this.setMixMute(1, value); }
+
+	@Meta.property("Mix 2 output mute state")
+	public get mix2Mute(): boolean { return this.mixMutes[2] !== undefined ? this.mixMutes[2] : false; }
+	public set mix2Mute(value: boolean) { this.setMixMute(2, value); }
+
+	@Meta.property("Mix 3 output mute state")
+	public get mix3Mute(): boolean { return this.mixMutes[3] !== undefined ? this.mixMutes[3] : false; }
+	public set mix3Mute(value: boolean) { this.setMixMute(3, value); }
+
+	@Meta.property("Mix 4 output mute state")
+	public get mix4Mute(): boolean { return this.mixMutes[4] !== undefined ? this.mixMutes[4] : false; }
+	public set mix4Mute(value: boolean) { this.setMixMute(4, value); }
+
+	@Meta.property("Mix 5 output mute state")
+	public get mix5Mute(): boolean { return this.mixMutes[5] !== undefined ? this.mixMutes[5] : false; }
+	public set mix5Mute(value: boolean) { this.setMixMute(5, value); }
+
+	@Meta.property("Mix 6 output mute state")
+	public get mix6Mute(): boolean { return this.mixMutes[6] !== undefined ? this.mixMutes[6] : false; }
+	public set mix6Mute(value: boolean) { this.setMixMute(6, value); }
+
+	@Meta.property("Mix 7 output mute state")
+	public get mix7Mute(): boolean { return this.mixMutes[7] !== undefined ? this.mixMutes[7] : false; }
+	public set mix7Mute(value: boolean) { this.setMixMute(7, value); }
+
+	@Meta.property("Mix 8 output mute state")
+	public get mix8Mute(): boolean { return this.mixMutes[8] !== undefined ? this.mixMutes[8] : false; }
+	public set mix8Mute(value: boolean) { this.setMixMute(8, value); }
+
+	@Meta.property("Mix 9 output mute state")
+	public get mix9Mute(): boolean { return this.mixMutes[9] !== undefined ? this.mixMutes[9] : false; }
+	public set mix9Mute(value: boolean) { this.setMixMute(9, value); }
+
+	@Meta.property("Mix 10 output mute state")
+	public get mix10Mute(): boolean { return this.mixMutes[10] !== undefined ? this.mixMutes[10] : false; }
+	public set mix10Mute(value: boolean) { this.setMixMute(10, value); }
+
+	@Meta.property("Mix 11 output mute state")
+	public get mix11Mute(): boolean { return this.mixMutes[11] !== undefined ? this.mixMutes[11] : false; }
+	public set mix11Mute(value: boolean) { this.setMixMute(11, value); }
+
+	@Meta.property("Mix 12 output mute state")
+	public get mix12Mute(): boolean { return this.mixMutes[12] !== undefined ? this.mixMutes[12] : false; }
+	public set mix12Mute(value: boolean) { this.setMixMute(12, value); }
+
 	// ========== Channel Level Properties ==========
 
 	@Meta.property("Channel 1 fader level (-85 to +10 dB)")
