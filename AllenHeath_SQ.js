@@ -116,8 +116,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.nrpnDataLSB = -1;
             // Receive buffer for MIDI messages
             _this.receiveBuffer = [];
+            // Initialize indexed properties using indexedProperty helper
+            _this.channel = _this.indexedProperty("channel", ChannelStrip);
+            _this.dca = _this.indexedProperty("dca", ChannelStrip);
+            _this.mix = _this.indexedProperty("mix", ChannelStrip);
             // Initialize channels (48 input channels)
-            _this.channel = [];
             for (var i = 1; i <= 48; i++) {
                 _this.channel[i] = new ChannelStrip(_this, i, 0x4F, // Level MSB
                 i - 1, // Level LSB (0-47 for channels 1-48)
@@ -126,7 +129,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 );
             }
             // Initialize DCAs (8 DCA groups)
-            _this.dca = [];
             for (var i = 1; i <= 8; i++) {
                 _this.dca[i] = new ChannelStrip(_this, i, 0x4F, // Level MSB
                 0x20 + (i - 1), // Level LSB (0x20-0x27 for DCA 1-8)
@@ -135,7 +137,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 );
             }
             // Initialize Mixes (12 Mix/AUX outputs)
-            _this.mix = [];
             for (var i = 1; i <= 12; i++) {
                 _this.mix[i] = new ChannelStrip(_this, i, 0x4F, // Level MSB
                 0x30 + i, // Level LSB (0x31-0x3C for Mix 1-12)

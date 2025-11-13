@@ -97,9 +97,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private currentScene: number = 1;
 
 	// Indexed properties for channels, DCAs, and mixes
-	public readonly channel: ChannelStrip[];
-	public readonly dca: ChannelStrip[];
-	public readonly mix: ChannelStrip[];
+	public readonly channel: {[index: number]: ChannelStrip};
+	public readonly dca: {[index: number]: ChannelStrip};
+	public readonly mix: {[index: number]: ChannelStrip};
 
 	// Main LR output
 	private _lrLevel: number = -85;
@@ -117,8 +117,12 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	constructor(private socket: NetworkTCP) {
 		super(socket);
 
+		// Initialize indexed properties using indexedProperty helper
+		this.channel = this.indexedProperty("channel", ChannelStrip);
+		this.dca = this.indexedProperty("dca", ChannelStrip);
+		this.mix = this.indexedProperty("mix", ChannelStrip);
+
 		// Initialize channels (48 input channels)
-		this.channel = [];
 		for (let i = 1; i <= 48; i++) {
 			this.channel[i] = new ChannelStrip(
 				this,
@@ -131,7 +135,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		}
 
 		// Initialize DCAs (8 DCA groups)
-		this.dca = [];
 		for (let i = 1; i <= 8; i++) {
 			this.dca[i] = new ChannelStrip(
 				this,
@@ -144,7 +147,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		}
 
 		// Initialize Mixes (12 Mix/AUX outputs)
-		this.mix = [];
 		for (let i = 1; i <= 12; i++) {
 			this.mix[i] = new ChannelStrip(
 				this,
