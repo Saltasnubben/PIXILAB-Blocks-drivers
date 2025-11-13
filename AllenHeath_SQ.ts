@@ -30,6 +30,7 @@ import {property, min, max, callable, parameter, driver} from "system_lib/Metada
 class ChannelStrip {
 	private _level: number = -85;
 	private _mute: boolean = false;
+	private _updatingFromFeedback: boolean = false;
 
 	constructor(
 		private owner: AllenHeath_SQ,
@@ -40,9 +41,9 @@ class ChannelStrip {
 		private nrpnMuteLSB: number
 	) {}
 
-	@property("Fader level in dB (-85 to +10)")
-	@min(-85)
-	@max(10)
+	@Meta.property("Fader level in dB (-85 to +10)")
+	@Meta.min(-85)
+	@Meta.max(10)
 	get level(): number {
 		return this._level;
 	}
@@ -53,40 +54,52 @@ class ChannelStrip {
 			return;
 		}
 
-		// Convert dB to 14-bit NRPN value (0-16383)
-		const range = 10 - (-85); // 95 dB range
-		const normalizedLevel = (value - (-85)) / range;
-		const nrpnValue = Math.round(normalizedLevel * 16383);
-
-		this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
 		this._level = value;
+
+		// Only send MIDI if this is not a feedback update
+		if (!this._updatingFromFeedback) {
+			// Convert dB to 14-bit NRPN value (0-16383)
+			const range = 10 - (-85); // 95 dB range
+			const normalizedLevel = (value - (-85)) / range;
+			const nrpnValue = Math.round(normalizedLevel * 16383);
+
+			this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
+		}
 	}
 
-	@property("Mute state")
+	@Meta.property("Mute state")
 	get mute(): boolean {
 		return this._mute;
 	}
 
 	set mute(value: boolean) {
-		const nrpnValue = value ? 1 : 0;
-		this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
 		this._mute = value;
+
+		// Only send MIDI if this is not a feedback update
+		if (!this._updatingFromFeedback) {
+			const nrpnValue = value ? 1 : 0;
+			this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
+		}
 	}
 
 	/**
 	 * Update level from feedback (internal use)
+	 * Uses setter to trigger property change notification
 	 */
 	updateLevel(levelDB: number): void {
-		this._level = levelDB;
-		this.owner.changed(`channel[${this.index}].level`);
+		this._updatingFromFeedback = true;
+		this.level = levelDB;
+		this._updatingFromFeedback = false;
 	}
 
 	/**
 	 * Update mute from feedback (internal use)
+	 * Uses setter to trigger property change notification
 	 */
 	updateMute(muted: boolean): void {
-		this._mute = muted;
-		this.owner.changed(`channel[${this.index}].mute`);
+		this._updatingFromFeedback = true;
+		this.mute = muted;
+		this._updatingFromFeedback = false;
 	}
 }
 

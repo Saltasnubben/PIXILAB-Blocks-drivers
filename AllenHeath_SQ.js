@@ -39,6 +39,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             this.nrpnMuteLSB = nrpnMuteLSB;
             this._level = -85;
             this._mute = false;
+            this._updatingFromFeedback = false;
         }
         Object.defineProperty(ChannelStrip.prototype, "level", {
             get: function () {
@@ -49,12 +50,15 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     console.warn("Level must be between -85 and +10 dB");
                     return;
                 }
-                // Convert dB to 14-bit NRPN value (0-16383)
-                var range = 10 - (-85); // 95 dB range
-                var normalizedLevel = (value - (-85)) / range;
-                var nrpnValue = Math.round(normalizedLevel * 16383);
-                this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
                 this._level = value;
+                // Only send MIDI if this is not a feedback update
+                if (!this._updatingFromFeedback) {
+                    // Convert dB to 14-bit NRPN value (0-16383)
+                    var range = 10 - (-85); // 95 dB range
+                    var normalizedLevel = (value - (-85)) / range;
+                    var nrpnValue = Math.round(normalizedLevel * 16383);
+                    this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
+                }
             },
             enumerable: false,
             configurable: true
@@ -64,26 +68,33 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 return this._mute;
             },
             set: function (value) {
-                var nrpnValue = value ? 1 : 0;
-                this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
                 this._mute = value;
+                // Only send MIDI if this is not a feedback update
+                if (!this._updatingFromFeedback) {
+                    var nrpnValue = value ? 1 : 0;
+                    this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
+                }
             },
             enumerable: false,
             configurable: true
         });
         /**
          * Update level from feedback (internal use)
+         * Uses setter to trigger property change notification
          */
         ChannelStrip.prototype.updateLevel = function (levelDB) {
-            this._level = levelDB;
-            this.owner.changed("channel[" + this.index + "].level");
+            this._updatingFromFeedback = true;
+            this.level = levelDB;
+            this._updatingFromFeedback = false;
         };
         /**
          * Update mute from feedback (internal use)
+         * Uses setter to trigger property change notification
          */
         ChannelStrip.prototype.updateMute = function (muted) {
-            this._mute = muted;
-            this.owner.changed("channel[" + this.index + "].mute");
+            this._updatingFromFeedback = true;
+            this.mute = muted;
+            this._updatingFromFeedback = false;
         };
         __decorate([
             Metadata_1.property("Fader level in dB (-85 to +10)"),
