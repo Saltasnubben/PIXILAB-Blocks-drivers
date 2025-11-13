@@ -27,63 +27,43 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AllenHeath_SQ = void 0;
     /**
-     * Represents a channel strip with level and mute control
+     * Level control for a single channel/DCA/mix
      */
-    var ChannelStrip = /** @class */ (function () {
-        function ChannelStrip(owner, index, nrpnLevelMSB, nrpnLevelLSB, nrpnMuteMSB, nrpnMuteLSB) {
+    var LevelControl = /** @class */ (function () {
+        function LevelControl(owner, channelNumber, nrpnMSB, nrpnLSBBase, propertyPath) {
             this.owner = owner;
-            this.index = index;
-            this.nrpnLevelMSB = nrpnLevelMSB;
-            this.nrpnLevelLSB = nrpnLevelLSB;
-            this.nrpnMuteMSB = nrpnMuteMSB;
-            this.nrpnMuteLSB = nrpnMuteLSB;
-            this._level = -85;
-            this._mute = false;
+            this.channelNumber = channelNumber;
+            this.nrpnMSB = nrpnMSB;
+            this.nrpnLSBBase = nrpnLSBBase;
+            this.propertyPath = propertyPath;
+            this._value = -85;
         }
-        Object.defineProperty(ChannelStrip.prototype, "level", {
+        Object.defineProperty(LevelControl.prototype, "value", {
             get: function () {
-                return this._level;
+                return this._value;
             },
-            set: function (value) {
-                if (value < -85 || value > 10) {
+            set: function (level) {
+                if (level < -85 || level > 10) {
                     console.warn("Level must be between -85 and +10 dB");
                     return;
                 }
-                this._level = value;
+                this._value = level;
                 // Convert dB to 14-bit NRPN value (0-16383)
                 var range = 10 - (-85); // 95 dB range
-                var normalizedLevel = (value - (-85)) / range;
+                var normalizedLevel = (level - (-85)) / range;
                 var nrpnValue = Math.round(normalizedLevel * 16383);
-                this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
-            },
-            enumerable: false,
-            configurable: true
-        });
-        Object.defineProperty(ChannelStrip.prototype, "mute", {
-            get: function () {
-                return this._mute;
-            },
-            set: function (value) {
-                this._mute = value;
-                var nrpnValue = value ? 1 : 0;
-                this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
+                // Calculate LSB: convert 1-based channel number to 0-based LSB
+                var lsb = this.nrpnLSBBase + (this.channelNumber - 1);
+                this.owner.sendNRPN(this.nrpnMSB, lsb, nrpnValue);
             },
             enumerable: false,
             configurable: true
         });
         /**
-         * Update level from feedback (internal use)
-         * Updates internal state without sending MIDI and notifies Blocks of the change
+         * Update from feedback without sending MIDI
          */
-        ChannelStrip.prototype.updateLevel = function (levelDB) {
-            this._level = levelDB;
-        };
-        /**
-         * Update mute from feedback (internal use)
-         * Updates internal state without sending MIDI and notifies Blocks of the change
-         */
-        ChannelStrip.prototype.updateMute = function (muted) {
-            this._mute = muted;
+        LevelControl.prototype.updateValue = function (level) {
+            this._value = level;
         };
         __decorate([
             Metadata_1.property("Fader level in dB (-85 to +10)"),
@@ -91,13 +71,63 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             Metadata_1.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
-        ], ChannelStrip.prototype, "level", null);
+        ], LevelControl.prototype, "value", null);
+        return LevelControl;
+    }());
+    /**
+     * Mute control for a single channel/DCA/mix
+     */
+    var MuteControl = /** @class */ (function () {
+        function MuteControl(owner, channelNumber, nrpnMSB, nrpnLSBBase, propertyPath) {
+            this.owner = owner;
+            this.channelNumber = channelNumber;
+            this.nrpnMSB = nrpnMSB;
+            this.nrpnLSBBase = nrpnLSBBase;
+            this.propertyPath = propertyPath;
+            this._value = false;
+        }
+        Object.defineProperty(MuteControl.prototype, "value", {
+            get: function () {
+                return this._value;
+            },
+            set: function (muted) {
+                this._value = muted;
+                var nrpnValue = muted ? 1 : 0;
+                // Calculate LSB: convert 1-based channel number to 0-based LSB
+                var lsb = this.nrpnLSBBase + (this.channelNumber - 1);
+                this.owner.sendNRPN(this.nrpnMSB, lsb, nrpnValue);
+            },
+            enumerable: false,
+            configurable: true
+        });
+        /**
+         * Update from feedback without sending MIDI
+         */
+        MuteControl.prototype.updateValue = function (muted) {
+            this._value = muted;
+        };
         __decorate([
             Metadata_1.property("Mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
-        ], ChannelStrip.prototype, "mute", null);
-        return ChannelStrip;
+        ], MuteControl.prototype, "value", null);
+        return MuteControl;
+    }());
+    /**
+     * Container for channel controls with separate indexed properties for level and mute
+     */
+    var ChannelContainer = /** @class */ (function () {
+        function ChannelContainer(owner, count, levelMSB, levelLSBBase, muteMSB, muteLSBBase, name) {
+            // Initialize indexed properties
+            this.level = owner.indexedProperty(name + ".level", LevelControl);
+            this.mute = owner.indexedProperty(name + ".mute", MuteControl);
+            // Create controls with 1-based indexing
+            for (var i = 1; i <= count; i++) {
+                this.level.push(new LevelControl(owner, i, levelMSB, levelLSBBase, name + ".level"));
+                this.mute.push(new MuteControl(owner, i, muteMSB, muteLSBBase, name + ".mute"));
+            }
+        }
+        return ChannelContainer;
     }());
     var AllenHeath_SQ = /** @class */ (function (_super) {
         __extends(AllenHeath_SQ, _super);
@@ -116,40 +146,13 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.nrpnDataLSB = -1;
             // Receive buffer for MIDI messages
             _this.receiveBuffer = [];
-            // Initialize indexed properties using indexedProperty helper
-            _this.channel = _this.indexedProperty("channel", ChannelStrip);
-            _this.dca = _this.indexedProperty("dca", ChannelStrip);
-            _this.mix = _this.indexedProperty("mix", ChannelStrip);
-            // Initialize channels (48 input channels) using push()
-            // Note: Blocks uses 0-based indexing, so channel[0] = mixer channel 1
-            for (var i = 0; i < 48; i++) {
-                _this.channel.push(new ChannelStrip(_this, i, // 0-based index for array access
-                0x4F, // Level MSB
-                i, // Level LSB (0-47 for channels 1-48)
-                0, // Mute MSB
-                i // Mute LSB
-                ));
-            }
-            // Initialize DCAs (8 DCA groups) using push()
-            // Note: Blocks uses 0-based indexing, so dca[0] = DCA 1
-            for (var i = 0; i < 8; i++) {
-                _this.dca.push(new ChannelStrip(_this, i, // 0-based index for array access
-                0x4F, // Level MSB
-                0x20 + i, // Level LSB (0x20-0x27 for DCA 1-8)
-                2, // Mute MSB
-                i // Mute LSB (0-7)
-                ));
-            }
-            // Initialize Mixes (12 Mix/AUX outputs) using push()
-            // Note: Blocks uses 0-based indexing, so mix[0] = Mix 1
-            for (var i = 0; i < 12; i++) {
-                _this.mix.push(new ChannelStrip(_this, i, // 0-based index for array access
-                0x4F, // Level MSB
-                0x31 + i, // Level LSB (0x31-0x3C for Mix 1-12)
-                1, // Mute MSB
-                0x31 + i // Mute LSB
-                ));
-            }
+            // Initialize channel containers with 1-based indexing
+            // Channels 1-48: Level MSB=0x4F, Level LSB=0-47, Mute MSB=0, Mute LSB=0-47
+            _this.channel = new ChannelContainer(_this, 48, 0x4F, 0, 0, 0, "channel");
+            // DCAs 1-8: Level MSB=0x4F, Level LSB=0x20-0x27, Mute MSB=2, Mute LSB=0-7
+            _this.dca = new ChannelContainer(_this, 8, 0x4F, 0x20, 2, 0, "dca");
+            // Mixes 1-12: Level MSB=0x4F, Level LSB=0x31-0x3C, Mute MSB=1, Mute LSB=0x31-0x3C
+            _this.mix = new ChannelContainer(_this, 12, 0x4F, 0x31, 1, 0x31, "mix");
             // Subscribe to connection events
             socket.subscribe('connect', function (sender, message) {
                 if (socket.connected) {
@@ -394,17 +397,17 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 var levelDB = ((nrpnValue / 16383) * 95) - 85;
                 // Channel levels: LSB = 0-47 for channels 1-48
                 if (this.nrpnLSB < 48) {
-                    var channelIndex = this.nrpnLSB; // 0-based index for array (channel[0] = Ch 1)
-                    console.info("Channel " + (channelIndex + 1) + " level feedback: " + levelDB.toFixed(1) + " dB");
-                    this.channel[channelIndex].updateLevel(levelDB);
-                    this.changed("channel[" + channelIndex + "].level");
+                    var channelNumber = this.nrpnLSB + 1; // Convert to 1-based
+                    console.info("Channel " + channelNumber + " level feedback: " + levelDB.toFixed(1) + " dB");
+                    this.channel.level[channelNumber].updateValue(levelDB);
+                    this.changed("channel.level[" + channelNumber + "]");
                 }
                 // DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
                 else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
-                    var dcaIndex = this.nrpnLSB - 0x20; // 0-based index for array (dca[0] = DCA 1)
-                    console.info("DCA " + (dcaIndex + 1) + " level feedback: " + levelDB.toFixed(1) + " dB");
-                    this.dca[dcaIndex].updateLevel(levelDB);
-                    this.changed("dca[" + dcaIndex + "].level");
+                    var dcaNumber = (this.nrpnLSB - 0x20) + 1; // Convert to 1-based
+                    console.info("DCA " + dcaNumber + " level feedback: " + levelDB.toFixed(1) + " dB");
+                    this.dca.level[dcaNumber].updateValue(levelDB);
+                    this.changed("dca.level[" + dcaNumber + "]");
                 }
                 // Main LR level: LSB = 0x30 (48)
                 else if (this.nrpnLSB === 0x30) {
@@ -414,19 +417,19 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
                 // Mix levels: LSB = 0x31-0x3C (49-60) for Mix 1-12
                 else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-                    var mixIndex = this.nrpnLSB - 0x31; // 0-based index for array (mix[0] = Mix 1)
-                    console.info("Mix " + (mixIndex + 1) + " level feedback: " + levelDB.toFixed(1) + " dB");
-                    this.mix[mixIndex].updateLevel(levelDB);
-                    this.changed("mix[" + mixIndex + "].level");
+                    var mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
+                    console.info("Mix " + mixNumber + " level feedback: " + levelDB.toFixed(1) + " dB");
+                    this.mix.level[mixNumber].updateValue(levelDB);
+                    this.changed("mix.level[" + mixNumber + "]");
                 }
             }
             // Channel mutes: MSB = 0, LSB = channel (0-47)
             else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
-                var channelIndex = this.nrpnLSB; // 0-based index for array
+                var channelNumber = this.nrpnLSB + 1; // Convert to 1-based
                 var muted = nrpnValue > 0;
-                console.info("Channel " + (channelIndex + 1) + " mute feedback: " + muted);
-                this.channel[channelIndex].updateMute(muted);
-                this.changed("channel[" + channelIndex + "].mute");
+                console.info("Channel " + channelNumber + " mute feedback: " + muted);
+                this.channel.mute[channelNumber].updateValue(muted);
+                this.changed("channel.mute[" + channelNumber + "]");
             }
             // Main LR and Mix mutes: MSB = 1
             else if (this.nrpnMSB === 1) {
@@ -439,19 +442,19 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
                 // Mix mutes: LSB = 0x31-0x3C (49-60) for Mix 1-12
                 else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-                    var mixIndex = this.nrpnLSB - 0x31; // 0-based index for array
-                    console.info("Mix " + (mixIndex + 1) + " mute feedback: " + muted);
-                    this.mix[mixIndex].updateMute(muted);
-                    this.changed("mix[" + mixIndex + "].mute");
+                    var mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
+                    console.info("Mix " + mixNumber + " mute feedback: " + muted);
+                    this.mix.mute[mixNumber].updateValue(muted);
+                    this.changed("mix.mute[" + mixNumber + "]");
                 }
             }
             // DCA mutes: MSB = 2, LSB = DCA (0-7)
             else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
-                var dcaIndex = this.nrpnLSB; // 0-based index for array
+                var dcaNumber = this.nrpnLSB + 1; // Convert to 1-based
                 var muted = nrpnValue > 0;
-                console.info("DCA " + (dcaIndex + 1) + " mute feedback: " + muted);
-                this.dca[dcaIndex].updateMute(muted);
-                this.changed("dca[" + dcaIndex + "].mute");
+                console.info("DCA " + dcaNumber + " mute feedback: " + muted);
+                this.dca.mute[dcaNumber].updateValue(muted);
+                this.changed("dca.mute[" + dcaNumber + "]");
             }
             // Reset NRPN state
             this.nrpnMSB = -1;

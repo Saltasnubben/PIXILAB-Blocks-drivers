@@ -9,6 +9,7 @@
  * - Main LR output control
  * - Real-time NRPN feedback from console
  * - Support for up to 48 input channels, 8 DCAs, 12 mixes
+ * - 1-based indexing: channel.level[1] controls desk channel 1
  *
  * Connection:
  * - Connect to the SQ console's IP address on port 51325
@@ -25,69 +26,113 @@ import * as Meta from "system_lib/Metadata";
 import {property, min, max, callable, parameter, driver} from "system_lib/Metadata";
 
 /**
- * Represents a channel strip with level and mute control
+ * Level control for a single channel/DCA/mix
  */
-class ChannelStrip {
-	private _level: number = -85;
-	private _mute: boolean = false;
+class LevelControl {
+	private _value: number = -85;
 
 	constructor(
 		private owner: AllenHeath_SQ,
-		private index: number,
-		private nrpnLevelMSB: number,
-		private nrpnLevelLSB: number,
-		private nrpnMuteMSB: number,
-		private nrpnMuteLSB: number
+		private channelNumber: number,  // 1-based channel number
+		private nrpnMSB: number,
+		private nrpnLSBBase: number,
+		private propertyPath: string   // e.g., "channel.level"
 	) {}
 
 	@Meta.property("Fader level in dB (-85 to +10)")
 	@Meta.min(-85)
 	@Meta.max(10)
-	get level(): number {
-		return this._level;
+	get value(): number {
+		return this._value;
 	}
 
-	set level(value: number) {
-		if (value < -85 || value > 10) {
+	set value(level: number) {
+		if (level < -85 || level > 10) {
 			console.warn(`Level must be between -85 and +10 dB`);
 			return;
 		}
 
-		this._level = value;
+		this._value = level;
 
 		// Convert dB to 14-bit NRPN value (0-16383)
 		const range = 10 - (-85); // 95 dB range
-		const normalizedLevel = (value - (-85)) / range;
+		const normalizedLevel = (level - (-85)) / range;
 		const nrpnValue = Math.round(normalizedLevel * 16383);
 
-		this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
+		// Calculate LSB: convert 1-based channel number to 0-based LSB
+		const lsb = this.nrpnLSBBase + (this.channelNumber - 1);
+		this.owner.sendNRPN(this.nrpnMSB, lsb, nrpnValue);
 	}
+
+	/**
+	 * Update from feedback without sending MIDI
+	 */
+	updateValue(level: number): void {
+		this._value = level;
+	}
+}
+
+/**
+ * Mute control for a single channel/DCA/mix
+ */
+class MuteControl {
+	private _value: boolean = false;
+
+	constructor(
+		private owner: AllenHeath_SQ,
+		private channelNumber: number,  // 1-based channel number
+		private nrpnMSB: number,
+		private nrpnLSBBase: number,
+		private propertyPath: string   // e.g., "channel.mute"
+	) {}
 
 	@Meta.property("Mute state")
-	get mute(): boolean {
-		return this._mute;
+	get value(): boolean {
+		return this._value;
 	}
 
-	set mute(value: boolean) {
-		this._mute = value;
-		const nrpnValue = value ? 1 : 0;
-		this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
-	}
+	set value(muted: boolean) {
+		this._value = muted;
+		const nrpnValue = muted ? 1 : 0;
 
-	/**
-	 * Update level from feedback (internal use)
-	 * Updates internal state without sending MIDI and notifies Blocks of the change
-	 */
-	updateLevel(levelDB: number): void {
-		this._level = levelDB;
+		// Calculate LSB: convert 1-based channel number to 0-based LSB
+		const lsb = this.nrpnLSBBase + (this.channelNumber - 1);
+		this.owner.sendNRPN(this.nrpnMSB, lsb, nrpnValue);
 	}
 
 	/**
-	 * Update mute from feedback (internal use)
-	 * Updates internal state without sending MIDI and notifies Blocks of the change
+	 * Update from feedback without sending MIDI
 	 */
-	updateMute(muted: boolean): void {
-		this._mute = muted;
+	updateValue(muted: boolean): void {
+		this._value = muted;
+	}
+}
+
+/**
+ * Container for channel controls with separate indexed properties for level and mute
+ */
+class ChannelContainer {
+	public readonly level: {[index: number]: LevelControl};
+	public readonly mute: {[index: number]: MuteControl};
+
+	constructor(
+		owner: AllenHeath_SQ,
+		count: number,
+		levelMSB: number,
+		levelLSBBase: number,
+		muteMSB: number,
+		muteLSBBase: number,
+		name: string
+	) {
+		// Initialize indexed properties
+		this.level = owner.indexedProperty(`${name}.level`, LevelControl);
+		this.mute = owner.indexedProperty(`${name}.mute`, MuteControl);
+
+		// Create controls with 1-based indexing
+		for (let i = 1; i <= count; i++) {
+			this.level.push(new LevelControl(owner, i, levelMSB, levelLSBBase, `${name}.level`));
+			this.mute.push(new MuteControl(owner, i, muteMSB, muteLSBBase, `${name}.mute`));
+		}
 	}
 }
 
@@ -97,10 +142,10 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	private midiChannel: number = 0; // MIDI channel 1 (0-indexed)
 	private currentScene: number = 1;
 
-	// Indexed properties for channels, DCAs, and mixes
-	public readonly channel: {[index: number]: ChannelStrip};
-	public readonly dca: {[index: number]: ChannelStrip};
-	public readonly mix: {[index: number]: ChannelStrip};
+	// Channel containers with separate level and mute indexed properties
+	public readonly channel: ChannelContainer;
+	public readonly dca: ChannelContainer;
+	public readonly mix: ChannelContainer;
 
 	// Main LR output
 	private _lrLevel: number = -85;
@@ -118,49 +163,15 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	constructor(private socket: NetworkTCP) {
 		super(socket);
 
-		// Initialize indexed properties using indexedProperty helper
-		this.channel = this.indexedProperty("channel", ChannelStrip);
-		this.dca = this.indexedProperty("dca", ChannelStrip);
-		this.mix = this.indexedProperty("mix", ChannelStrip);
+		// Initialize channel containers with 1-based indexing
+		// Channels 1-48: Level MSB=0x4F, Level LSB=0-47, Mute MSB=0, Mute LSB=0-47
+		this.channel = new ChannelContainer(this, 48, 0x4F, 0, 0, 0, "channel");
 
-		// Initialize channels (48 input channels) using push()
-		// Note: Blocks uses 0-based indexing, so channel[0] = mixer channel 1
-		for (let i = 0; i < 48; i++) {
-			this.channel.push(new ChannelStrip(
-				this,
-				i,              // 0-based index for array access
-				0x4F,           // Level MSB
-				i,              // Level LSB (0-47 for channels 1-48)
-				0,              // Mute MSB
-				i               // Mute LSB
-			));
-		}
+		// DCAs 1-8: Level MSB=0x4F, Level LSB=0x20-0x27, Mute MSB=2, Mute LSB=0-7
+		this.dca = new ChannelContainer(this, 8, 0x4F, 0x20, 2, 0, "dca");
 
-		// Initialize DCAs (8 DCA groups) using push()
-		// Note: Blocks uses 0-based indexing, so dca[0] = DCA 1
-		for (let i = 0; i < 8; i++) {
-			this.dca.push(new ChannelStrip(
-				this,
-				i,              // 0-based index for array access
-				0x4F,           // Level MSB
-				0x20 + i,       // Level LSB (0x20-0x27 for DCA 1-8)
-				2,              // Mute MSB
-				i               // Mute LSB (0-7)
-			));
-		}
-
-		// Initialize Mixes (12 Mix/AUX outputs) using push()
-		// Note: Blocks uses 0-based indexing, so mix[0] = Mix 1
-		for (let i = 0; i < 12; i++) {
-			this.mix.push(new ChannelStrip(
-				this,
-				i,              // 0-based index for array access
-				0x4F,           // Level MSB
-				0x31 + i,       // Level LSB (0x31-0x3C for Mix 1-12)
-				1,              // Mute MSB
-				0x31 + i        // Mute LSB
-			));
-		}
+		// Mixes 1-12: Level MSB=0x4F, Level LSB=0x31-0x3C, Mute MSB=1, Mute LSB=0x31-0x3C
+		this.mix = new ChannelContainer(this, 12, 0x4F, 0x31, 1, 0x31, "mix");
 
 		// Subscribe to connection events
 		socket.subscribe('connect', (sender, message) => {
@@ -434,17 +445,17 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 			// Channel levels: LSB = 0-47 for channels 1-48
 			if (this.nrpnLSB < 48) {
-				const channelIndex = this.nrpnLSB; // 0-based index for array (channel[0] = Ch 1)
-				console.info(`Channel ${channelIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
-				this.channel[channelIndex].updateLevel(levelDB);
-				this.changed(`channel[${channelIndex}].level`);
+				const channelNumber = this.nrpnLSB + 1; // Convert to 1-based
+				console.info(`Channel ${channelNumber} level feedback: ${levelDB.toFixed(1)} dB`);
+				this.channel.level[channelNumber].updateValue(levelDB);
+				this.changed(`channel.level[${channelNumber}]`);
 			}
 			// DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
 			else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
-				const dcaIndex = this.nrpnLSB - 0x20; // 0-based index for array (dca[0] = DCA 1)
-				console.info(`DCA ${dcaIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
-				this.dca[dcaIndex].updateLevel(levelDB);
-				this.changed(`dca[${dcaIndex}].level`);
+				const dcaNumber = (this.nrpnLSB - 0x20) + 1; // Convert to 1-based
+				console.info(`DCA ${dcaNumber} level feedback: ${levelDB.toFixed(1)} dB`);
+				this.dca.level[dcaNumber].updateValue(levelDB);
+				this.changed(`dca.level[${dcaNumber}]`);
 			}
 			// Main LR level: LSB = 0x30 (48)
 			else if (this.nrpnLSB === 0x30) {
@@ -454,19 +465,19 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			}
 			// Mix levels: LSB = 0x31-0x3C (49-60) for Mix 1-12
 			else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-				const mixIndex = this.nrpnLSB - 0x31; // 0-based index for array (mix[0] = Mix 1)
-				console.info(`Mix ${mixIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
-				this.mix[mixIndex].updateLevel(levelDB);
-				this.changed(`mix[${mixIndex}].level`);
+				const mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
+				console.info(`Mix ${mixNumber} level feedback: ${levelDB.toFixed(1)} dB`);
+				this.mix.level[mixNumber].updateValue(levelDB);
+				this.changed(`mix.level[${mixNumber}]`);
 			}
 		}
 		// Channel mutes: MSB = 0, LSB = channel (0-47)
 		else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
-			const channelIndex = this.nrpnLSB; // 0-based index for array
+			const channelNumber = this.nrpnLSB + 1; // Convert to 1-based
 			const muted = nrpnValue > 0;
-			console.info(`Channel ${channelIndex + 1} mute feedback: ${muted}`);
-			this.channel[channelIndex].updateMute(muted);
-			this.changed(`channel[${channelIndex}].mute`);
+			console.info(`Channel ${channelNumber} mute feedback: ${muted}`);
+			this.channel.mute[channelNumber].updateValue(muted);
+			this.changed(`channel.mute[${channelNumber}]`);
 		}
 		// Main LR and Mix mutes: MSB = 1
 		else if (this.nrpnMSB === 1) {
@@ -480,19 +491,19 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			}
 			// Mix mutes: LSB = 0x31-0x3C (49-60) for Mix 1-12
 			else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-				const mixIndex = this.nrpnLSB - 0x31; // 0-based index for array
-				console.info(`Mix ${mixIndex + 1} mute feedback: ${muted}`);
-				this.mix[mixIndex].updateMute(muted);
-				this.changed(`mix[${mixIndex}].mute`);
+				const mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
+				console.info(`Mix ${mixNumber} mute feedback: ${muted}`);
+				this.mix.mute[mixNumber].updateValue(muted);
+				this.changed(`mix.mute[${mixNumber}]`);
 			}
 		}
 		// DCA mutes: MSB = 2, LSB = DCA (0-7)
 		else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
-			const dcaIndex = this.nrpnLSB; // 0-based index for array
+			const dcaNumber = this.nrpnLSB + 1; // Convert to 1-based
 			const muted = nrpnValue > 0;
-			console.info(`DCA ${dcaIndex + 1} mute feedback: ${muted}`);
-			this.dca[dcaIndex].updateMute(muted);
-			this.changed(`dca[${dcaIndex}].mute`);
+			console.info(`DCA ${dcaNumber} mute feedback: ${muted}`);
+			this.dca.mute[dcaNumber].updateValue(muted);
+			this.changed(`dca.mute[${dcaNumber}]`);
 		}
 
 		// Reset NRPN state
