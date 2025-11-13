@@ -95,8 +95,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             socket.subscribe('finish', function () {
                 _this.stopPolling();
             });
-            // Enable automatic connection management
-            socket.autoConnect();
+            // Enable automatic connection management with raw bytes mode for MIDI binary protocol
+            socket.autoConnect(true);
             // If already connected when driver loads, initialize now
             if (socket.connected) {
                 _this.onConnected();
