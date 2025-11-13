@@ -43,7 +43,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib/Metadata", "system_lib/Metadata"], function (require, exports, Network_1, Driver_1, Meta, Metadata_1) {
+define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib/Metadata"], function (require, exports, Network_1, Driver_1, Meta) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AllenHeath_SQ = void 0;
@@ -495,40 +495,40 @@ define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib
         };
         var _a;
         __decorate([
-            (0, Metadata_1.property)("Current scene number (1-500)"),
-            (0, Metadata_1.min)(1),
-            (0, Metadata_1.max)(500),
+            property("Current scene number (1-500)"),
+            min(1),
+            max(500),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "scene", null);
         __decorate([
-            (0, Metadata_1.property)("MIDI channel (1-16, must match console setting)"),
-            (0, Metadata_1.min)(1),
-            (0, Metadata_1.max)(16),
+            property("MIDI channel (1-16, must match console setting)"),
+            min(1),
+            max(16),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "midiCh", null);
         __decorate([
-            (0, Metadata_1.property)("Main LR output level in dB (-85 to +10)"),
-            (0, Metadata_1.min)(-85),
-            (0, Metadata_1.max)(10),
+            property("Main LR output level in dB (-85 to +10)"),
+            min(-85),
+            max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "lrLevel", null);
         __decorate([
-            (0, Metadata_1.property)("Main LR output mute state"),
+            property("Main LR output mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "lrMute", null);
         __decorate([
-            (0, Metadata_1.callable)("Recall a scene"),
-            (0, Metadata_1.parameter)("Scene number (1-500)"),
+            callable("Recall a scene"),
+            parameter("Scene number (1-500)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", void 0)
         ], AllenHeath_SQ.prototype, "recallScene", null);
         AllenHeath_SQ = __decorate([
-            (0, Metadata_1.driver)('NetworkTCP', { port: 51325 }),
+            Meta.driver('NetworkTCP', { port: 51325 }),
             __metadata("design:paramtypes", [typeof (_a = typeof Network_1.NetworkTCP !== "undefined" && Network_1.NetworkTCP) === "function" ? _a : Object])
         ], AllenHeath_SQ);
         return AllenHeath_SQ;

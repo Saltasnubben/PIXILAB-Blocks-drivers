@@ -23,7 +23,6 @@
 import {NetworkTCP} from "system/Network";
 import {Driver} from "system_lib/Driver";
 import * as Meta from "system_lib/Metadata";
-import {property, min, max, callable, parameter, driver} from "system_lib/Metadata";
 
 /**
  * Level control for a single channel/DCA/mix
@@ -108,7 +107,7 @@ class MuteControl {
 	}
 }
 
-@driver('NetworkTCP', { port: 51325 })
+@Meta.driver('NetworkTCP', { port: 51325 })
 export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 	private midiChannel: number = 0; // MIDI channel 1 (0-indexed)
