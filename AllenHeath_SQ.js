@@ -495,34 +495,34 @@ define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib
         };
         var _a;
         __decorate([
-            property("Current scene number (1-500)"),
-            min(1),
-            max(500),
+            Meta.property("Current scene number (1-500)"),
+            Meta.min(1),
+            Meta.max(500),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "scene", null);
         __decorate([
-            property("MIDI channel (1-16, must match console setting)"),
-            min(1),
-            max(16),
+            Meta.property("MIDI channel (1-16, must match console setting)"),
+            Meta.min(1),
+            Meta.max(16),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "midiCh", null);
         __decorate([
-            property("Main LR output level in dB (-85 to +10)"),
-            min(-85),
-            max(10),
+            Meta.property("Main LR output level in dB (-85 to +10)"),
+            Meta.min(-85),
+            Meta.max(10),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], AllenHeath_SQ.prototype, "lrLevel", null);
         __decorate([
-            property("Main LR output mute state"),
+            Meta.property("Main LR output mute state"),
             __metadata("design:type", Boolean),
             __metadata("design:paramtypes", [Boolean])
         ], AllenHeath_SQ.prototype, "lrMute", null);
         __decorate([
-            callable("Recall a scene"),
-            parameter("Scene number (1-500)"),
+            Meta.callable("Recall a scene"),
+            Meta.parameter("Scene number (1-500)"),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number]),
             __metadata("design:returntype", void 0)

@@ -197,9 +197,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	/**
 	 * Get the current scene number
 	 */
-	@property("Current scene number (1-500)")
-	@min(1)
-	@max(500)
+	@Meta.property("Current scene number (1-500)")
+	@Meta.min(1)
+	@Meta.max(500)
 	public get scene(): number {
 		return this.currentScene;
 	}
@@ -217,9 +217,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	/**
 	 * MIDI channel (1-16)
 	 */
-	@property("MIDI channel (1-16, must match console setting)")
-	@min(1)
-	@max(16)
+	@Meta.property("MIDI channel (1-16, must match console setting)")
+	@Meta.min(1)
+	@Meta.max(16)
 	public set midiCh(value: number) {
 		this.midiChannel = value - 1; // Convert to 0-indexed
 	}
@@ -231,9 +231,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	/**
 	 * Main LR output level
 	 */
-	@property("Main LR output level in dB (-85 to +10)")
-	@min(-85)
-	@max(10)
+	@Meta.property("Main LR output level in dB (-85 to +10)")
+	@Meta.min(-85)
+	@Meta.max(10)
 	public get lrLevel(): number {
 		return this._lrLevel;
 	}
@@ -257,7 +257,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	/**
 	 * Main LR output mute
 	 */
-	@property("Main LR output mute state")
+	@Meta.property("Main LR output mute state")
 	public get lrMute(): boolean {
 		return this._lrMute;
 	}
@@ -272,8 +272,8 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	/**
 	 * Recall a scene by number (1-500)
 	 */
-	@callable("Recall a scene")
-	@parameter("Scene number (1-500)")
+	@Meta.callable("Recall a scene")
+	@Meta.parameter("Scene number (1-500)")
 	public recallScene(sceneNumber: number): void {
 		if (sceneNumber < 1 || sceneNumber > 500) {
 			console.warn("Scene number must be between 1 and 500");
