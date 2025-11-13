@@ -9,7 +9,7 @@
  * - Main LR output control
  * - Real-time NRPN feedback from console
  * - Support for up to 48 input channels, 8 DCAs, 12 mixes
- * - 1-based indexing: channel.level[1] controls desk channel 1
+ * - 1-based indexing: channelLevel[1] controls desk channel 1
  *
  * Connection:
  * - Connect to the SQ console's IP address on port 51325
@@ -36,7 +36,7 @@ class LevelControl {
 		private channelNumber: number,  // 1-based channel number
 		private nrpnMSB: number,
 		private nrpnLSBBase: number,
-		private propertyPath: string   // e.g., "channel.level"
+		private propertyPath: string   // e.g., "channelLevel"
 	) {}
 
 	@Meta.property("Fader level in dB (-85 to +10)")
@@ -83,7 +83,7 @@ class MuteControl {
 		private channelNumber: number,  // 1-based channel number
 		private nrpnMSB: number,
 		private nrpnLSBBase: number,
-		private propertyPath: string   // e.g., "channel.mute"
+		private propertyPath: string   // e.g., "channelMute"
 	) {}
 
 	@Meta.property("Mute state")
@@ -125,13 +125,13 @@ class ChannelContainer {
 		name: string
 	) {
 		// Initialize indexed properties
-		this.level = owner.indexedProperty(`${name}.level`, LevelControl);
-		this.mute = owner.indexedProperty(`${name}.mute`, MuteControl);
+		this.level = owner.indexedProperty(`${name}Level`, LevelControl);
+		this.mute = owner.indexedProperty(`${name}Mute`, MuteControl);
 
 		// Create controls with 1-based indexing
 		for (let i = 1; i <= count; i++) {
-			this.level.push(new LevelControl(owner, i, levelMSB, levelLSBBase, `${name}.level`));
-			this.mute.push(new MuteControl(owner, i, muteMSB, muteLSBBase, `${name}.mute`));
+			this.level.push(new LevelControl(owner, i, levelMSB, levelLSBBase, `${name}Level`));
+			this.mute.push(new MuteControl(owner, i, muteMSB, muteLSBBase, `${name}Mute`));
 		}
 	}
 }
@@ -448,14 +448,14 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 				const channelNumber = this.nrpnLSB + 1; // Convert to 1-based
 				console.info(`Channel ${channelNumber} level feedback: ${levelDB.toFixed(1)} dB`);
 				this.channel.level[channelNumber].updateValue(levelDB);
-				this.changed(`channel.level[${channelNumber}]`);
+				this.changed(`channelLevel[${channelNumber}]`);
 			}
 			// DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
 			else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
 				const dcaNumber = (this.nrpnLSB - 0x20) + 1; // Convert to 1-based
 				console.info(`DCA ${dcaNumber} level feedback: ${levelDB.toFixed(1)} dB`);
 				this.dca.level[dcaNumber].updateValue(levelDB);
-				this.changed(`dca.level[${dcaNumber}]`);
+				this.changed(`dcaLevel[${dcaNumber}]`);
 			}
 			// Main LR level: LSB = 0x30 (48)
 			else if (this.nrpnLSB === 0x30) {
@@ -468,7 +468,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 				const mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
 				console.info(`Mix ${mixNumber} level feedback: ${levelDB.toFixed(1)} dB`);
 				this.mix.level[mixNumber].updateValue(levelDB);
-				this.changed(`mix.level[${mixNumber}]`);
+				this.changed(`mixLevel[${mixNumber}]`);
 			}
 		}
 		// Channel mutes: MSB = 0, LSB = channel (0-47)
@@ -477,7 +477,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			const muted = nrpnValue > 0;
 			console.info(`Channel ${channelNumber} mute feedback: ${muted}`);
 			this.channel.mute[channelNumber].updateValue(muted);
-			this.changed(`channel.mute[${channelNumber}]`);
+			this.changed(`channelMute[${channelNumber}]`);
 		}
 		// Main LR and Mix mutes: MSB = 1
 		else if (this.nrpnMSB === 1) {
@@ -494,7 +494,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 				const mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
 				console.info(`Mix ${mixNumber} mute feedback: ${muted}`);
 				this.mix.mute[mixNumber].updateValue(muted);
-				this.changed(`mix.mute[${mixNumber}]`);
+				this.changed(`mixMute[${mixNumber}]`);
 			}
 		}
 		// DCA mutes: MSB = 2, LSB = DCA (0-7)
@@ -503,7 +503,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			const muted = nrpnValue > 0;
 			console.info(`DCA ${dcaNumber} mute feedback: ${muted}`);
 			this.dca.mute[dcaNumber].updateValue(muted);
-			this.changed(`dca.mute[${dcaNumber}]`);
+			this.changed(`dcaMute[${dcaNumber}]`);
 		}
 
 		// Reset NRPN state
