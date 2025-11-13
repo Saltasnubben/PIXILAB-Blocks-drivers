@@ -122,40 +122,43 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		this.dca = this.indexedProperty("dca", ChannelStrip);
 		this.mix = this.indexedProperty("mix", ChannelStrip);
 
-		// Initialize channels (48 input channels)
-		for (let i = 1; i <= 48; i++) {
-			this.channel[i] = new ChannelStrip(
+		// Initialize channels (48 input channels) using push()
+		// Note: Blocks uses 0-based indexing, so channel[0] = mixer channel 1
+		for (let i = 0; i < 48; i++) {
+			this.channel.push(new ChannelStrip(
 				this,
-				i,
+				i,              // 0-based index for array access
 				0x4F,           // Level MSB
-				i - 1,          // Level LSB (0-47 for channels 1-48)
+				i,              // Level LSB (0-47 for channels 1-48)
 				0,              // Mute MSB
-				i - 1           // Mute LSB
-			);
+				i               // Mute LSB
+			));
 		}
 
-		// Initialize DCAs (8 DCA groups)
-		for (let i = 1; i <= 8; i++) {
-			this.dca[i] = new ChannelStrip(
+		// Initialize DCAs (8 DCA groups) using push()
+		// Note: Blocks uses 0-based indexing, so dca[0] = DCA 1
+		for (let i = 0; i < 8; i++) {
+			this.dca.push(new ChannelStrip(
 				this,
-				i,
+				i,              // 0-based index for array access
 				0x4F,           // Level MSB
-				0x20 + (i - 1), // Level LSB (0x20-0x27 for DCA 1-8)
+				0x20 + i,       // Level LSB (0x20-0x27 for DCA 1-8)
 				2,              // Mute MSB
-				i - 1           // Mute LSB (0-7)
-			);
+				i               // Mute LSB (0-7)
+			));
 		}
 
-		// Initialize Mixes (12 Mix/AUX outputs)
-		for (let i = 1; i <= 12; i++) {
-			this.mix[i] = new ChannelStrip(
+		// Initialize Mixes (12 Mix/AUX outputs) using push()
+		// Note: Blocks uses 0-based indexing, so mix[0] = Mix 1
+		for (let i = 0; i < 12; i++) {
+			this.mix.push(new ChannelStrip(
 				this,
-				i,
+				i,              // 0-based index for array access
 				0x4F,           // Level MSB
-				0x30 + i,       // Level LSB (0x31-0x3C for Mix 1-12)
+				0x31 + i,       // Level LSB (0x31-0x3C for Mix 1-12)
 				1,              // Mute MSB
-				0x30 + i        // Mute LSB
-			);
+				0x31 + i        // Mute LSB
+			));
 		}
 
 		// Subscribe to connection events
@@ -430,15 +433,15 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 			// Channel levels: LSB = 0-47 for channels 1-48
 			if (this.nrpnLSB < 48) {
-				const channelNum = this.nrpnLSB + 1;
-				console.info(`Channel ${channelNum} level feedback: ${levelDB.toFixed(1)} dB`);
-				this.channel[channelNum].updateLevel(levelDB);
+				const channelIndex = this.nrpnLSB; // 0-based index for array (channel[0] = Ch 1)
+				console.info(`Channel ${channelIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
+				this.channel[channelIndex].updateLevel(levelDB);
 			}
 			// DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
 			else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
-				const dcaNum = this.nrpnLSB - 0x20 + 1;
-				console.info(`DCA ${dcaNum} level feedback: ${levelDB.toFixed(1)} dB`);
-				this.dca[dcaNum].updateLevel(levelDB);
+				const dcaIndex = this.nrpnLSB - 0x20; // 0-based index for array (dca[0] = DCA 1)
+				console.info(`DCA ${dcaIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
+				this.dca[dcaIndex].updateLevel(levelDB);
 			}
 			// Main LR level: LSB = 0x30 (48)
 			else if (this.nrpnLSB === 0x30) {
@@ -448,17 +451,17 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			}
 			// Mix levels: LSB = 0x31-0x3C (49-60) for Mix 1-12
 			else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-				const mixNum = this.nrpnLSB - 0x30;
-				console.info(`Mix ${mixNum} level feedback: ${levelDB.toFixed(1)} dB`);
-				this.mix[mixNum].updateLevel(levelDB);
+				const mixIndex = this.nrpnLSB - 0x31; // 0-based index for array (mix[0] = Mix 1)
+				console.info(`Mix ${mixIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
+				this.mix[mixIndex].updateLevel(levelDB);
 			}
 		}
 		// Channel mutes: MSB = 0, LSB = channel (0-47)
 		else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
-			const channelNum = this.nrpnLSB + 1;
+			const channelIndex = this.nrpnLSB; // 0-based index for array
 			const muted = nrpnValue > 0;
-			console.info(`Channel ${channelNum} mute feedback: ${muted}`);
-			this.channel[channelNum].updateMute(muted);
+			console.info(`Channel ${channelIndex + 1} mute feedback: ${muted}`);
+			this.channel[channelIndex].updateMute(muted);
 		}
 		// Main LR and Mix mutes: MSB = 1
 		else if (this.nrpnMSB === 1) {
@@ -472,17 +475,17 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			}
 			// Mix mutes: LSB = 0x31-0x3C (49-60) for Mix 1-12
 			else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-				const mixNum = this.nrpnLSB - 0x30;
-				console.info(`Mix ${mixNum} mute feedback: ${muted}`);
-				this.mix[mixNum].updateMute(muted);
+				const mixIndex = this.nrpnLSB - 0x31; // 0-based index for array
+				console.info(`Mix ${mixIndex + 1} mute feedback: ${muted}`);
+				this.mix[mixIndex].updateMute(muted);
 			}
 		}
 		// DCA mutes: MSB = 2, LSB = DCA (0-7)
 		else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
-			const dcaNum = this.nrpnLSB + 1;
+			const dcaIndex = this.nrpnLSB; // 0-based index for array
 			const muted = nrpnValue > 0;
-			console.info(`DCA ${dcaNum} mute feedback: ${muted}`);
-			this.dca[dcaNum].updateMute(muted);
+			console.info(`DCA ${dcaIndex + 1} mute feedback: ${muted}`);
+			this.dca[dcaIndex].updateMute(muted);
 		}
 
 		// Reset NRPN state
