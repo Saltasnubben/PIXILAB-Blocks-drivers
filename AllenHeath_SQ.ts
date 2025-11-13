@@ -30,7 +30,6 @@ import {property, min, max, callable, parameter, driver} from "system_lib/Metada
 class ChannelStrip {
 	private _level: number = -85;
 	private _mute: boolean = false;
-	private _updatingFromFeedback: boolean = false;
 
 	constructor(
 		private owner: AllenHeath_SQ,
@@ -56,15 +55,12 @@ class ChannelStrip {
 
 		this._level = value;
 
-		// Only send MIDI if this is not a feedback update
-		if (!this._updatingFromFeedback) {
-			// Convert dB to 14-bit NRPN value (0-16383)
-			const range = 10 - (-85); // 95 dB range
-			const normalizedLevel = (value - (-85)) / range;
-			const nrpnValue = Math.round(normalizedLevel * 16383);
+		// Convert dB to 14-bit NRPN value (0-16383)
+		const range = 10 - (-85); // 95 dB range
+		const normalizedLevel = (value - (-85)) / range;
+		const nrpnValue = Math.round(normalizedLevel * 16383);
 
-			this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
-		}
+		this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
 	}
 
 	@Meta.property("Mute state")
@@ -74,32 +70,24 @@ class ChannelStrip {
 
 	set mute(value: boolean) {
 		this._mute = value;
-
-		// Only send MIDI if this is not a feedback update
-		if (!this._updatingFromFeedback) {
-			const nrpnValue = value ? 1 : 0;
-			this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
-		}
+		const nrpnValue = value ? 1 : 0;
+		this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
 	}
 
 	/**
 	 * Update level from feedback (internal use)
-	 * Uses setter to trigger property change notification
+	 * Updates internal state without sending MIDI and notifies Blocks of the change
 	 */
 	updateLevel(levelDB: number): void {
-		this._updatingFromFeedback = true;
-		this.level = levelDB;
-		this._updatingFromFeedback = false;
+		this._level = levelDB;
 	}
 
 	/**
 	 * Update mute from feedback (internal use)
-	 * Uses setter to trigger property change notification
+	 * Updates internal state without sending MIDI and notifies Blocks of the change
 	 */
 	updateMute(muted: boolean): void {
-		this._updatingFromFeedback = true;
-		this.mute = muted;
-		this._updatingFromFeedback = false;
+		this._mute = muted;
 	}
 }
 
@@ -449,12 +437,14 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 				const channelIndex = this.nrpnLSB; // 0-based index for array (channel[0] = Ch 1)
 				console.info(`Channel ${channelIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
 				this.channel[channelIndex].updateLevel(levelDB);
+				this.changed(`channel[${channelIndex}].level`);
 			}
 			// DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
 			else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
 				const dcaIndex = this.nrpnLSB - 0x20; // 0-based index for array (dca[0] = DCA 1)
 				console.info(`DCA ${dcaIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
 				this.dca[dcaIndex].updateLevel(levelDB);
+				this.changed(`dca[${dcaIndex}].level`);
 			}
 			// Main LR level: LSB = 0x30 (48)
 			else if (this.nrpnLSB === 0x30) {
@@ -467,6 +457,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 				const mixIndex = this.nrpnLSB - 0x31; // 0-based index for array (mix[0] = Mix 1)
 				console.info(`Mix ${mixIndex + 1} level feedback: ${levelDB.toFixed(1)} dB`);
 				this.mix[mixIndex].updateLevel(levelDB);
+				this.changed(`mix[${mixIndex}].level`);
 			}
 		}
 		// Channel mutes: MSB = 0, LSB = channel (0-47)
@@ -475,6 +466,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			const muted = nrpnValue > 0;
 			console.info(`Channel ${channelIndex + 1} mute feedback: ${muted}`);
 			this.channel[channelIndex].updateMute(muted);
+			this.changed(`channel[${channelIndex}].mute`);
 		}
 		// Main LR and Mix mutes: MSB = 1
 		else if (this.nrpnMSB === 1) {
@@ -491,6 +483,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 				const mixIndex = this.nrpnLSB - 0x31; // 0-based index for array
 				console.info(`Mix ${mixIndex + 1} mute feedback: ${muted}`);
 				this.mix[mixIndex].updateMute(muted);
+				this.changed(`mix[${mixIndex}].mute`);
 			}
 		}
 		// DCA mutes: MSB = 2, LSB = DCA (0-7)
@@ -499,6 +492,7 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 			const muted = nrpnValue > 0;
 			console.info(`DCA ${dcaIndex + 1} mute feedback: ${muted}`);
 			this.dca[dcaIndex].updateMute(muted);
+			this.changed(`dca[${dcaIndex}].mute`);
 		}
 
 		// Reset NRPN state

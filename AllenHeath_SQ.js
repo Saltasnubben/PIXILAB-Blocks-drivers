@@ -39,7 +39,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             this.nrpnMuteLSB = nrpnMuteLSB;
             this._level = -85;
             this._mute = false;
-            this._updatingFromFeedback = false;
         }
         Object.defineProperty(ChannelStrip.prototype, "level", {
             get: function () {
@@ -51,14 +50,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     return;
                 }
                 this._level = value;
-                // Only send MIDI if this is not a feedback update
-                if (!this._updatingFromFeedback) {
-                    // Convert dB to 14-bit NRPN value (0-16383)
-                    var range = 10 - (-85); // 95 dB range
-                    var normalizedLevel = (value - (-85)) / range;
-                    var nrpnValue = Math.round(normalizedLevel * 16383);
-                    this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
-                }
+                // Convert dB to 14-bit NRPN value (0-16383)
+                var range = 10 - (-85); // 95 dB range
+                var normalizedLevel = (value - (-85)) / range;
+                var nrpnValue = Math.round(normalizedLevel * 16383);
+                this.owner.sendNRPN(this.nrpnLevelMSB, this.nrpnLevelLSB, nrpnValue);
             },
             enumerable: false,
             configurable: true
@@ -69,32 +65,25 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             },
             set: function (value) {
                 this._mute = value;
-                // Only send MIDI if this is not a feedback update
-                if (!this._updatingFromFeedback) {
-                    var nrpnValue = value ? 1 : 0;
-                    this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
-                }
+                var nrpnValue = value ? 1 : 0;
+                this.owner.sendNRPN(this.nrpnMuteMSB, this.nrpnMuteLSB, nrpnValue);
             },
             enumerable: false,
             configurable: true
         });
         /**
          * Update level from feedback (internal use)
-         * Uses setter to trigger property change notification
+         * Updates internal state without sending MIDI and notifies Blocks of the change
          */
         ChannelStrip.prototype.updateLevel = function (levelDB) {
-            this._updatingFromFeedback = true;
-            this.level = levelDB;
-            this._updatingFromFeedback = false;
+            this._level = levelDB;
         };
         /**
          * Update mute from feedback (internal use)
-         * Uses setter to trigger property change notification
+         * Updates internal state without sending MIDI and notifies Blocks of the change
          */
         ChannelStrip.prototype.updateMute = function (muted) {
-            this._updatingFromFeedback = true;
-            this.mute = muted;
-            this._updatingFromFeedback = false;
+            this._mute = muted;
         };
         __decorate([
             Metadata_1.property("Fader level in dB (-85 to +10)"),
@@ -408,12 +397,14 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     var channelIndex = this.nrpnLSB; // 0-based index for array (channel[0] = Ch 1)
                     console.info("Channel " + (channelIndex + 1) + " level feedback: " + levelDB.toFixed(1) + " dB");
                     this.channel[channelIndex].updateLevel(levelDB);
+                    this.changed("channel[" + channelIndex + "].level");
                 }
                 // DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
                 else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
                     var dcaIndex = this.nrpnLSB - 0x20; // 0-based index for array (dca[0] = DCA 1)
                     console.info("DCA " + (dcaIndex + 1) + " level feedback: " + levelDB.toFixed(1) + " dB");
                     this.dca[dcaIndex].updateLevel(levelDB);
+                    this.changed("dca[" + dcaIndex + "].level");
                 }
                 // Main LR level: LSB = 0x30 (48)
                 else if (this.nrpnLSB === 0x30) {
@@ -426,6 +417,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     var mixIndex = this.nrpnLSB - 0x31; // 0-based index for array (mix[0] = Mix 1)
                     console.info("Mix " + (mixIndex + 1) + " level feedback: " + levelDB.toFixed(1) + " dB");
                     this.mix[mixIndex].updateLevel(levelDB);
+                    this.changed("mix[" + mixIndex + "].level");
                 }
             }
             // Channel mutes: MSB = 0, LSB = channel (0-47)
@@ -434,6 +426,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 var muted = nrpnValue > 0;
                 console.info("Channel " + (channelIndex + 1) + " mute feedback: " + muted);
                 this.channel[channelIndex].updateMute(muted);
+                this.changed("channel[" + channelIndex + "].mute");
             }
             // Main LR and Mix mutes: MSB = 1
             else if (this.nrpnMSB === 1) {
@@ -449,6 +442,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     var mixIndex = this.nrpnLSB - 0x31; // 0-based index for array
                     console.info("Mix " + (mixIndex + 1) + " mute feedback: " + muted);
                     this.mix[mixIndex].updateMute(muted);
+                    this.changed("mix[" + mixIndex + "].mute");
                 }
             }
             // DCA mutes: MSB = 2, LSB = DCA (0-7)
@@ -457,6 +451,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 var muted = nrpnValue > 0;
                 console.info("DCA " + (dcaIndex + 1) + " mute feedback: " + muted);
                 this.dca[dcaIndex].updateMute(muted);
+                this.changed("dca[" + dcaIndex + "].mute");
             }
             // Reset NRPN state
             this.nrpnMSB = -1;
