@@ -9,7 +9,7 @@
  * - Main LR output control
  * - Real-time NRPN feedback from console
  * - Support for up to 48 input channels, 8 DCAs, 12 AUX
- * - 1-based indexing: channelLevel[1] controls desk channel 1
+ * - 1-based indexing: channelLevel[1] controls desk channel 1 (arrays start at index 1)
  *
  * Connection:
  * - Connect to the SQ console's IP address on port 51325
@@ -158,14 +158,6 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		this.dcaMute = this.indexedProperty("dcaMute", MuteControl);
 		this.auxLevel = this.indexedProperty("auxLevel", LevelControl);
 		this.auxMute = this.indexedProperty("auxMute", MuteControl);
-
-		// Add dummy entries at index 0 for 1-based indexing
-		this.channelLevel.push(null as any);
-		this.channelMute.push(null as any);
-		this.dcaLevel.push(null as any);
-		this.dcaMute.push(null as any);
-		this.auxLevel.push(null as any);
-		this.auxMute.push(null as any);
 
 		// Channels 1-48: Level LSB base=0x10, Mute LSB base=0
 		for (let i = 1; i <= 48; i++) {

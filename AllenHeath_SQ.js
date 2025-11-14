@@ -137,13 +137,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.dcaMute = _this.indexedProperty("dcaMute", MuteControl);
             _this.auxLevel = _this.indexedProperty("auxLevel", LevelControl);
             _this.auxMute = _this.indexedProperty("auxMute", MuteControl);
-            // Add dummy entries at index 0 for 1-based indexing
-            _this.channelLevel.push(null);
-            _this.channelMute.push(null);
-            _this.dcaLevel.push(null);
-            _this.dcaMute.push(null);
-            _this.auxLevel.push(null);
-            _this.auxMute.push(null);
             // Channels 1-48: Level LSB base=0x10, Mute LSB base=0
             for (var i = 1; i <= 48; i++) {
                 _this.channelLevel.push(new LevelControl(_this, i, 0x4F, 0x10, "channelLevel"));
