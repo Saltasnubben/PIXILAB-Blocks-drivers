@@ -27,7 +27,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AllenHeath_SQ = void 0;
     /**
-     * Level control for a single channel/DCA/mix
+     * Level control for a single channel/DCA/AUX
      */
     var LevelControl = /** @class */ (function () {
         function LevelControl(owner, channelNumber, nrpnMSB, nrpnLSBBase, propertyName) {
@@ -75,7 +75,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
         return LevelControl;
     }());
     /**
-     * Mute control for a single channel/DCA/mix
+     * Mute control for a single channel/DCA/AUX
      */
     var MuteControl = /** @class */ (function () {
         function MuteControl(owner, channelNumber, nrpnMSB, nrpnLSBBase, propertyName) {
@@ -135,22 +135,29 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.channelMute = _this.indexedProperty("channelMute", MuteControl);
             _this.dcaLevel = _this.indexedProperty("dcaLevel", LevelControl);
             _this.dcaMute = _this.indexedProperty("dcaMute", MuteControl);
-            _this.mixLevel = _this.indexedProperty("mixLevel", LevelControl);
-            _this.mixMute = _this.indexedProperty("mixMute", MuteControl);
-            // Channels 1-48: Level MSB=0x4F, Level LSB=0-47, Mute MSB=0, Mute LSB=0-47
+            _this.auxLevel = _this.indexedProperty("auxLevel", LevelControl);
+            _this.auxMute = _this.indexedProperty("auxMute", MuteControl);
+            // Add dummy entries at index 0 for 1-based indexing
+            _this.channelLevel.push(null);
+            _this.channelMute.push(null);
+            _this.dcaLevel.push(null);
+            _this.dcaMute.push(null);
+            _this.auxLevel.push(null);
+            _this.auxMute.push(null);
+            // Channels 1-48: Level LSB base=0x10, Mute LSB base=0
             for (var i = 1; i <= 48; i++) {
-                _this.channelLevel.push(new LevelControl(_this, i, 0x4F, 0, "channelLevel"));
+                _this.channelLevel.push(new LevelControl(_this, i, 0x4F, 0x10, "channelLevel"));
                 _this.channelMute.push(new MuteControl(_this, i, 0, 0, "channelMute"));
             }
-            // DCAs 1-8: Level MSB=0x4F, Level LSB=0x20-0x27, Mute MSB=2, Mute LSB=0-7
+            // DCAs 1-8: Level LSB base=0x40, Mute LSB base=0
             for (var i = 1; i <= 8; i++) {
-                _this.dcaLevel.push(new LevelControl(_this, i, 0x4F, 0x20, "dcaLevel"));
+                _this.dcaLevel.push(new LevelControl(_this, i, 0x4F, 0x40, "dcaLevel"));
                 _this.dcaMute.push(new MuteControl(_this, i, 2, 0, "dcaMute"));
             }
-            // Mixes 1-12: Level MSB=0x4F, Level LSB=0x31-0x3C, Mute MSB=1, Mute LSB=0x31-0x3C
+            // AUX 1-12: Level LSB base=0x00, Mute LSB base=0
             for (var i = 1; i <= 12; i++) {
-                _this.mixLevel.push(new LevelControl(_this, i, 0x4F, 0x31, "mixLevel"));
-                _this.mixMute.push(new MuteControl(_this, i, 1, 0x31, "mixMute"));
+                _this.auxLevel.push(new LevelControl(_this, i, 0x4F, 0x00, "auxLevel"));
+                _this.auxMute.push(new MuteControl(_this, i, 1, 0, "auxMute"));
             }
             // Subscribe to connection events
             socket.subscribe('connect', function (sender, message) {
@@ -225,7 +232,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 var normalizedLevel = (value - (-85)) / range;
                 var nrpnValue = Math.round(normalizedLevel * 16383);
                 console.info("Set Main LR level to " + value.toFixed(1) + " dB");
-                this.sendNRPN(0x4F, 0x30, nrpnValue);
+                this.sendNRPN(0x4F, 0x48, nrpnValue);  // LR level at LSB 0x48
                 this._lrLevel = value;
             },
             enumerable: false,
@@ -241,7 +248,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             set: function (value) {
                 var nrpnValue = value ? 1 : 0;
                 console.info("Set Main LR mute to " + value);
-                this.sendNRPN(1, 0x30, nrpnValue);
+                this.sendNRPN(1, 0x0C, nrpnValue);  // LR mute at MSB=1, LSB=0x0C
                 this._lrMute = value;
             },
             enumerable: false,
@@ -391,69 +398,81 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 return;
             }
             var nrpnValue = (this.nrpnDataMSB << 7) | this.nrpnDataLSB;
-            // Channel/DCA/Mix/LR fader levels: MSB = 0x4F (79)
+            // Fader levels: MSB = 0x4F
             if (this.nrpnMSB === 0x4F) {
                 var levelDB = ((nrpnValue / 16383) * 95) - 85;
-                // Channel levels: LSB = 0-47 for channels 1-48
-                if (this.nrpnLSB < 48) {
-                    var channelNumber = this.nrpnLSB + 1; // Convert to 1-based
+                // AUX levels: LSB 0-11 (0x00-0x0B)
+                if (this.nrpnLSB >= 0x00 && this.nrpnLSB <= 0x0B) {
+                    var auxNumber = this.nrpnLSB + 1; // Convert to 1-based
+                    console.info("AUX " + auxNumber + " level feedback: " + levelDB.toFixed(1) + " dB");
+                    if (this.auxLevel[auxNumber]) {
+                        this.auxLevel[auxNumber].updateValue(levelDB);
+                        this.changed("auxLevel[" + auxNumber + "]");
+                    }
+                }
+                // Channel levels: LSB 16-63 (0x10-0x3F)
+                else if (this.nrpnLSB >= 0x10 && this.nrpnLSB <= 0x3F) {
+                    var channelNumber = (this.nrpnLSB - 0x10) + 1; // Convert to 1-based
                     console.info("Channel " + channelNumber + " level feedback: " + levelDB.toFixed(1) + " dB");
-                    this.channelLevel[channelNumber].updateValue(levelDB);
-                    this.changed("channelLevel[" + channelNumber + "]");
+                    if (this.channelLevel[channelNumber]) {
+                        this.channelLevel[channelNumber].updateValue(levelDB);
+                        this.changed("channelLevel[" + channelNumber + "]");
+                    }
                 }
-                // DCA levels: LSB = 0x20-0x27 (32-39) for DCA 1-8
-                else if (this.nrpnLSB >= 0x20 && this.nrpnLSB <= 0x27) {
-                    var dcaNumber = (this.nrpnLSB - 0x20) + 1; // Convert to 1-based
+                // DCA levels: LSB 64-71 (0x40-0x47)
+                else if (this.nrpnLSB >= 0x40 && this.nrpnLSB <= 0x47) {
+                    var dcaNumber = (this.nrpnLSB - 0x40) + 1; // Convert to 1-based
                     console.info("DCA " + dcaNumber + " level feedback: " + levelDB.toFixed(1) + " dB");
-                    this.dcaLevel[dcaNumber].updateValue(levelDB);
-                    this.changed("dcaLevel[" + dcaNumber + "]");
+                    if (this.dcaLevel[dcaNumber]) {
+                        this.dcaLevel[dcaNumber].updateValue(levelDB);
+                        this.changed("dcaLevel[" + dcaNumber + "]");
+                    }
                 }
-                // Main LR level: LSB = 0x30 (48)
-                else if (this.nrpnLSB === 0x30) {
+                // LR level: LSB 72 (0x48)
+                else if (this.nrpnLSB === 0x48) {
                     console.info("Main LR level feedback: " + levelDB.toFixed(1) + " dB");
                     this._lrLevel = levelDB;
                     this.changed('lrLevel');
                 }
-                // Mix levels: LSB = 0x31-0x3C (49-60) for Mix 1-12
-                else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-                    var mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
-                    console.info("Mix " + mixNumber + " level feedback: " + levelDB.toFixed(1) + " dB");
-                    this.mixLevel[mixNumber].updateValue(levelDB);
-                    this.changed("mixLevel[" + mixNumber + "]");
-                }
             }
-            // Channel mutes: MSB = 0, LSB = channel (0-47)
-            else if (this.nrpnMSB === 0 && this.nrpnLSB < 48) {
+            // Channel mutes: MSB = 0, LSB 0-47
+            else if (this.nrpnMSB === 0 && this.nrpnLSB <= 47) {
                 var channelNumber = this.nrpnLSB + 1; // Convert to 1-based
                 var muted = nrpnValue > 0;
                 console.info("Channel " + channelNumber + " mute feedback: " + muted);
-                this.channelMute[channelNumber].updateValue(muted);
-                this.changed("channelMute[" + channelNumber + "]");
+                if (this.channelMute[channelNumber]) {
+                    this.channelMute[channelNumber].updateValue(muted);
+                    this.changed("channelMute[" + channelNumber + "]");
+                }
             }
-            // Main LR and Mix mutes: MSB = 1
+            // AUX and LR mutes: MSB = 1
             else if (this.nrpnMSB === 1) {
                 var muted = nrpnValue > 0;
-                // Main LR mute: LSB = 0x30 (48)
-                if (this.nrpnLSB === 0x30) {
+                // AUX mutes: LSB 0-11
+                if (this.nrpnLSB <= 11) {
+                    var auxNumber = this.nrpnLSB + 1; // Convert to 1-based
+                    console.info("AUX " + auxNumber + " mute feedback: " + muted);
+                    if (this.auxMute[auxNumber]) {
+                        this.auxMute[auxNumber].updateValue(muted);
+                        this.changed("auxMute[" + auxNumber + "]");
+                    }
+                }
+                // LR mute: LSB 12 (0x0C)
+                else if (this.nrpnLSB === 0x0C) {
                     console.info("Main LR mute feedback: " + muted);
                     this._lrMute = muted;
                     this.changed('lrMute');
                 }
-                // Mix mutes: LSB = 0x31-0x3C (49-60) for Mix 1-12
-                else if (this.nrpnLSB >= 0x31 && this.nrpnLSB <= 0x3C) {
-                    var mixNumber = (this.nrpnLSB - 0x31) + 1; // Convert to 1-based
-                    console.info("Mix " + mixNumber + " mute feedback: " + muted);
-                    this.mixMute[mixNumber].updateValue(muted);
-                    this.changed("mixMute[" + mixNumber + "]");
-                }
             }
-            // DCA mutes: MSB = 2, LSB = DCA (0-7)
-            else if (this.nrpnMSB === 2 && this.nrpnLSB < 8) {
+            // DCA mutes: MSB = 2, LSB 0-7
+            else if (this.nrpnMSB === 2 && this.nrpnLSB <= 7) {
                 var dcaNumber = this.nrpnLSB + 1; // Convert to 1-based
                 var muted = nrpnValue > 0;
                 console.info("DCA " + dcaNumber + " mute feedback: " + muted);
-                this.dcaMute[dcaNumber].updateValue(muted);
-                this.changed("dcaMute[" + dcaNumber + "]");
+                if (this.dcaMute[dcaNumber]) {
+                    this.dcaMute[dcaNumber].updateValue(muted);
+                    this.changed("dcaMute[" + dcaNumber + "]");
+                }
             }
             // Reset NRPN state
             this.nrpnMSB = -1;
