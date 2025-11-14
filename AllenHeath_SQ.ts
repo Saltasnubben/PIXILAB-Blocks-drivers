@@ -19,7 +19,7 @@
  * NRPN Mappings (based on SQ MIDI Protocol Issue 5):
  * LEVELS (MSB = 0x4F):
  *   - AUX 1-12: LSB 0x00-0x0B (0-11)
- *   - Channels 1-48: LSB 0x10-0x3F (16-63)
+ *   - Channels 1-48: LSB 0x0C-0x3B (12-59)
  *   - DCA 1-8: LSB 0x40-0x47 (64-71)
  *   - LR: LSB 0x48 (72)
  *
@@ -159,22 +159,23 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		this.auxLevel = this.indexedProperty("auxLevel", LevelControl);
 		this.auxMute = this.indexedProperty("auxMute", MuteControl);
 
-		// Channels 1-48: Level LSB base=0x10, Mute LSB base=0
+		// Use direct assignment for 1-based indexing (skip index 0)
+		// Channels 1-48: Level LSB base=0x0C, Mute LSB base=0
 		for (let i = 1; i <= 48; i++) {
-			this.channelLevel.push(new LevelControl(this, i, 0x4F, 0x10, "channelLevel"));
-			this.channelMute.push(new MuteControl(this, i, 0, 0, "channelMute"));
+			this.channelLevel[i] = new LevelControl(this, i, 0x4F, 0x0C, "channelLevel");
+			this.channelMute[i] = new MuteControl(this, i, 0, 0, "channelMute");
 		}
 
 		// DCAs 1-8: Level LSB base=0x40, Mute LSB base=0
 		for (let i = 1; i <= 8; i++) {
-			this.dcaLevel.push(new LevelControl(this, i, 0x4F, 0x40, "dcaLevel"));
-			this.dcaMute.push(new MuteControl(this, i, 2, 0, "dcaMute"));
+			this.dcaLevel[i] = new LevelControl(this, i, 0x4F, 0x40, "dcaLevel");
+			this.dcaMute[i] = new MuteControl(this, i, 2, 0, "dcaMute");
 		}
 
 		// AUX 1-12: Level LSB base=0x00, Mute LSB base=0
 		for (let i = 1; i <= 12; i++) {
-			this.auxLevel.push(new LevelControl(this, i, 0x4F, 0x00, "auxLevel"));
-			this.auxMute.push(new MuteControl(this, i, 1, 0, "auxMute"));
+			this.auxLevel[i] = new LevelControl(this, i, 0x4F, 0x00, "auxLevel");
+			this.auxMute[i] = new MuteControl(this, i, 1, 0, "auxMute");
 		}
 
 		// Subscribe to connection events
@@ -456,9 +457,9 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 					this.changed(`auxLevel[${auxNumber}]`);
 				}
 			}
-			// Channel levels: LSB 16-63 (0x10-0x3F)
-			else if (this.nrpnLSB >= 0x10 && this.nrpnLSB <= 0x3F) {
-				const channelNumber = (this.nrpnLSB - 0x10) + 1; // Convert to 1-based
+			// Channel levels: LSB 12-59 (0x0C-0x3B)
+			else if (this.nrpnLSB >= 0x0C && this.nrpnLSB <= 0x3B) {
+				const channelNumber = (this.nrpnLSB - 0x0C) + 1; // Convert to 1-based
 				console.info(`Channel ${channelNumber} level feedback: ${levelDB.toFixed(1)} dB`);
 				if (this.channelLevel[channelNumber]) {
 					this.channelLevel[channelNumber].updateValue(levelDB);
