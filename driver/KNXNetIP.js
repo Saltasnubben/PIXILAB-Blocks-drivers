@@ -302,11 +302,16 @@ define(["require", "exports", "system_lib/Metadata", "system_lib/Driver", "syste
                 this.mLastReceivedDestination = destMain + "/" + destMiddle + "/" + destSub;
                 var dataLen = packet[cemiStart + 8];
                 var tpdu = packet[cemiStart + 9];
-                var dataBytes = packet.slice(cemiStart + 9);
-                this.mLastReceivedRaw = dataBytes.map(function (b) {
-                    var hex = b.toString(16);
-                    return hex.length === 1 ? '0' + hex : hex;
-                }).join(' ');
+                var dataBytes = [];
+                for (var i = cemiStart + 9; i < packet.length; i++) {
+                    dataBytes.push(packet[i]);
+                }
+                var rawParts = [];
+                for (var i = 0; i < dataBytes.length; i++) {
+                    var hex = dataBytes[i].toString(16);
+                    rawParts.push(hex.length === 1 ? '0' + hex : hex);
+                }
+                this.mLastReceivedRaw = rawParts.join(' ');
                 if (dataLen === 1) {
                     var dataByte = packet[cemiStart + 10];
                     if ((dataByte & 0x80) === 0x80) {
@@ -321,7 +326,11 @@ define(["require", "exports", "system_lib/Metadata", "system_lib/Driver", "syste
                 }
                 else if (dataLen > 2) {
                     var dataStart = cemiStart + 11;
-                    this.mLastReceivedValue = packet.slice(dataStart, dataStart + dataLen - 1);
+                    var valueArray = [];
+                    for (var i = dataStart; i < dataStart + dataLen - 1; i++) {
+                        valueArray.push(packet[i]);
+                    }
+                    this.mLastReceivedValue = valueArray;
                 }
                 debugLog("Received KNX message:", {
                     source: this.mLastReceivedSource,

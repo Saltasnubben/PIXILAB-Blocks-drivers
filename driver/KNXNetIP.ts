@@ -442,8 +442,15 @@ export class KNXNetIP extends Driver<NetworkUDP> {
 			const tpdu = packet[cemiStart + 9];
 
 			// Store raw data as hex string
-			const dataBytes = packet.slice(cemiStart + 9);
-			this.mLastReceivedRaw = dataBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+			// Convert to regular array in case packet is array-like object
+			const dataBytes: number[] = [];
+			for (let i = cemiStart + 9; i < packet.length; i++) {
+				dataBytes.push(packet[i]);
+			}
+			this.mLastReceivedRaw = dataBytes.map(b => {
+				const hex = b.toString(16);
+				return hex.length === 1 ? '0' + hex : hex;
+			}).join(' ');
 
 			// Parse value based on data length and format
 			if (dataLen === 1) {
@@ -462,7 +469,11 @@ export class KNXNetIP extends Driver<NetworkUDP> {
 			} else if (dataLen > 2) {
 				// Multi-byte data - store as array
 				const dataStart = cemiStart + 11;
-				this.mLastReceivedValue = packet.slice(dataStart, dataStart + dataLen - 1);
+				const valueArray: number[] = [];
+				for (let i = dataStart; i < dataStart + dataLen - 1; i++) {
+					valueArray.push(packet[i]);
+				}
+				this.mLastReceivedValue = valueArray;
 			}
 
 			debugLog("Received KNX message:", {
