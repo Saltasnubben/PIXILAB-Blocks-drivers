@@ -56,7 +56,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 	/**
 	 * Send SSIP command to the TV
-	 * SSIP format: 24 bytes fixed-size data + 0x0A (LF) newline
+	 * SSIP format: 23 characters of command + 0x0A (LF) newline = 24 bytes total
 	 */
 	private sendCommand(command: string): void {
 		if (!this.mConnected) {
@@ -65,10 +65,15 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 		}
 
 		try {
-			// Ensure command is exactly 24 bytes, padded with zeros if needed
+			// Ensure command is exactly 23 characters (23 chars + LF newline = 24 bytes total)
 			let padded = command;
-			while (padded.length < 24) {
+			while (padded.length < 23) {
 				padded = padded + '0';
+			}
+
+			// Truncate if longer than 23 (shouldn't happen, but be safe)
+			if (padded.length > 23) {
+				padded = padded.substring(0, 23);
 			}
 
 			// Add LF (0x0A) at the end as required by SSIP
@@ -113,8 +118,8 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	public set power(on: boolean) {
 		if (this.mPower !== on) {
 			this.mPower = on;
-			// SSIP Control: *SCPOWR[00000000000000000000=off, 00000000000000000001=on]
-			const value = on ? '00000000000000000001' : '00000000000000000000';
+			// SSIP Control: *SCPOWR[16-digit value] (0=off, 1=on)
+			const value = on ? '0000000000000001' : '0000000000000000';
 			this.sendCommand('*SCPOWR' + value);
 		}
 	}
@@ -136,9 +141,9 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 		if (this.mHdmiInput !== input) {
 			this.mHdmiInput = input;
-			// SSIP Control: *SCINPT[00000000010000XXXX] where XXXX is the port number (1-4)
-			const portStr = this.padLeft(String(input), 4, '0');
-			const value = '00000000010000' + portStr;
+			// SSIP Control: *SCINPT[16-digit value] where format is 00000001 + 8-digit port
+			const portStr = this.padLeft(String(input), 8, '0');
+			const value = '00000001' + portStr;
 			this.sendCommand('*SCINPT' + value);
 		}
 	}
@@ -160,9 +165,8 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 		if (this.mVolume !== level) {
 			this.mVolume = level;
-			// SSIP Control: *SCVOLU[left-padded decimal value]
-			// Example: volume 41, represented as 00000000000000000041
-			const value = this.padLeft(String(level), 20, '0');
+			// SSIP Control: *SCVOLU[16-digit value] left-padded with zeros
+			const value = this.padLeft(String(level), 16, '0');
 			this.sendCommand('*SCVOLU' + value);
 		}
 	}

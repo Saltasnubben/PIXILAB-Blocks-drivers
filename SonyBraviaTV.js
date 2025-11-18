@@ -67,8 +67,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             }
             try {
                 var padded = command;
-                while (padded.length < 24) {
+                while (padded.length < 23) {
                     padded = padded + '0';
+                }
+                if (padded.length > 23) {
+                    padded = padded.substring(0, 23);
                 }
                 this.socket.sendText(padded + '\n');
             }
@@ -92,7 +95,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             set: function (on) {
                 if (this.mPower !== on) {
                     this.mPower = on;
-                    var value = on ? '00000000000000000001' : '00000000000000000000';
+                    var value = on ? '0000000000000001' : '0000000000000000';
                     this.sendCommand('*SCPOWR' + value);
                 }
             },
@@ -110,8 +113,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
                 if (this.mHdmiInput !== input) {
                     this.mHdmiInput = input;
-                    var portStr = this.padLeft(String(input), 4, '0');
-                    var value = '00000000010000' + portStr;
+                    var portStr = this.padLeft(String(input), 8, '0');
+                    var value = '00000001' + portStr;
                     this.sendCommand('*SCINPT' + value);
                 }
             },
@@ -129,7 +132,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
                 if (this.mVolume !== level) {
                     this.mVolume = level;
-                    var value = this.padLeft(String(level), 20, '0');
+                    var value = this.padLeft(String(level), 16, '0');
                     this.sendCommand('*SCVOLU' + value);
                 }
             },
