@@ -1,4 +1,3 @@
-import { NetworkTCP } from "system/Network";
 import { Driver } from "system_lib/Driver";
 export declare class SonyBraviaTV extends Driver<NetworkTCP> {
     protected socket: NetworkTCP;

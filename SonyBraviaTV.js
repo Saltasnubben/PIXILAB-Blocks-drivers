@@ -25,7 +25,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib/Metadata"], function (require, exports, Network_1, Driver_1, Metadata_1) {
+define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], function (require, exports, Driver_1, Metadata_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SonyBraviaTV = void 0;
@@ -237,7 +237,7 @@ define(["require", "exports", "system/Network", "system_lib/Driver", "system_lib
         ], SonyBraviaTV.prototype, "powerOff", null);
         SonyBraviaTV = __decorate([
             (0, Metadata_1.driver)('NetworkTCP', { port: 20060 }),
-            __metadata("design:paramtypes", [Network_1.NetworkTCP])
+            __metadata("design:paramtypes", [Object])
         ], SonyBraviaTV);
         return SonyBraviaTV;
     }(Driver_1.Driver));

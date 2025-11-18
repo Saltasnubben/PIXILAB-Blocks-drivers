@@ -1,4 +1,3 @@
-import {NetworkTCP} from "system/Network";
 import {Driver} from "system_lib/Driver";
 import {callable, driver, parameter, property} from "system_lib/Metadata";
 
