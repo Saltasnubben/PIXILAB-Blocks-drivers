@@ -38,7 +38,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.mHdmiInput = 1;
             _this.mVolume = 0;
             _this.mConnected = false;
-            _this.mRequestId = 1;
             socket.autoConnect();
             socket.subscribe('connect', function (sender, message) {
                 if (message.type === 'Connection') {
@@ -52,31 +51,39 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             if (connected) {
                 this.pollPowerStatus();
                 this.pollVolumeStatus();
+                this.pollInputStatus();
             }
         };
-        SonyBraviaTV.prototype.sendRequest = function (service, method, params) {
+        SonyBraviaTV.prototype.padLeft = function (str, length, padChar) {
+            while (str.length < length) {
+                str = padChar + str;
+            }
+            return str;
+        };
+        SonyBraviaTV.prototype.sendCommand = function (command) {
             if (!this.mConnected) {
                 console.warn('Sony Bravia TV not connected');
                 return;
             }
-            var request = {
-                method: method,
-                params: params,
-                id: this.mRequestId++,
-                jsonrpc: '2.0'
-            };
             try {
-                this.socket.sendText(JSON.stringify(request));
+                var padded = command;
+                while (padded.length < 24) {
+                    padded = padded + '0';
+                }
+                this.socket.sendText(padded + '\n');
             }
             catch (e) {
-                console.error('Failed to send request to Sony Bravia:', e);
+                console.error('Failed to send command to Sony Bravia:', e);
             }
         };
         SonyBraviaTV.prototype.pollPowerStatus = function () {
-            this.sendRequest('system', 'getPowerStatus', []);
+            this.sendCommand('*SEPOWR################');
         };
         SonyBraviaTV.prototype.pollVolumeStatus = function () {
-            this.sendRequest('audio', 'getVolumeInformation', []);
+            this.sendCommand('*SEVOLU################');
+        };
+        SonyBraviaTV.prototype.pollInputStatus = function () {
+            this.sendCommand('*SEINPT################');
         };
         Object.defineProperty(SonyBraviaTV.prototype, "power", {
             get: function () {
@@ -85,8 +92,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             set: function (on) {
                 if (this.mPower !== on) {
                     this.mPower = on;
-                    var status_1 = on ? 'active' : 'standby';
-                    this.sendRequest('system', 'setPowerStatus', [{ status: status_1 }]);
+                    var value = on ? '00000000000000000001' : '00000000000000000000';
+                    this.sendCommand('*SCPOWR' + value);
                 }
             },
             enumerable: false,
@@ -103,8 +110,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
                 if (this.mHdmiInput !== input) {
                     this.mHdmiInput = input;
-                    var uri = "extInput:hdmi?port=".concat(input);
-                    this.sendRequest('avContent', 'setPlayContent', [{ uri: uri }]);
+                    var portStr = this.padLeft(String(input), 4, '0');
+                    var value = '00000000010000' + portStr;
+                    this.sendCommand('*SCINPT' + value);
                 }
             },
             enumerable: false,
@@ -121,7 +129,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
                 if (this.mVolume !== level) {
                     this.mVolume = level;
-                    this.sendRequest('audio', 'setAudioVolume', [{ volume: level }]);
+                    var value = this.padLeft(String(level), 20, '0');
+                    this.sendCommand('*SCVOLU' + value);
                 }
             },
             enumerable: false,

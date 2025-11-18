@@ -3,7 +3,7 @@ import {callable, driver, parameter, property} from "system_lib/Metadata";
 
 /**
  * Sony Bravia Professional Display driver for controlling power, HDMI input, and volume
- * Uses the JSON-RPC over TCP interface (not HTTP)
+ * Uses the SSIP (Simple Serial IP Protocol) interface
  * Default port: 20060
  *
  * Supported functions:
@@ -17,7 +17,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	private mHdmiInput = 1;
 	private mVolume = 0;
 	private mConnected = false;
-	private mRequestId = 1;
 
 	public constructor(protected socket: NetworkTCP) {
 		super(socket);
@@ -40,29 +39,42 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 			// Poll initial state when connected
 			this.pollPowerStatus();
 			this.pollVolumeStatus();
+			this.pollInputStatus();
 		}
 	}
 
 	/**
-	 * Send a JSON-RPC request to the TV
+	 * Pad a string on the left to a specific length
+	 * ES5 compatible alternative to String.padStart()
 	 */
-	private sendRequest(service: string, method: string, params: any[]): void {
+	private padLeft(str: string, length: number, padChar: string): string {
+		while (str.length < length) {
+			str = padChar + str;
+		}
+		return str;
+	}
+
+	/**
+	 * Send SSIP command to the TV
+	 * SSIP format: 24 bytes fixed-size data + 0x0A (LF) newline
+	 */
+	private sendCommand(command: string): void {
 		if (!this.mConnected) {
 			console.warn('Sony Bravia TV not connected');
 			return;
 		}
 
-		const request = {
-			method: method,
-			params: params,
-			id: this.mRequestId++,
-			jsonrpc: '2.0'
-		};
-
 		try {
-			this.socket.sendText(JSON.stringify(request));
+			// Ensure command is exactly 24 bytes, padded with zeros if needed
+			let padded = command;
+			while (padded.length < 24) {
+				padded = padded + '0';
+			}
+
+			// Add LF (0x0A) at the end as required by SSIP
+			this.socket.sendText(padded + '\n');
 		} catch (e) {
-			console.error('Failed to send request to Sony Bravia:', e);
+			console.error('Failed to send command to Sony Bravia:', e);
 		}
 	}
 
@@ -70,14 +82,24 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 * Poll current power status from the TV
 	 */
 	private pollPowerStatus() {
-		this.sendRequest('system', 'getPowerStatus', []);
+		// SSIP Enquiry: *SEPOWR[################]
+		this.sendCommand('*SEPOWR################');
 	}
 
 	/**
 	 * Poll current volume status from the TV
 	 */
 	private pollVolumeStatus() {
-		this.sendRequest('audio', 'getVolumeInformation', []);
+		// SSIP Enquiry: *SEVOLU[################]
+		this.sendCommand('*SEVOLU################');
+	}
+
+	/**
+	 * Poll current input status from the TV
+	 */
+	private pollInputStatus() {
+		// SSIP Enquiry: *SEINPT[################]
+		this.sendCommand('*SEINPT################');
 	}
 
 	/**
@@ -91,8 +113,9 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	public set power(on: boolean) {
 		if (this.mPower !== on) {
 			this.mPower = on;
-			const status = on ? 'active' : 'standby';
-			this.sendRequest('system', 'setPowerStatus', [{ status: status }]);
+			// SSIP Control: *SCPOWR[00000000000000000000=off, 00000000000000000001=on]
+			const value = on ? '00000000000000000001' : '00000000000000000000';
+			this.sendCommand('*SCPOWR' + value);
 		}
 	}
 
@@ -113,8 +136,10 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 		if (this.mHdmiInput !== input) {
 			this.mHdmiInput = input;
-			const uri = `extInput:hdmi?port=${input}`;
-			this.sendRequest('avContent', 'setPlayContent', [{ uri: uri }]);
+			// SSIP Control: *SCINPT[00000000010000XXXX] where XXXX is the port number (1-4)
+			const portStr = this.padLeft(String(input), 4, '0');
+			const value = '00000000010000' + portStr;
+			this.sendCommand('*SCINPT' + value);
 		}
 	}
 
@@ -135,7 +160,10 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 		if (this.mVolume !== level) {
 			this.mVolume = level;
-			this.sendRequest('audio', 'setAudioVolume', [{ volume: level }]);
+			// SSIP Control: *SCVOLU[left-padded decimal value]
+			// Example: volume 41, represented as 00000000000000000041
+			const value = this.padLeft(String(level), 20, '0');
+			this.sendCommand('*SCVOLU' + value);
 		}
 	}
 
