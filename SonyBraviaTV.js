@@ -37,15 +37,14 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.mPower = false;
             _this.mHdmiInput = 1;
             _this.mVolume = 0;
+            _this.mConnected = false;
             _this.mRequestId = 1;
-            _this.mPendingRequests = new Map();
             socket.autoConnect();
             socket.subscribe('connect', function (sender, message) {
-                if (message.type === 'Connection')
+                if (message.type === 'Connection') {
+                    _this.mConnected = sender.connected;
                     _this.onConnectStateChanged(sender.connected);
-            });
-            socket.subscribe('textReceived', function (sender, message) {
-                _this.onTextReceived(message.text);
+                }
             });
             return _this;
         }
@@ -55,71 +54,29 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 this.pollVolumeStatus();
             }
         };
-        SonyBraviaTV.prototype.onTextReceived = function (text) {
+        SonyBraviaTV.prototype.sendRequest = function (service, method, params) {
+            if (!this.mConnected) {
+                console.warn('Sony Bravia TV not connected');
+                return;
+            }
+            var request = {
+                method: method,
+                params: params,
+                id: this.mRequestId++,
+                jsonrpc: '2.0'
+            };
             try {
-                var response = JSON.parse(text);
-                if (response.id !== undefined) {
-                    var callback = this.mPendingRequests.get(response.id);
-                    if (callback) {
-                        callback(response);
-                        this.mPendingRequests.delete(response.id);
-                    }
-                }
-                if (response.error) {
-                    console.error('Sony Bravia API Error:', response.error);
-                }
+                this.socket.sendText(JSON.stringify(request));
             }
             catch (e) {
-                console.error('Failed to parse Sony Bravia response:', text);
+                console.error('Failed to send request to Sony Bravia:', e);
             }
-        };
-        SonyBraviaTV.prototype.sendRequest = function (service, method, params) {
-            var _this = this;
-            if (params === void 0) { params = []; }
-            return new Promise(function (resolve, reject) {
-                var requestId = _this.mRequestId++;
-                _this.mPendingRequests.set(requestId, function (response) {
-                    if (response.error) {
-                        reject(new Error(response.error.message || 'Unknown error'));
-                    }
-                    else {
-                        resolve(response.result);
-                    }
-                });
-                var request = {
-                    method: method,
-                    params: params,
-                    id: requestId,
-                    jsonrpc: '2.0'
-                };
-                _this.socket.sendText(JSON.stringify(request));
-            });
         };
         SonyBraviaTV.prototype.pollPowerStatus = function () {
-            var _this = this;
-            if (this.socket.connected) {
-                this.sendRequest('system', 'getPowerStatus')
-                    .then(function (result) {
-                    if (result && result.length > 0) {
-                        var status_1 = result[0];
-                        _this.mPower = status_1.status === 'active';
-                    }
-                })
-                    .catch(function (err) { return console.error('Failed to poll power status:', err); });
-            }
+            this.sendRequest('system', 'getPowerStatus', []);
         };
         SonyBraviaTV.prototype.pollVolumeStatus = function () {
-            var _this = this;
-            if (this.socket.connected) {
-                this.sendRequest('audio', 'getVolumeInformation')
-                    .then(function (result) {
-                    if (result && result.length > 0) {
-                        var volumeInfo = result[0];
-                        _this.mVolume = volumeInfo.volume || 0;
-                    }
-                })
-                    .catch(function (err) { return console.error('Failed to poll volume status:', err); });
-            }
+            this.sendRequest('audio', 'getVolumeInformation', []);
         };
         Object.defineProperty(SonyBraviaTV.prototype, "power", {
             get: function () {
@@ -128,12 +85,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             set: function (on) {
                 if (this.mPower !== on) {
                     this.mPower = on;
-                    var status_2 = on ? 'active' : 'standby';
-                    this.sendRequest('system', 'setPowerStatus', [{ status: status_2 }])
-                        .then(function () {
-                        console.log("Power set to ".concat(status_2));
-                    })
-                        .catch(function (err) { return console.error('Failed to set power:', err); });
+                    var status_1 = on ? 'active' : 'standby';
+                    this.sendRequest('system', 'setPowerStatus', [{ status: status_1 }]);
                 }
             },
             enumerable: false,
@@ -151,11 +104,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 if (this.mHdmiInput !== input) {
                     this.mHdmiInput = input;
                     var uri = "extInput:hdmi?port=".concat(input);
-                    this.sendRequest('avContent', 'setPlayContent', [{ uri: uri }])
-                        .then(function () {
-                        console.log("HDMI input set to ".concat(input));
-                    })
-                        .catch(function (err) { return console.error('Failed to set HDMI input:', err); });
+                    this.sendRequest('avContent', 'setPlayContent', [{ uri: uri }]);
                 }
             },
             enumerable: false,
@@ -172,11 +121,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
                 if (this.mVolume !== level) {
                     this.mVolume = level;
-                    this.sendRequest('audio', 'setAudioVolume', [{ volume: level }])
-                        .then(function () {
-                        console.log("Volume set to ".concat(level));
-                    })
-                        .catch(function (err) { return console.error('Failed to set volume:', err); });
+                    this.sendRequest('audio', 'setAudioVolume', [{ volume: level }]);
                 }
             },
             enumerable: false,
