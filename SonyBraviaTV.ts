@@ -39,7 +39,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	/**
 	 * Called when the connection state changes
 	 */
-	private onConnectStateChanged(connected: boolean) {
+	protected onConnectStateChanged(connected: boolean) {
 		if (connected) {
 			// Poll initial state when connected
 			this.pollPowerStatus();
