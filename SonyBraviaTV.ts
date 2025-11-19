@@ -16,17 +16,15 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	private mPower = false;
 	private mHdmiInput = 1;
 	private mVolume = 0;
-	private mConnected = false;
 
 	public constructor(protected socket: NetworkTCP) {
 		super(socket);
 		socket.autoConnect();
 
-		// Subscribe to connection state changes
+		// Subscribe to connection state changes to poll status when connected
 		socket.subscribe('connect', (sender, message) => {
-			if (message.type === 'Connection') {
-				this.mConnected = sender.connected;
-				this.onConnectStateChanged(sender.connected);
+			if (message.type === 'Connection' && sender.connected) {
+				this.onConnectStateChanged(true);
 			}
 		});
 	}
@@ -59,11 +57,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 * SSIP format: 23 characters of command + 0x0A (LF) newline = 24 bytes total
 	 */
 	private sendCommand(command: string): void {
-		if (!this.mConnected) {
-			console.warn('Sony Bravia TV not connected');
-			return;
-		}
-
 		try {
 			// Ensure command is exactly 23 characters (23 chars + LF newline = 24 bytes total)
 			let padded = command;

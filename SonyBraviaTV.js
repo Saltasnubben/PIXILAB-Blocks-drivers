@@ -37,12 +37,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.mPower = false;
             _this.mHdmiInput = 1;
             _this.mVolume = 0;
-            _this.mConnected = false;
             socket.autoConnect();
             socket.subscribe('connect', function (sender, message) {
-                if (message.type === 'Connection') {
-                    _this.mConnected = sender.connected;
-                    _this.onConnectStateChanged(sender.connected);
+                if (message.type === 'Connection' && sender.connected) {
+                    _this.onConnectStateChanged(true);
                 }
             });
             return _this;
@@ -61,10 +59,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             return str;
         };
         SonyBraviaTV.prototype.sendCommand = function (command) {
-            if (!this.mConnected) {
-                console.warn('Sony Bravia TV not connected');
-                return;
-            }
             try {
                 var padded = command;
                 while (padded.length < 23) {
