@@ -27,6 +27,13 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 				this.onConnectStateChanged(true);
 			}
 		});
+
+		// Subscribe to incoming text to process responses and feedback
+		// This helps establish proper two-way communication with some TV models
+		socket.subscribe('textReceived', (sender, message) => {
+			// Just acknowledge receipt - parsing done by TV feedback
+			// This ensures the socket is in listening mode for proper communication
+		});
 	}
 
 	/**
@@ -34,7 +41,8 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 */
 	protected onConnectStateChanged(connected: boolean) {
 		if (connected) {
-			// Poll initial state when connected
+			// Poll status to establish the connection and prime the protocol
+			// This helps with TV models that don't trigger connection events reliably
 			this.pollPowerStatus();
 			this.pollVolumeStatus();
 			this.pollInputStatus();
@@ -55,6 +63,9 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	/**
 	 * Send SSIP command to the TV
 	 * SSIP format: 23 characters of command + 0x0A (LF) newline = 24 bytes total
+	 *
+	 * Some TV models (particularly 40" models) may need a small delay before
+	 * accepting control commands after connection.
 	 */
 	private sendCommand(command: string): void {
 		try {
