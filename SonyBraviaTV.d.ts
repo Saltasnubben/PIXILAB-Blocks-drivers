@@ -4,7 +4,6 @@ export declare class SonyBraviaTV extends Driver<NetworkTCP> {
     private mPower;
     private mHdmiInput;
     private mVolume;
-    private mConnected;
     constructor(socket: NetworkTCP);
     protected onConnectStateChanged(connected: boolean): void;
     private padLeft;
