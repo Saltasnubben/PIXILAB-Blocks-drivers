@@ -154,16 +154,12 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Receive and buffer incoming data
          */
         BMDvideohubDriver.prototype.receiveData = function (data) {
-            console.warn("VideoHub: Received " + data.length + " chars: " + JSON.stringify(data.substring(0, 50)));
             this.receiveBuffer += data;
-            // Log buffer status
-            console.warn("VideoHub: Buffer now " + this.receiveBuffer.length + " chars, looking for \\n\\n");
-            // Process complete blocks (terminated by blank line)
+            // Process complete blocks (terminated by blank line - CRLF CRLF)
             var doubleLine;
-            while ((doubleLine = this.receiveBuffer.indexOf('\n\n')) >= 0) {
-                console.warn("VideoHub: Found block delimiter at position " + doubleLine);
+            while ((doubleLine = this.receiveBuffer.indexOf('\r\n\r\n')) >= 0) {
                 var block = this.receiveBuffer.substring(0, doubleLine);
-                this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 2);
+                this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 4); // Skip \r\n\r\n
                 if (block.length > 0) {
                     this.processBlock(block);
                 }
@@ -173,7 +169,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Process a complete protocol block
          */
         BMDvideohubDriver.prototype.processBlock = function (block) {
-            var lines = block.split('\n');
+            var lines = block.split('\r\n');
             if (lines.length === 0)
                 return;
             var header = lines[0].trim();

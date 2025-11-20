@@ -117,18 +117,13 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Receive and buffer incoming data
 	 */
 	private receiveData(data: string): void {
-		console.warn(`VideoHub: Received ${data.length} chars: ${JSON.stringify(data.substring(0, 50))}`);
 		this.receiveBuffer += data;
 
-		// Log buffer status
-		console.warn(`VideoHub: Buffer now ${this.receiveBuffer.length} chars, looking for \\n\\n`);
-
-		// Process complete blocks (terminated by blank line)
+		// Process complete blocks (terminated by blank line - CRLF CRLF)
 		let doubleLine: number;
-		while ((doubleLine = this.receiveBuffer.indexOf('\n\n')) >= 0) {
-			console.warn(`VideoHub: Found block delimiter at position ${doubleLine}`);
+		while ((doubleLine = this.receiveBuffer.indexOf('\r\n\r\n')) >= 0) {
 			const block = this.receiveBuffer.substring(0, doubleLine);
-			this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 2);
+			this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 4); // Skip \r\n\r\n
 
 			if (block.length > 0) {
 				this.processBlock(block);
@@ -140,7 +135,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Process a complete protocol block
 	 */
 	private processBlock(block: string): void {
-		const lines = block.split('\n');
+		const lines = block.split('\r\n');
 		if (lines.length === 0) return;
 
 		const header = lines[0].trim();
