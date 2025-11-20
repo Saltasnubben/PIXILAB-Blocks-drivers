@@ -263,8 +263,10 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 */
 	private initializeInputs(): void {
 		console.warn(`VideoHub: initializeInputs() creating ${this.numInputs} inputs`);
-		this.inputLabels = new Array(this.numInputs).fill('');
+		// Initialize array without using ES6 fill() which isn't supported in Blocks
+		this.inputLabels = new Array(this.numInputs);
 		for (let i = 0; i < this.numInputs; i++) {
+			this.inputLabels[i] = '';
 			this.input[i] = new InputInfo(this, i);
 		}
 		console.warn(`VideoHub: Created ${Object.keys(this.input).length} input objects`);
@@ -275,8 +277,10 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 */
 	private initializeOutputs(): void {
 		console.warn(`VideoHub: initializeOutputs() creating ${this.numOutputs} outputs`);
-		this.outputLabels = new Array(this.numOutputs).fill('');
+		// Initialize array without using ES6 fill() which isn't supported in Blocks
+		this.outputLabels = new Array(this.numOutputs);
 		for (let i = 0; i < this.numOutputs; i++) {
+			this.outputLabels[i] = '';
 			this.output[i] = new OutputRoute(this, i);
 		}
 		console.warn(`VideoHub: Created ${Object.keys(this.output).length} output objects`);
