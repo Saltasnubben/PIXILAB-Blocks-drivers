@@ -107,7 +107,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	protected onConnectStateChanged(connected: boolean): void {
 		if (connected) {
 			this.receiveBuffer = "";
-			console.info("VideoHub connected");
+			console.warn("VideoHub connected");
 		} else {
 			console.warn("VideoHub disconnected");
 		}
@@ -117,7 +117,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Receive and buffer incoming data
 	 */
 	private receiveData(data: string): void {
-		console.info(`VideoHub: Received ${data.length} chars`);
+		console.warn(`VideoHub: Received ${data.length} chars`);
 		this.receiveBuffer += data;
 
 		// Process complete blocks (terminated by blank line)
@@ -142,7 +142,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		const header = lines[0].trim();
 		const data = lines.slice(1);
 
-		console.info(`VideoHub block: ${header} (${data.length} lines)`);
+		console.warn(`VideoHub block: ${header} (${data.length} lines)`);
 
 		switch (header) {
 			case 'PROTOCOL PREAMBLE:':
@@ -167,7 +167,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				// Configuration block - not needed for basic routing
 				break;
 			case 'ACK':
-				console.info('VideoHub: Command acknowledged');
+				console.warn('VideoHub: Command acknowledged');
 				break;
 			case 'NAK':
 				console.warn('VideoHub: Command rejected');
@@ -177,7 +177,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				if (header.startsWith('NETWORK')) {
 					// Silently ignore network info blocks
 				} else {
-					console.info(`VideoHub: Unknown block type: ${header}`);
+					console.warn(`VideoHub: Unknown block type: ${header}`);
 				}
 				break;
 		}
@@ -191,7 +191,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		data.forEach(line => {
 			// Just log for now
 			if (line.startsWith('Version:')) {
-				console.info('VideoHub ' + line);
+				console.warn('VideoHub ' + line);
 			}
 		});
 	}
@@ -222,7 +222,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 			}
 		});
 
-		console.info(`VideoHub: ${this.deviceModel}, ${this.numInputs} inputs, ${this.numOutputs} outputs`);
+		console.warn(`VideoHub: ${this.deviceModel}, ${this.numInputs} inputs, ${this.numOutputs} outputs`);
 	}
 
 	/**
@@ -301,7 +301,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				}
 			}
 		});
-		console.info(`VideoHub: Parsed ${count} routing entries`);
+		console.warn(`VideoHub: Parsed ${count} routing entries`);
 	}
 
 	/**
@@ -318,7 +318,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Route an input to an output
 	 */
 	public routeInputToOutput(inputIndex: number, outputIndex: number): void {
-		console.info(`VideoHub: routeInputToOutput called - input ${inputIndex} to output ${outputIndex}`);
+		console.warn(`VideoHub: routeInputToOutput called - input ${inputIndex} to output ${outputIndex}`);
 
 		if (!this.socket.connected) {
 			console.warn("Cannot route - not connected to VideoHub");
@@ -337,7 +337,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 		// Send routing command
 		const cmd = `VIDEO OUTPUT ROUTING:\n${outputIndex} ${inputIndex}\n\n`;
-		console.info(`VideoHub: Sending command: ${JSON.stringify(cmd)}`);
+		console.warn(`VideoHub: Sending command: ${JSON.stringify(cmd)}`);
 		this.socket.sendText(cmd);
 	}
 

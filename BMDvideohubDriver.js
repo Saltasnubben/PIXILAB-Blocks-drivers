@@ -144,7 +144,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
         BMDvideohubDriver.prototype.onConnectStateChanged = function (connected) {
             if (connected) {
                 this.receiveBuffer = "";
-                console.info("VideoHub connected");
+                console.warn("VideoHub connected");
             }
             else {
                 console.warn("VideoHub disconnected");
@@ -154,7 +154,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Receive and buffer incoming data
          */
         BMDvideohubDriver.prototype.receiveData = function (data) {
-            console.info("VideoHub: Received " + data.length + " chars");
+            console.warn("VideoHub: Received " + data.length + " chars");
             this.receiveBuffer += data;
             // Process complete blocks (terminated by blank line)
             var doubleLine;
@@ -175,7 +175,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 return;
             var header = lines[0].trim();
             var data = lines.slice(1);
-            console.info("VideoHub block: " + header + " (" + data.length + " lines)");
+            console.warn("VideoHub block: " + header + " (" + data.length + " lines)");
             switch (header) {
                 case 'PROTOCOL PREAMBLE:':
                     this.parseProtocolPreamble(data);
@@ -199,7 +199,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     // Configuration block - not needed for basic routing
                     break;
                 case 'ACK':
-                    console.info('VideoHub: Command acknowledged');
+                    console.warn('VideoHub: Command acknowledged');
                     break;
                 case 'NAK':
                     console.warn('VideoHub: Command rejected');
@@ -210,7 +210,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                         // Silently ignore network info blocks
                     }
                     else {
-                        console.info("VideoHub: Unknown block type: " + header);
+                        console.warn("VideoHub: Unknown block type: " + header);
                     }
                     break;
             }
@@ -223,7 +223,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             data.forEach(function (line) {
                 // Just log for now
                 if (line.startsWith('Version:')) {
-                    console.info('VideoHub ' + line);
+                    console.warn('VideoHub ' + line);
                 }
             });
         };
@@ -252,7 +252,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                         break;
                 }
             });
-            console.info("VideoHub: " + this.deviceModel + ", " + this.numInputs + " inputs, " + this.numOutputs + " outputs");
+            console.warn("VideoHub: " + this.deviceModel + ", " + this.numInputs + " inputs, " + this.numOutputs + " outputs");
         };
         /**
          * Initialize input objects
@@ -326,7 +326,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     }
                 }
             });
-            console.info("VideoHub: Parsed " + count + " routing entries");
+            console.warn("VideoHub: Parsed " + count + " routing entries");
         };
         /**
          * Get output label
@@ -341,7 +341,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Route an input to an output
          */
         BMDvideohubDriver.prototype.routeInputToOutput = function (inputIndex, outputIndex) {
-            console.info("VideoHub: routeInputToOutput called - input " + inputIndex + " to output " + outputIndex);
+            console.warn("VideoHub: routeInputToOutput called - input " + inputIndex + " to output " + outputIndex);
             if (!this.socket.connected) {
                 console.warn("Cannot route - not connected to VideoHub");
                 return;
@@ -356,7 +356,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             }
             // Send routing command
             var cmd = "VIDEO OUTPUT ROUTING:\n" + outputIndex + " " + inputIndex + "\n\n";
-            console.info("VideoHub: Sending command: " + JSON.stringify(cmd));
+            console.warn("VideoHub: Sending command: " + JSON.stringify(cmd));
             this.socket.sendText(cmd);
         };
         /**
