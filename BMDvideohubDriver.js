@@ -154,6 +154,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Receive and buffer incoming data
          */
         BMDvideohubDriver.prototype.receiveData = function (data) {
+            console.info("VideoHub: Received " + data.length + " chars");
             this.receiveBuffer += data;
             // Process complete blocks (terminated by blank line)
             var doubleLine;
@@ -174,6 +175,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 return;
             var header = lines[0].trim();
             var data = lines.slice(1);
+            console.info("VideoHub block: " + header + " (" + data.length + " lines)");
             switch (header) {
                 case 'PROTOCOL PREAMBLE:':
                     this.parseProtocolPreamble(data);
@@ -197,11 +199,19 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     // Configuration block - not needed for basic routing
                     break;
                 case 'ACK':
+                    console.info('VideoHub: Command acknowledged');
+                    break;
                 case 'NAK':
-                    // Acknowledgment - command accepted or rejected
+                    console.warn('VideoHub: Command rejected');
                     break;
                 default:
-                    // Unknown block type
+                    // Unknown block type - might be NETWORK, NETWORK INTERFACE 0, etc.
+                    if (header.startsWith('NETWORK')) {
+                        // Silently ignore network info blocks
+                    }
+                    else {
+                        console.info("VideoHub: Unknown block type: " + header);
+                    }
                     break;
             }
         };
@@ -302,6 +312,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          */
         BMDvideohubDriver.prototype.parseOutputRouting = function (data) {
             var _this = this;
+            var count = 0;
             data.forEach(function (line) {
                 var spaceIdx = line.indexOf(' ');
                 if (spaceIdx > 0) {
@@ -310,10 +321,12 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     if (outputIndex >= 0 && outputIndex < _this.numOutputs) {
                         if (_this.output[outputIndex]) {
                             _this.output[outputIndex].updateRoutedInput(inputIndex);
+                            count++;
                         }
                     }
                 }
             });
+            console.info("VideoHub: Parsed " + count + " routing entries");
         };
         /**
          * Get output label
@@ -328,6 +341,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Route an input to an output
          */
         BMDvideohubDriver.prototype.routeInputToOutput = function (inputIndex, outputIndex) {
+            console.info("VideoHub: routeInputToOutput called - input " + inputIndex + " to output " + outputIndex);
             if (!this.socket.connected) {
                 console.warn("Cannot route - not connected to VideoHub");
                 return;
@@ -342,6 +356,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             }
             // Send routing command
             var cmd = "VIDEO OUTPUT ROUTING:\n" + outputIndex + " " + inputIndex + "\n\n";
+            console.info("VideoHub: Sending command: " + JSON.stringify(cmd));
             this.socket.sendText(cmd);
         };
         /**

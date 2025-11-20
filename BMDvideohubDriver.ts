@@ -117,6 +117,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Receive and buffer incoming data
 	 */
 	private receiveData(data: string): void {
+		console.info(`VideoHub: Received ${data.length} chars`);
 		this.receiveBuffer += data;
 
 		// Process complete blocks (terminated by blank line)
@@ -141,6 +142,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		const header = lines[0].trim();
 		const data = lines.slice(1);
 
+		console.info(`VideoHub block: ${header} (${data.length} lines)`);
+
 		switch (header) {
 			case 'PROTOCOL PREAMBLE:':
 				this.parseProtocolPreamble(data);
@@ -164,11 +167,18 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				// Configuration block - not needed for basic routing
 				break;
 			case 'ACK':
+				console.info('VideoHub: Command acknowledged');
+				break;
 			case 'NAK':
-				// Acknowledgment - command accepted or rejected
+				console.warn('VideoHub: Command rejected');
 				break;
 			default:
-				// Unknown block type
+				// Unknown block type - might be NETWORK, NETWORK INTERFACE 0, etc.
+				if (header.startsWith('NETWORK')) {
+					// Silently ignore network info blocks
+				} else {
+					console.info(`VideoHub: Unknown block type: ${header}`);
+				}
 				break;
 		}
 	}
@@ -276,6 +286,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Parse output routing state
 	 */
 	private parseOutputRouting(data: string[]): void {
+		let count = 0;
 		data.forEach(line => {
 			const spaceIdx = line.indexOf(' ');
 			if (spaceIdx > 0) {
@@ -285,10 +296,12 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				if (outputIndex >= 0 && outputIndex < this.numOutputs) {
 					if (this.output[outputIndex]) {
 						this.output[outputIndex].updateRoutedInput(inputIndex);
+						count++;
 					}
 				}
 			}
 		});
+		console.info(`VideoHub: Parsed ${count} routing entries`);
 	}
 
 	/**
@@ -305,6 +318,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Route an input to an output
 	 */
 	public routeInputToOutput(inputIndex: number, outputIndex: number): void {
+		console.info(`VideoHub: routeInputToOutput called - input ${inputIndex} to output ${outputIndex}`);
+
 		if (!this.socket.connected) {
 			console.warn("Cannot route - not connected to VideoHub");
 			return;
@@ -322,6 +337,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 		// Send routing command
 		const cmd = `VIDEO OUTPUT ROUTING:\n${outputIndex} ${inputIndex}\n\n`;
+		console.info(`VideoHub: Sending command: ${JSON.stringify(cmd)}`);
 		this.socket.sendText(cmd);
 	}
 
