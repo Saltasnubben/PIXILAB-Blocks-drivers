@@ -31,14 +31,16 @@ class OutputRoute {
 		this.outputIndex = outputIndex;
 	}
 
-	@property("Routed input number (0-based)")
-	@min(0)
+	@property("Routed input number (1-based)")
+	@min(1)
 	get routedInput(): number {
-		return this.mRoutedInput;
+		// Return 1-based input number for user interface
+		return this.mRoutedInput + 1;
 	}
 
 	set routedInput(input: number) {
-		this.owner.routeInputToOutput(input, this.outputIndex);
+		// Convert from 1-based to 0-based for internal routing
+		this.owner.routeInputToOutput(input - 1, this.outputIndex);
 	}
 
 	/**
@@ -99,23 +101,15 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 	constructor(private socket: NetworkTCP) {
 		super(socket);
-		console.warn("=== BMDvideohubDriver CONSTRUCTOR CALLED ===");
-		console.warn("Socket connected: " + socket.connected);
-		console.warn("Socket enabled: " + socket.enabled);
-
 		socket.autoConnect();
 
 		socket.subscribe('connect', (sender, message) => {
-			console.warn("Connect event received, type: " + message.type);
 			this.onConnectStateChanged(message.type === 'Connection');
 		});
 
 		socket.subscribe('textReceived', (sender, message) => {
-			console.warn("TextReceived event, length: " + message.text.length);
 			this.receiveData(message.text);
 		});
-
-		console.warn("=== BMDvideohubDriver CONSTRUCTOR COMPLETE ===");
 	}
 
 	/**
@@ -135,16 +129,12 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * NetworkTCP delivers each line separately without line endings, so we reconstruct them
 	 */
 	private receiveData(data: string): void {
-		console.warn("VideoHub: receiveData called with: \"" + data + "\" (length: " + data.length + ")");
-
 		// Add line back with CRLF (NetworkTCP strips line endings)
 		this.receiveBuffer += data + '\r\n';
-		console.warn("VideoHub: Buffer now " + this.receiveBuffer.length + " chars");
 
 		// Process complete blocks (terminated by blank line - \r\n\r\n becomes two consecutive CRLFs)
 		let doubleLine: number;
 		while ((doubleLine = this.receiveBuffer.indexOf('\r\n\r\n')) >= 0) {
-			console.warn("VideoHub: Found block delimiter at position " + doubleLine);
 			const block = this.receiveBuffer.substring(0, doubleLine);
 			this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 4); // Skip \r\n\r\n
 
@@ -163,8 +153,6 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 		const header = lines[0].trim();
 		const data = lines.slice(1);
-
-		console.warn(`VideoHub block: ${header} (${data.length} lines)`);
 
 		switch (header) {
 			case 'PROTOCOL PREAMBLE:':
@@ -189,18 +177,13 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				// Configuration block - not needed for basic routing
 				break;
 			case 'ACK':
-				console.warn('VideoHub: Command acknowledged');
+				// Command acknowledged
 				break;
 			case 'NAK':
-				console.warn('VideoHub: Command rejected');
+				console.warn('VideoHub: Command rejected by device');
 				break;
 			default:
-				// Unknown block type - might be NETWORK, NETWORK INTERFACE 0, etc.
-				if (header.startsWith('NETWORK')) {
-					// Silently ignore network info blocks
-				} else {
-					console.warn(`VideoHub: Unknown block type: ${header}`);
-				}
+				// Silently ignore unknown block types (NETWORK, CONFIGURATION, TAKE MODE, etc.)
 				break;
 		}
 	}
@@ -209,48 +192,37 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Parse protocol preamble (version info)
 	 */
 	private parseProtocolPreamble(data: string[]): void {
-		// Protocol version information
-		data.forEach(line => {
-			// Just log for now
-			if (line.startsWith('Version:')) {
-				console.warn('VideoHub ' + line);
-			}
-		});
+		// Protocol version information - silently parsed
 	}
 
 	/**
 	 * Parse device information
 	 */
 	private parseDeviceInfo(data: string[]): void {
-		console.warn(`VideoHub: parseDeviceInfo called with ${data.length} lines`);
 		data.forEach(line => {
 			const parts = line.split(':');
 			if (parts.length < 2) return;
 
 			const key = parts[0].trim();
 			const value = parts.slice(1).join(':').trim();
-			console.warn(`VideoHub: Parsing "${key}" = "${value}"`);
 
 			switch (key) {
 				case 'Model name':
 					this.deviceModel = value;
-					console.warn(`VideoHub: Set deviceModel to "${this.deviceModel}"`);
 					break;
 				case 'Video inputs':
 					this.numInputs = parseInt(value) || 0;
-					console.warn(`VideoHub: Set numInputs to ${this.numInputs}`);
 					this.initializeInputs();
 					break;
 				case 'Video outputs':
 					this.numOutputs = parseInt(value) || 0;
-					console.warn(`VideoHub: Set numOutputs to ${this.numOutputs}`);
 					this.initializeOutputs();
 					break;
 			}
 		});
 
-		console.warn(`VideoHub: ${this.deviceModel}, ${this.numInputs} inputs, ${this.numOutputs} outputs`);
-		console.warn(`VideoHub: Calling changed() for model, inputs, outputs`);
+		// Log connection info
+		console.warn(`VideoHub connected: ${this.deviceModel}, ${this.numInputs} inputs, ${this.numOutputs} outputs`);
 
 		// Explicitly notify property changes for read-only properties
 		this.changed('model');
@@ -262,28 +234,24 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Initialize input objects
 	 */
 	private initializeInputs(): void {
-		console.warn(`VideoHub: initializeInputs() creating ${this.numInputs} inputs`);
 		// Initialize array without using ES6 fill() which isn't supported in Blocks
 		this.inputLabels = new Array(this.numInputs);
 		for (let i = 0; i < this.numInputs; i++) {
 			this.inputLabels[i] = '';
 			this.input[i] = new InputInfo(this, i);
 		}
-		console.warn(`VideoHub: Created ${Object.keys(this.input).length} input objects`);
 	}
 
 	/**
 	 * Initialize output objects
 	 */
 	private initializeOutputs(): void {
-		console.warn(`VideoHub: initializeOutputs() creating ${this.numOutputs} outputs`);
 		// Initialize array without using ES6 fill() which isn't supported in Blocks
 		this.outputLabels = new Array(this.numOutputs);
 		for (let i = 0; i < this.numOutputs; i++) {
 			this.outputLabels[i] = '';
 			this.output[i] = new OutputRoute(this, i);
 		}
-		console.warn(`VideoHub: Created ${Object.keys(this.output).length} output objects`);
 	}
 
 	/**
@@ -327,7 +295,6 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Parse output routing state
 	 */
 	private parseOutputRouting(data: string[]): void {
-		let count = 0;
 		data.forEach(line => {
 			const spaceIdx = line.indexOf(' ');
 			if (spaceIdx > 0) {
@@ -337,12 +304,10 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				if (outputIndex >= 0 && outputIndex < this.numOutputs) {
 					if (this.output[outputIndex]) {
 						this.output[outputIndex].updateRoutedInput(inputIndex);
-						count++;
 					}
 				}
 			}
 		});
-		console.warn(`VideoHub: Parsed ${count} routing entries`);
 	}
 
 	/**
@@ -359,38 +324,36 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Route an input to an output
 	 */
 	public routeInputToOutput(inputIndex: number, outputIndex: number): void {
-		console.warn(`VideoHub: routeInputToOutput called - input ${inputIndex} to output ${outputIndex}`);
-
 		if (!this.socket.connected) {
-			console.warn("Cannot route - not connected to VideoHub");
+			console.warn("VideoHub: Cannot route - not connected");
 			return;
 		}
 
 		if (inputIndex < 0 || inputIndex >= this.numInputs) {
-			console.warn(`Invalid input index: ${inputIndex} (must be 0-${this.numInputs-1})`);
+			console.warn(`VideoHub: Invalid input ${inputIndex + 1} (must be 1-${this.numInputs})`);
 			return;
 		}
 
 		if (outputIndex < 0 || outputIndex >= this.numOutputs) {
-			console.warn(`Invalid output index: ${outputIndex} (must be 0-${this.numOutputs-1})`);
+			console.warn(`VideoHub: Invalid output ${outputIndex + 1} (must be 1-${this.numOutputs})`);
 			return;
 		}
 
 		// Send routing command (must use CRLF line endings)
 		const cmd = `VIDEO OUTPUT ROUTING:\r\n${outputIndex} ${inputIndex}\r\n\r\n`;
-		console.warn(`VideoHub: Sending command: ${JSON.stringify(cmd)}`);
 		this.socket.sendText(cmd);
 	}
 
 	/**
-	 * Callable method to route input to output
+	 * Callable method to route input to output (1-based numbering)
 	 */
 	@callable("Route input to output")
 	public route(
-		@parameter("Input number (0-based)") inputNum: number,
-		@parameter("Output number (0-based)") outputNum: number
+		@parameter("Input number") inputNum: number,
+		@parameter("Output number") outputNum: number
 	): void {
-		this.routeInputToOutput(inputNum, outputNum);
+		// Convert from 1-based to 0-based for internal routing
+		this.routeInputToOutput(inputNum - 1, outputNum - 1);
 	}
 
 	/**

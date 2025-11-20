@@ -54,10 +54,12 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
         }
         Object.defineProperty(OutputRoute.prototype, "routedInput", {
             get: function () {
-                return this.mRoutedInput;
+                // Return 1-based input number for user interface
+                return this.mRoutedInput + 1;
             },
             set: function (input) {
-                this.owner.routeInputToOutput(input, this.outputIndex);
+                // Convert from 1-based to 0-based for internal routing
+                this.owner.routeInputToOutput(input - 1, this.outputIndex);
             },
             enumerable: false,
             configurable: true
@@ -79,8 +81,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             configurable: true
         });
         __decorate([
-            (0, Metadata_1.property)("Routed input number (0-based)"),
-            (0, Metadata_1.min)(0),
+            (0, Metadata_1.property)("Routed input number (1-based)"),
+            (0, Metadata_1.min)(1),
             __metadata("design:type", Number),
             __metadata("design:paramtypes", [Number])
         ], OutputRoute.prototype, "routedInput", null);
@@ -134,19 +136,13 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.input = {};
             _this.outputLabels = [];
             _this.inputLabels = [];
-            console.warn("=== BMDvideohubDriver CONSTRUCTOR CALLED ===");
-            console.warn("Socket connected: " + socket.connected);
-            console.warn("Socket enabled: " + socket.enabled);
             socket.autoConnect();
             socket.subscribe('connect', function (sender, message) {
-                console.warn("Connect event received, type: " + message.type);
                 _this.onConnectStateChanged(message.type === 'Connection');
             });
             socket.subscribe('textReceived', function (sender, message) {
-                console.warn("TextReceived event, length: " + message.text.length);
                 _this.receiveData(message.text);
             });
-            console.warn("=== BMDvideohubDriver CONSTRUCTOR COMPLETE ===");
             return _this;
         }
         /**
@@ -166,14 +162,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * NetworkTCP delivers each line separately without line endings, so we reconstruct them
          */
         BMDvideohubDriver.prototype.receiveData = function (data) {
-            console.warn("VideoHub: receiveData called with: \"" + data + "\" (length: " + data.length + ")");
             // Add line back with CRLF (NetworkTCP strips line endings)
             this.receiveBuffer += data + '\r\n';
-            console.warn("VideoHub: Buffer now " + this.receiveBuffer.length + " chars");
             // Process complete blocks (terminated by blank line - \r\n\r\n becomes two consecutive CRLFs)
             var doubleLine;
             while ((doubleLine = this.receiveBuffer.indexOf('\r\n\r\n')) >= 0) {
-                console.warn("VideoHub: Found block delimiter at position " + doubleLine);
                 var block = this.receiveBuffer.substring(0, doubleLine);
                 this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 4); // Skip \r\n\r\n
                 if (block.length > 0) {
@@ -190,7 +183,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 return;
             var header = lines[0].trim();
             var data = lines.slice(1);
-            console.warn("VideoHub block: " + header + " (" + data.length + " lines)");
             switch (header) {
                 case 'PROTOCOL PREAMBLE:':
                     this.parseProtocolPreamble(data);
@@ -214,19 +206,13 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     // Configuration block - not needed for basic routing
                     break;
                 case 'ACK':
-                    console.warn('VideoHub: Command acknowledged');
+                    // Command acknowledged
                     break;
                 case 'NAK':
-                    console.warn('VideoHub: Command rejected');
+                    console.warn('VideoHub: Command rejected by device');
                     break;
                 default:
-                    // Unknown block type - might be NETWORK, NETWORK INTERFACE 0, etc.
-                    if (header.startsWith('NETWORK')) {
-                        // Silently ignore network info blocks
-                    }
-                    else {
-                        console.warn("VideoHub: Unknown block type: " + header);
-                    }
+                    // Silently ignore unknown block types (NETWORK, CONFIGURATION, TAKE MODE, etc.)
                     break;
             }
         };
@@ -234,46 +220,35 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Parse protocol preamble (version info)
          */
         BMDvideohubDriver.prototype.parseProtocolPreamble = function (data) {
-            // Protocol version information
-            data.forEach(function (line) {
-                // Just log for now
-                if (line.startsWith('Version:')) {
-                    console.warn('VideoHub ' + line);
-                }
-            });
+            // Protocol version information - silently parsed
         };
         /**
          * Parse device information
          */
         BMDvideohubDriver.prototype.parseDeviceInfo = function (data) {
             var _this = this;
-            console.warn("VideoHub: parseDeviceInfo called with " + data.length + " lines");
             data.forEach(function (line) {
                 var parts = line.split(':');
                 if (parts.length < 2)
                     return;
                 var key = parts[0].trim();
                 var value = parts.slice(1).join(':').trim();
-                console.warn("VideoHub: Parsing \"" + key + "\" = \"" + value + "\"");
                 switch (key) {
                     case 'Model name':
                         _this.deviceModel = value;
-                        console.warn("VideoHub: Set deviceModel to \"" + _this.deviceModel + "\"");
                         break;
                     case 'Video inputs':
                         _this.numInputs = parseInt(value) || 0;
-                        console.warn("VideoHub: Set numInputs to " + _this.numInputs);
                         _this.initializeInputs();
                         break;
                     case 'Video outputs':
                         _this.numOutputs = parseInt(value) || 0;
-                        console.warn("VideoHub: Set numOutputs to " + _this.numOutputs);
                         _this.initializeOutputs();
                         break;
                 }
             });
-            console.warn("VideoHub: " + this.deviceModel + ", " + this.numInputs + " inputs, " + this.numOutputs + " outputs");
-            console.warn("VideoHub: Calling changed() for model, inputs, outputs");
+            // Log connection info
+            console.warn("VideoHub connected: " + this.deviceModel + ", " + this.numInputs + " inputs, " + this.numOutputs + " outputs");
             // Explicitly notify property changes for read-only properties
             this.changed('model');
             this.changed('inputs');
@@ -283,27 +258,23 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Initialize input objects
          */
         BMDvideohubDriver.prototype.initializeInputs = function () {
-            console.warn("VideoHub: initializeInputs() creating " + this.numInputs + " inputs");
             // Initialize array without using ES6 fill() which isn't supported in Blocks
             this.inputLabels = new Array(this.numInputs);
             for (var i = 0; i < this.numInputs; i++) {
                 this.inputLabels[i] = '';
                 this.input[i] = new InputInfo(this, i);
             }
-            console.warn("VideoHub: Created " + Object.keys(this.input).length + " input objects");
         };
         /**
          * Initialize output objects
          */
         BMDvideohubDriver.prototype.initializeOutputs = function () {
-            console.warn("VideoHub: initializeOutputs() creating " + this.numOutputs + " outputs");
             // Initialize array without using ES6 fill() which isn't supported in Blocks
             this.outputLabels = new Array(this.numOutputs);
             for (var i = 0; i < this.numOutputs; i++) {
                 this.outputLabels[i] = '';
                 this.output[i] = new OutputRoute(this, i);
             }
-            console.warn("VideoHub: Created " + Object.keys(this.output).length + " output objects");
         };
         /**
          * Parse input labels
@@ -345,7 +316,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          */
         BMDvideohubDriver.prototype.parseOutputRouting = function (data) {
             var _this = this;
-            var count = 0;
             data.forEach(function (line) {
                 var spaceIdx = line.indexOf(' ');
                 if (spaceIdx > 0) {
@@ -354,12 +324,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     if (outputIndex >= 0 && outputIndex < _this.numOutputs) {
                         if (_this.output[outputIndex]) {
                             _this.output[outputIndex].updateRoutedInput(inputIndex);
-                            count++;
                         }
                     }
                 }
             });
-            console.warn("VideoHub: Parsed " + count + " routing entries");
         };
         /**
          * Get output label
@@ -374,29 +342,28 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Route an input to an output
          */
         BMDvideohubDriver.prototype.routeInputToOutput = function (inputIndex, outputIndex) {
-            console.warn("VideoHub: routeInputToOutput called - input " + inputIndex + " to output " + outputIndex);
             if (!this.socket.connected) {
-                console.warn("Cannot route - not connected to VideoHub");
+                console.warn("VideoHub: Cannot route - not connected");
                 return;
             }
             if (inputIndex < 0 || inputIndex >= this.numInputs) {
-                console.warn("Invalid input index: " + inputIndex + " (must be 0-" + (this.numInputs - 1) + ")");
+                console.warn("VideoHub: Invalid input " + (inputIndex + 1) + " (must be 1-" + this.numInputs + ")");
                 return;
             }
             if (outputIndex < 0 || outputIndex >= this.numOutputs) {
-                console.warn("Invalid output index: " + outputIndex + " (must be 0-" + (this.numOutputs - 1) + ")");
+                console.warn("VideoHub: Invalid output " + (outputIndex + 1) + " (must be 1-" + this.numOutputs + ")");
                 return;
             }
             // Send routing command (must use CRLF line endings)
             var cmd = "VIDEO OUTPUT ROUTING:\r\n" + outputIndex + " " + inputIndex + "\r\n\r\n";
-            console.warn("VideoHub: Sending command: " + JSON.stringify(cmd));
             this.socket.sendText(cmd);
         };
         /**
-         * Callable method to route input to output
+         * Callable method to route input to output (1-based numbering)
          */
         BMDvideohubDriver.prototype.route = function (inputNum, outputNum) {
-            this.routeInputToOutput(inputNum, outputNum);
+            // Convert from 1-based to 0-based for internal routing
+            this.routeInputToOutput(inputNum - 1, outputNum - 1);
         };
         /**
          * Query current routing status
@@ -452,8 +419,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
         });
         __decorate([
             (0, Metadata_1.callable)("Route input to output"),
-            __param(0, (0, Metadata_1.parameter)("Input number (0-based)")),
-            __param(1, (0, Metadata_1.parameter)("Output number (0-based)")),
+            __param(0, (0, Metadata_1.parameter)("Input number")),
+            __param(1, (0, Metadata_1.parameter)("Output number")),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", [Number, Number]),
             __metadata("design:returntype", void 0)
