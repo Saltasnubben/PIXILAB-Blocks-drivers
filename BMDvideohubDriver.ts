@@ -99,15 +99,23 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 	constructor(private socket: NetworkTCP) {
 		super(socket);
+		console.warn("=== BMDvideohubDriver CONSTRUCTOR CALLED ===");
+		console.warn("Socket connected: " + socket.connected);
+		console.warn("Socket enabled: " + socket.enabled);
+
 		socket.autoConnect();
 
 		socket.subscribe('connect', (sender, message) => {
+			console.warn("Connect event received, type: " + message.type);
 			this.onConnectStateChanged(message.type === 'Connection');
 		});
 
 		socket.subscribe('textReceived', (sender, message) => {
+			console.warn("TextReceived event, length: " + message.text.length);
 			this.receiveData(message.text);
 		});
+
+		console.warn("=== BMDvideohubDriver CONSTRUCTOR COMPLETE ===");
 	}
 
 	/**

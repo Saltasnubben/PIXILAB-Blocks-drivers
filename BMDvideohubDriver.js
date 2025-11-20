@@ -134,13 +134,19 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.input = {};
             _this.outputLabels = [];
             _this.inputLabels = [];
+            console.warn("=== BMDvideohubDriver CONSTRUCTOR CALLED ===");
+            console.warn("Socket connected: " + socket.connected);
+            console.warn("Socket enabled: " + socket.enabled);
             socket.autoConnect();
             socket.subscribe('connect', function (sender, message) {
+                console.warn("Connect event received, type: " + message.type);
                 _this.onConnectStateChanged(message.type === 'Connection');
             });
             socket.subscribe('textReceived', function (sender, message) {
+                console.warn("TextReceived event, length: " + message.text.length);
                 _this.receiveData(message.text);
             });
+            console.warn("=== BMDvideohubDriver CONSTRUCTOR COMPLETE ===");
             return _this;
         }
         /**
