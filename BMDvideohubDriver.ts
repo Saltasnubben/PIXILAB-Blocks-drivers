@@ -63,13 +63,22 @@ class OutputRoute {
 class InputInfo {
 	private mLabel: string = "";
 
+	constructor(
+		private owner: BMDvideohubDriver,
+		private index: number
+	) {}
+
 	@property("Input label", true)
 	get label(): string {
 		return this.mLabel;
 	}
 
 	public updateLabel(label: string): void {
-		this.mLabel = label;
+		if (this.mLabel !== label) {
+			this.mLabel = label;
+			// Notify property change
+			this.owner.changed(`input`);
+		}
 	}
 }
 
@@ -199,49 +208,64 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	 * Parse device information
 	 */
 	private parseDeviceInfo(data: string[]): void {
+		console.warn(`VideoHub: parseDeviceInfo called with ${data.length} lines`);
 		data.forEach(line => {
 			const parts = line.split(':');
 			if (parts.length < 2) return;
 
 			const key = parts[0].trim();
 			const value = parts.slice(1).join(':').trim();
+			console.warn(`VideoHub: Parsing "${key}" = "${value}"`);
 
 			switch (key) {
 				case 'Model name':
 					this.deviceModel = value;
+					console.warn(`VideoHub: Set deviceModel to "${this.deviceModel}"`);
 					break;
 				case 'Video inputs':
 					this.numInputs = parseInt(value) || 0;
+					console.warn(`VideoHub: Set numInputs to ${this.numInputs}`);
 					this.initializeInputs();
 					break;
 				case 'Video outputs':
 					this.numOutputs = parseInt(value) || 0;
+					console.warn(`VideoHub: Set numOutputs to ${this.numOutputs}`);
 					this.initializeOutputs();
 					break;
 			}
 		});
 
 		console.warn(`VideoHub: ${this.deviceModel}, ${this.numInputs} inputs, ${this.numOutputs} outputs`);
+		console.warn(`VideoHub: Calling changed() for model, inputs, outputs`);
+
+		// Explicitly notify property changes for read-only properties
+		this.changed('model');
+		this.changed('inputs');
+		this.changed('outputs');
 	}
 
 	/**
 	 * Initialize input objects
 	 */
 	private initializeInputs(): void {
+		console.warn(`VideoHub: initializeInputs() creating ${this.numInputs} inputs`);
 		this.inputLabels = new Array(this.numInputs).fill('');
 		for (let i = 0; i < this.numInputs; i++) {
-			this.input[i] = new InputInfo();
+			this.input[i] = new InputInfo(this, i);
 		}
+		console.warn(`VideoHub: Created ${Object.keys(this.input).length} input objects`);
 	}
 
 	/**
 	 * Initialize output objects
 	 */
 	private initializeOutputs(): void {
+		console.warn(`VideoHub: initializeOutputs() creating ${this.numOutputs} outputs`);
 		this.outputLabels = new Array(this.numOutputs).fill('');
 		for (let i = 0; i < this.numOutputs; i++) {
 			this.output[i] = new OutputRoute(this, i);
 		}
+		console.warn(`VideoHub: Created ${Object.keys(this.output).length} output objects`);
 	}
 
 	/**
@@ -362,7 +386,21 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		}
 	}
 
-	// Property getters for device info
+	@callable("Debug: Show device info")
+	public debugInfo(): void {
+		console.warn(`=== VIDEOHUB DEBUG INFO ===`);
+		console.warn(`Connected: ${this.socket.connected}`);
+		console.warn(`Model: "${this.deviceModel}"`);
+		console.warn(`Inputs: ${this.numInputs}`);
+		console.warn(`Outputs: ${this.numOutputs}`);
+		console.warn(`Input objects created: ${Object.keys(this.input).length}`);
+		console.warn(`Output objects created: ${Object.keys(this.output).length}`);
+		console.warn(`Buffer size: ${this.receiveBuffer.length} chars`);
+		if (this.numOutputs > 0 && this.output[0]) {
+			console.warn(`Output[0].routedInput: ${this.output[0].routedInput}`);
+		}
+		console.warn(`=== END DEBUG ===`);
+	}
 
 	@property("Device model name", true)
 	get model(): string {

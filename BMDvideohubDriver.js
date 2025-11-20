@@ -95,7 +95,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
      * Represents input information
      */
     var InputInfo = (function () {
-        function InputInfo() {
+        function InputInfo(owner, index) {
+            this.owner = owner;
+            this.index = index;
             this.mLabel = "";
         }
         Object.defineProperty(InputInfo.prototype, "label", {
@@ -106,7 +108,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             configurable: true
         });
         InputInfo.prototype.updateLabel = function (label) {
-            this.mLabel = label;
+            if (this.mLabel !== label) {
+                this.mLabel = label;
+                this.owner.changed('input');
+            }
         };
         __decorate([
             (0, Metadata_1.property)("Input label", true),
@@ -231,45 +236,59 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          */
         BMDvideohubDriver.prototype.parseDeviceInfo = function (data) {
             var _this = this;
+            console.warn("VideoHub: parseDeviceInfo called with " + data.length + " lines");
             data.forEach(function (line) {
                 var parts = line.split(':');
                 if (parts.length < 2)
                     return;
                 var key = parts[0].trim();
                 var value = parts.slice(1).join(':').trim();
+                console.warn("VideoHub: Parsing \"" + key + "\" = \"" + value + "\"");
                 switch (key) {
                     case 'Model name':
                         _this.deviceModel = value;
+                        console.warn("VideoHub: Set deviceModel to \"" + _this.deviceModel + "\"");
                         break;
                     case 'Video inputs':
                         _this.numInputs = parseInt(value) || 0;
+                        console.warn("VideoHub: Set numInputs to " + _this.numInputs);
                         _this.initializeInputs();
                         break;
                     case 'Video outputs':
                         _this.numOutputs = parseInt(value) || 0;
+                        console.warn("VideoHub: Set numOutputs to " + _this.numOutputs);
                         _this.initializeOutputs();
                         break;
                 }
             });
             console.warn("VideoHub: " + this.deviceModel + ", " + this.numInputs + " inputs, " + this.numOutputs + " outputs");
+            console.warn("VideoHub: Calling changed() for model, inputs, outputs");
+            // Explicitly notify property changes for read-only properties
+            this.changed('model');
+            this.changed('inputs');
+            this.changed('outputs');
         };
         /**
          * Initialize input objects
          */
         BMDvideohubDriver.prototype.initializeInputs = function () {
+            console.warn("VideoHub: initializeInputs() creating " + this.numInputs + " inputs");
             this.inputLabels = new Array(this.numInputs).fill('');
             for (var i = 0; i < this.numInputs; i++) {
-                this.input[i] = new InputInfo();
+                this.input[i] = new InputInfo(this, i);
             }
+            console.warn("VideoHub: Created " + Object.keys(this.input).length + " input objects");
         };
         /**
          * Initialize output objects
          */
         BMDvideohubDriver.prototype.initializeOutputs = function () {
+            console.warn("VideoHub: initializeOutputs() creating " + this.numOutputs + " outputs");
             this.outputLabels = new Array(this.numOutputs).fill('');
             for (var i = 0; i < this.numOutputs; i++) {
                 this.output[i] = new OutputRoute(this, i);
             }
+            console.warn("VideoHub: Created " + Object.keys(this.output).length + " output objects");
         };
         /**
          * Parse input labels
@@ -373,6 +392,20 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 this.socket.sendText("VIDEO OUTPUT ROUTING:\r\n\r\n");
             }
         };
+        BMDvideohubDriver.prototype.debugInfo = function () {
+            console.warn("=== VIDEOHUB DEBUG INFO ===");
+            console.warn("Connected: " + this.socket.connected);
+            console.warn("Model: \"" + this.deviceModel + "\"");
+            console.warn("Inputs: " + this.numInputs);
+            console.warn("Outputs: " + this.numOutputs);
+            console.warn("Input objects created: " + Object.keys(this.input).length);
+            console.warn("Output objects created: " + Object.keys(this.output).length);
+            console.warn("Buffer size: " + this.receiveBuffer.length + " chars");
+            if (this.numOutputs > 0 && this.output[0]) {
+                console.warn("Output[0].routedInput: " + this.output[0].routedInput);
+            }
+            console.warn("=== END DEBUG ===");
+        };
         Object.defineProperty(BMDvideohubDriver.prototype, "model", {
             // Property getters for device info
             get: function () {
@@ -416,6 +449,12 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             __metadata("design:paramtypes", []),
             __metadata("design:returntype", void 0)
         ], BMDvideohubDriver.prototype, "queryStatus", null);
+        __decorate([
+            (0, Metadata_1.callable)("Debug: Show device info"),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
+        ], BMDvideohubDriver.prototype, "debugInfo", null);
         __decorate([
             (0, Metadata_1.property)("Device model name", true),
             __metadata("design:type", String),
