@@ -353,8 +353,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 console.warn("Invalid output index: " + outputIndex + " (must be 0-" + (this.numOutputs - 1) + ")");
                 return;
             }
-            // Send routing command
-            var cmd = "VIDEO OUTPUT ROUTING:\n" + outputIndex + " " + inputIndex + "\n\n";
+            // Send routing command (must use CRLF line endings)
+            var cmd = "VIDEO OUTPUT ROUTING:\r\n" + outputIndex + " " + inputIndex + "\r\n\r\n";
             console.warn("VideoHub: Sending command: " + JSON.stringify(cmd));
             this.socket.sendText(cmd);
         };
@@ -369,8 +369,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          */
         BMDvideohubDriver.prototype.queryStatus = function () {
             if (this.socket.connected) {
-                // Requesting routing status - device should respond with current state
-                this.socket.sendText("VIDEO OUTPUT ROUTING:\n\n");
+                // Requesting routing status - device should respond with current state (must use CRLF)
+                this.socket.sendText("VIDEO OUTPUT ROUTING:\r\n\r\n");
             }
         };
         Object.defineProperty(BMDvideohubDriver.prototype, "model", {

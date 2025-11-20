@@ -334,8 +334,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 			return;
 		}
 
-		// Send routing command
-		const cmd = `VIDEO OUTPUT ROUTING:\n${outputIndex} ${inputIndex}\n\n`;
+		// Send routing command (must use CRLF line endings)
+		const cmd = `VIDEO OUTPUT ROUTING:\r\n${outputIndex} ${inputIndex}\r\n\r\n`;
 		console.warn(`VideoHub: Sending command: ${JSON.stringify(cmd)}`);
 		this.socket.sendText(cmd);
 	}
@@ -357,8 +357,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	@callable("Query routing status")
 	public queryStatus(): void {
 		if (this.socket.connected) {
-			// Requesting routing status - device should respond with current state
-			this.socket.sendText("VIDEO OUTPUT ROUTING:\n\n");
+			// Requesting routing status - device should respond with current state (must use CRLF)
+			this.socket.sendText("VIDEO OUTPUT ROUTING:\r\n\r\n");
 		}
 	}
 
