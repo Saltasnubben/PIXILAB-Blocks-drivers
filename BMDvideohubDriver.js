@@ -154,11 +154,14 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
          * Receive and buffer incoming data
          */
         BMDvideohubDriver.prototype.receiveData = function (data) {
-            console.warn("VideoHub: Received " + data.length + " chars");
+            console.warn("VideoHub: Received " + data.length + " chars: " + JSON.stringify(data.substring(0, 50)));
             this.receiveBuffer += data;
+            // Log buffer status
+            console.warn("VideoHub: Buffer now " + this.receiveBuffer.length + " chars, looking for \\n\\n");
             // Process complete blocks (terminated by blank line)
             var doubleLine;
             while ((doubleLine = this.receiveBuffer.indexOf('\n\n')) >= 0) {
+                console.warn("VideoHub: Found block delimiter at position " + doubleLine);
                 var block = this.receiveBuffer.substring(0, doubleLine);
                 this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 2);
                 if (block.length > 0) {
