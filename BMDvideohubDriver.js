@@ -163,12 +163,17 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
         };
         /**
          * Receive and buffer incoming data
+         * NetworkTCP delivers each line separately without line endings, so we reconstruct them
          */
         BMDvideohubDriver.prototype.receiveData = function (data) {
-            this.receiveBuffer += data;
-            // Process complete blocks (terminated by blank line - CRLF CRLF)
+            console.warn("VideoHub: receiveData called with: \"" + data + "\" (length: " + data.length + ")");
+            // Add line back with CRLF (NetworkTCP strips line endings)
+            this.receiveBuffer += data + '\r\n';
+            console.warn("VideoHub: Buffer now " + this.receiveBuffer.length + " chars");
+            // Process complete blocks (terminated by blank line - \r\n\r\n becomes two consecutive CRLFs)
             var doubleLine;
             while ((doubleLine = this.receiveBuffer.indexOf('\r\n\r\n')) >= 0) {
+                console.warn("VideoHub: Found block delimiter at position " + doubleLine);
                 var block = this.receiveBuffer.substring(0, doubleLine);
                 this.receiveBuffer = this.receiveBuffer.substring(doubleLine + 4); // Skip \r\n\r\n
                 if (block.length > 0) {
