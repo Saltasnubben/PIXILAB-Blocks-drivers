@@ -106,6 +106,31 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
         return OutputRoute;
     }());
     /**
+     * Simple label wrapper for string indexing
+     */
+    var LabelWrapper = (function () {
+        function LabelWrapper(mLabel) {
+            if (mLabel === void 0) { mLabel = ""; }
+            this.mLabel = mLabel;
+        }
+        Object.defineProperty(LabelWrapper.prototype, "label", {
+            get: function () {
+                return this.mLabel;
+            },
+            enumerable: false,
+            configurable: true
+        });
+        LabelWrapper.prototype.updateLabel = function (label) {
+            this.mLabel = label;
+        };
+        __decorate([
+            (0, Metadata_1.property)("Label text", true),
+            __metadata("design:type", String),
+            __metadata("design:paramtypes", [])
+        ], LabelWrapper.prototype, "label", null);
+        return LabelWrapper;
+    }());
+    /**
      * Represents input information
      */
     var InputInfo = (function () {
@@ -291,7 +316,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 this.inputLabels[i] = '';
                 this.mInput[i] = new InputInfo(this, i);
                 // Populate 1-based label dictionary
-                this.mInputLabel[i + 1] = '';
+                this.mInputLabel[i + 1] = new LabelWrapper('');
             }
         };
         /**
@@ -304,7 +329,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 this.outputLabels[i] = '';
                 this.mOutput[i] = new OutputRoute(this, i);
                 // Populate 1-based label dictionary
-                this.mOutputLabel[i + 1] = '';
+                this.mOutputLabel[i + 1] = new LabelWrapper('');
             }
         };
         /**
@@ -320,7 +345,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     if (index >= 0 && index < _this.numInputs) {
                         _this.inputLabels[index] = label;
                         // Update 1-based label dictionary
-                        _this.mInputLabel[index + 1] = label;
+                        if (_this.mInputLabel[index + 1]) {
+                            _this.mInputLabel[index + 1].updateLabel(label);
+                        }
                         if (_this.mInput[index]) {
                             _this.mInput[index].updateLabel(label);
                         }
@@ -342,7 +369,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     if (index >= 0 && index < _this.numOutputs) {
                         _this.outputLabels[index] = label;
                         // Update 1-based label dictionary
-                        _this.mOutputLabel[index + 1] = label;
+                        if (_this.mOutputLabel[index + 1]) {
+                            _this.mOutputLabel[index + 1].updateLabel(label);
+                        }
                     }
                 }
             });

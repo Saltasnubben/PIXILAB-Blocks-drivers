@@ -65,6 +65,22 @@ class OutputRoute {
 }
 
 /**
+ * Simple label wrapper for string indexing
+ */
+class LabelWrapper {
+	constructor(private mLabel: string = "") {}
+
+	@property("Label text", true)
+	get label(): string {
+		return this.mLabel;
+	}
+
+	public updateLabel(label: string): void {
+		this.mLabel = label;
+	}
+}
+
+/**
  * Represents input information
  */
 class InputInfo {
@@ -110,8 +126,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	private inputLabels: string[] = [];
 
 	// Simple label dictionaries with 1-based indexing for easy display
-	private mInputLabel: {[index: number]: string} = {};
-	private mOutputLabel: {[index: number]: string} = {};
+	private mInputLabel: {[index: number]: LabelWrapper} = {};
+	private mOutputLabel: {[index: number]: LabelWrapper} = {};
 
 	constructor(private socket: NetworkTCP) {
 		super(socket);
@@ -254,7 +270,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 			this.inputLabels[i] = '';
 			this.mInput[i] = new InputInfo(this, i);
 			// Populate 1-based label dictionary
-			this.mInputLabel[i + 1] = '';
+			this.mInputLabel[i + 1] = new LabelWrapper('');
 		}
 	}
 
@@ -268,7 +284,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 			this.outputLabels[i] = '';
 			this.mOutput[i] = new OutputRoute(this, i);
 			// Populate 1-based label dictionary
-			this.mOutputLabel[i + 1] = '';
+			this.mOutputLabel[i + 1] = new LabelWrapper('');
 		}
 	}
 
@@ -285,7 +301,9 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				if (index >= 0 && index < this.numInputs) {
 					this.inputLabels[index] = label;
 					// Update 1-based label dictionary
-					this.mInputLabel[index + 1] = label;
+					if (this.mInputLabel[index + 1]) {
+						this.mInputLabel[index + 1].updateLabel(label);
+					}
 					if (this.mInput[index]) {
 						this.mInput[index].updateLabel(label);
 					}
@@ -308,7 +326,9 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				if (index >= 0 && index < this.numOutputs) {
 					this.outputLabels[index] = label;
 					// Update 1-based label dictionary
-					this.mOutputLabel[index + 1] = label;
+					if (this.mOutputLabel[index + 1]) {
+						this.mOutputLabel[index + 1].updateLabel(label);
+					}
 				}
 			}
 		});
@@ -443,12 +463,12 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	}
 
 	@property("Input labels (1-based)")
-	get inputLabel(): {[index: number]: string} {
+	get inputLabel(): {[index: number]: LabelWrapper} {
 		return this.mInputLabel;
 	}
 
 	@property("Output labels (1-based)")
-	get outputLabel(): {[index: number]: string} {
+	get outputLabel(): {[index: number]: LabelWrapper} {
 		return this.mOutputLabel;
 	}
 
