@@ -103,15 +103,15 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	private deviceModel: string = "Unknown";
 
 	// Arrays of routing and label information (0-based indexing internally)
-	public readonly output: {[index: number]: OutputRoute} = {};
-	public readonly input: {[index: number]: InputInfo} = {};
+	private mOutput: {[index: number]: OutputRoute} = {};
+	private mInput: {[index: number]: InputInfo} = {};
 
 	private outputLabels: string[] = [];
 	private inputLabels: string[] = [];
 
 	// Simple label dictionaries with 1-based indexing for easy display
-	public readonly inputLabel: {[index: number]: string} = {};
-	public readonly outputLabel: {[index: number]: string} = {};
+	private mInputLabel: {[index: number]: string} = {};
+	private mOutputLabel: {[index: number]: string} = {};
 
 	constructor(private socket: NetworkTCP) {
 		super(socket);
@@ -252,9 +252,9 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		this.inputLabels = new Array(this.numInputs);
 		for (let i = 0; i < this.numInputs; i++) {
 			this.inputLabels[i] = '';
-			this.input[i] = new InputInfo(this, i);
+			this.mInput[i] = new InputInfo(this, i);
 			// Populate 1-based label dictionary
-			this.inputLabel[i + 1] = '';
+			this.mInputLabel[i + 1] = '';
 		}
 	}
 
@@ -266,9 +266,9 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		this.outputLabels = new Array(this.numOutputs);
 		for (let i = 0; i < this.numOutputs; i++) {
 			this.outputLabels[i] = '';
-			this.output[i] = new OutputRoute(this, i);
+			this.mOutput[i] = new OutputRoute(this, i);
 			// Populate 1-based label dictionary
-			this.outputLabel[i + 1] = '';
+			this.mOutputLabel[i + 1] = '';
 		}
 	}
 
@@ -285,9 +285,9 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				if (index >= 0 && index < this.numInputs) {
 					this.inputLabels[index] = label;
 					// Update 1-based label dictionary
-					this.inputLabel[index + 1] = label;
-					if (this.input[index]) {
-						this.input[index].updateLabel(label);
+					this.mInputLabel[index + 1] = label;
+					if (this.mInput[index]) {
+						this.mInput[index].updateLabel(label);
 					}
 				}
 			}
@@ -308,7 +308,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				if (index >= 0 && index < this.numOutputs) {
 					this.outputLabels[index] = label;
 					// Update 1-based label dictionary
-					this.outputLabel[index + 1] = label;
+					this.mOutputLabel[index + 1] = label;
 				}
 			}
 		});
@@ -326,8 +326,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				const inputIndex = parseInt(line.substring(spaceIdx + 1));
 
 				if (outputIndex >= 0 && outputIndex < this.numOutputs) {
-					if (this.output[outputIndex]) {
-						this.output[outputIndex].updateRoutedInput(inputIndex);
+					if (this.mOutput[outputIndex]) {
+						this.mOutput[outputIndex].updateRoutedInput(inputIndex);
 					}
 				}
 			}
@@ -362,7 +362,7 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 	public getInputDestinations(inputIndex: number): string {
 		const destinations: string[] = [];
 		for (let i = 0; i < this.numOutputs; i++) {
-			if (this.output[i] && this.output[i]['mRoutedInput'] === inputIndex) {
+			if (this.mOutput[i] && this.mOutput[i]['mRoutedInput'] === inputIndex) {
 				destinations.push(this.getOutputLabel(i));
 			}
 		}
@@ -423,13 +423,33 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		console.warn(`Model: "${this.deviceModel}"`);
 		console.warn(`Inputs: ${this.numInputs}`);
 		console.warn(`Outputs: ${this.numOutputs}`);
-		console.warn(`Input objects created: ${Object.keys(this.input).length}`);
-		console.warn(`Output objects created: ${Object.keys(this.output).length}`);
+		console.warn(`Input objects created: ${Object.keys(this.mInput).length}`);
+		console.warn(`Output objects created: ${Object.keys(this.mOutput).length}`);
 		console.warn(`Buffer size: ${this.receiveBuffer.length} chars`);
-		if (this.numOutputs > 0 && this.output[0]) {
-			console.warn(`Output[0].routedInput: ${this.output[0].routedInput}`);
+		if (this.numOutputs > 0 && this.mOutput[0]) {
+			console.warn(`Output[0].routedInput: ${this.mOutput[0].routedInput}`);
 		}
 		console.warn(`=== END DEBUG ===`);
+	}
+
+	@property("Output routing controls")
+	get output(): {[index: number]: OutputRoute} {
+		return this.mOutput;
+	}
+
+	@property("Input information")
+	get input(): {[index: number]: InputInfo} {
+		return this.mInput;
+	}
+
+	@property("Input labels (1-based)")
+	get inputLabel(): {[index: number]: string} {
+		return this.mInputLabel;
+	}
+
+	@property("Output labels (1-based)")
+	get outputLabel(): {[index: number]: string} {
+		return this.mOutputLabel;
 	}
 
 	@property("Device model name", true)
