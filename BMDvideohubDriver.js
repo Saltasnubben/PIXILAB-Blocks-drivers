@@ -80,6 +80,13 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             enumerable: false,
             configurable: true
         });
+        Object.defineProperty(OutputRoute.prototype, "routedInputLabel", {
+            get: function () {
+                return this.owner.getInputLabel(this.mRoutedInput);
+            },
+            enumerable: false,
+            configurable: true
+        });
         __decorate([
             (0, Metadata_1.property)("Routed input number (1-based)"),
             (0, Metadata_1.min)(1),
@@ -91,6 +98,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             __metadata("design:type", String),
             __metadata("design:paramtypes", [])
         ], OutputRoute.prototype, "label", null);
+        __decorate([
+            (0, Metadata_1.property)("Routed input label", true),
+            __metadata("design:type", String),
+            __metadata("design:paramtypes", [])
+        ], OutputRoute.prototype, "routedInputLabel", null);
         return OutputRoute;
     }());
     /**
@@ -109,6 +121,13 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             enumerable: false,
             configurable: true
         });
+        Object.defineProperty(InputInfo.prototype, "destinations", {
+            get: function () {
+                return this.owner.getInputDestinations(this.index);
+            },
+            enumerable: false,
+            configurable: true
+        });
         InputInfo.prototype.updateLabel = function (label) {
             if (this.mLabel !== label) {
                 this.mLabel = label;
@@ -120,6 +139,11 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             __metadata("design:type", String),
             __metadata("design:paramtypes", [])
         ], InputInfo.prototype, "label", null);
+        __decorate([
+            (0, Metadata_1.property)("Routed to outputs", true),
+            __metadata("design:type", String),
+            __metadata("design:paramtypes", [])
+        ], InputInfo.prototype, "destinations", null);
         return InputInfo;
     }());
     var BMDvideohubDriver = (function (_super) {
@@ -136,6 +160,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             _this.input = {};
             _this.outputLabels = [];
             _this.inputLabels = [];
+            // Simple label dictionaries with 1-based indexing for easy display
+            _this.inputLabel = {};
+            _this.outputLabel = {};
             socket.autoConnect();
             socket.subscribe('connect', function (sender, message) {
                 _this.onConnectStateChanged(message.type === 'Connection');
@@ -263,6 +290,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             for (var i = 0; i < this.numInputs; i++) {
                 this.inputLabels[i] = '';
                 this.input[i] = new InputInfo(this, i);
+                // Populate 1-based label dictionary
+                this.inputLabel[i + 1] = '';
             }
         };
         /**
@@ -274,6 +303,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             for (var i = 0; i < this.numOutputs; i++) {
                 this.outputLabels[i] = '';
                 this.output[i] = new OutputRoute(this, i);
+                // Populate 1-based label dictionary
+                this.outputLabel[i + 1] = '';
             }
         };
         /**
@@ -288,12 +319,15 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     var label = line.substring(spaceIdx + 1);
                     if (index >= 0 && index < _this.numInputs) {
                         _this.inputLabels[index] = label;
+                        // Update 1-based label dictionary
+                        _this.inputLabel[index + 1] = label;
                         if (_this.input[index]) {
                             _this.input[index].updateLabel(label);
                         }
                     }
                 }
             });
+            this.changed('inputLabel');
         };
         /**
          * Parse output labels
@@ -307,9 +341,12 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     var label = line.substring(spaceIdx + 1);
                     if (index >= 0 && index < _this.numOutputs) {
                         _this.outputLabels[index] = label;
+                        // Update 1-based label dictionary
+                        _this.outputLabel[index + 1] = label;
                     }
                 }
             });
+            this.changed('outputLabel');
         };
         /**
          * Parse output routing state
@@ -328,15 +365,38 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     }
                 }
             });
+            // Routing changes affect input destinations, so notify
+            this.changed('input');
         };
         /**
-         * Get output label
+         * Get output label (0-based index)
          */
         BMDvideohubDriver.prototype.getOutputLabel = function (index) {
             if (index >= 0 && index < this.outputLabels.length) {
-                return this.outputLabels[index] || ("Output " + index);
+                return this.outputLabels[index] || ("Output " + (index + 1));
             }
-            return "Output " + index;
+            return "Output " + (index + 1);
+        };
+        /**
+         * Get input label (0-based index)
+         */
+        BMDvideohubDriver.prototype.getInputLabel = function (index) {
+            if (index >= 0 && index < this.inputLabels.length) {
+                return this.inputLabels[index] || ("Input " + (index + 1));
+            }
+            return "Input " + (index + 1);
+        };
+        /**
+         * Get comma-separated list of output labels where this input is routed (0-based index)
+         */
+        BMDvideohubDriver.prototype.getInputDestinations = function (inputIndex) {
+            var destinations = [];
+            for (var i = 0; i < this.numOutputs; i++) {
+                if (this.output[i] && this.output[i].mRoutedInput === inputIndex) {
+                    destinations.push(this.getOutputLabel(i));
+                }
+            }
+            return destinations.length > 0 ? destinations.join(', ') : 'None';
         };
         /**
          * Route an input to an output

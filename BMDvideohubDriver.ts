@@ -57,6 +57,11 @@ class OutputRoute {
 	get label(): string {
 		return this.owner.getOutputLabel(this.outputIndex);
 	}
+
+	@property("Routed input label", true)
+	get routedInputLabel(): string {
+		return this.owner.getInputLabel(this.mRoutedInput);
+	}
 }
 
 /**
@@ -73,6 +78,11 @@ class InputInfo {
 	@property("Input label", true)
 	get label(): string {
 		return this.mLabel;
+	}
+
+	@property("Routed to outputs", true)
+	get destinations(): string {
+		return this.owner.getInputDestinations(this.index);
 	}
 
 	public updateLabel(label: string): void {
@@ -98,6 +108,10 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 	private outputLabels: string[] = [];
 	private inputLabels: string[] = [];
+
+	// Simple label dictionaries with 1-based indexing for easy display
+	public readonly inputLabel: {[index: number]: string} = {};
+	public readonly outputLabel: {[index: number]: string} = {};
 
 	constructor(private socket: NetworkTCP) {
 		super(socket);
@@ -239,6 +253,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		for (let i = 0; i < this.numInputs; i++) {
 			this.inputLabels[i] = '';
 			this.input[i] = new InputInfo(this, i);
+			// Populate 1-based label dictionary
+			this.inputLabel[i + 1] = '';
 		}
 	}
 
@@ -251,6 +267,8 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 		for (let i = 0; i < this.numOutputs; i++) {
 			this.outputLabels[i] = '';
 			this.output[i] = new OutputRoute(this, i);
+			// Populate 1-based label dictionary
+			this.outputLabel[i + 1] = '';
 		}
 	}
 
@@ -266,12 +284,15 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 				if (index >= 0 && index < this.numInputs) {
 					this.inputLabels[index] = label;
+					// Update 1-based label dictionary
+					this.inputLabel[index + 1] = label;
 					if (this.input[index]) {
 						this.input[index].updateLabel(label);
 					}
 				}
 			}
 		});
+		this.changed('inputLabel');
 	}
 
 	/**
@@ -286,9 +307,12 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 
 				if (index >= 0 && index < this.numOutputs) {
 					this.outputLabels[index] = label;
+					// Update 1-based label dictionary
+					this.outputLabel[index + 1] = label;
 				}
 			}
 		});
+		this.changed('outputLabel');
 	}
 
 	/**
@@ -308,16 +332,41 @@ export class BMDvideohubDriver extends Driver<NetworkTCP> {
 				}
 			}
 		});
+		// Routing changes affect input destinations, so notify
+		this.changed('input');
 	}
 
 	/**
-	 * Get output label
+	 * Get output label (0-based index)
 	 */
 	public getOutputLabel(index: number): string {
 		if (index >= 0 && index < this.outputLabels.length) {
-			return this.outputLabels[index] || `Output ${index}`;
+			return this.outputLabels[index] || `Output ${index + 1}`;
 		}
-		return `Output ${index}`;
+		return `Output ${index + 1}`;
+	}
+
+	/**
+	 * Get input label (0-based index)
+	 */
+	public getInputLabel(index: number): string {
+		if (index >= 0 && index < this.inputLabels.length) {
+			return this.inputLabels[index] || `Input ${index + 1}`;
+		}
+		return `Input ${index + 1}`;
+	}
+
+	/**
+	 * Get comma-separated list of output labels where this input is routed (0-based index)
+	 */
+	public getInputDestinations(inputIndex: number): string {
+		const destinations: string[] = [];
+		for (let i = 0; i < this.numOutputs; i++) {
+			if (this.output[i] && this.output[i]['mRoutedInput'] === inputIndex) {
+				destinations.push(this.getOutputLabel(i));
+			}
+		}
+		return destinations.length > 0 ? destinations.join(', ') : 'None';
 	}
 
 	/**
