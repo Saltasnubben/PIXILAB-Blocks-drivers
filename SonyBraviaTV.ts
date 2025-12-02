@@ -27,13 +27,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 				this.onConnectStateChanged(true);
 			}
 		});
-
-		// Subscribe to incoming text to process responses and feedback
-		// This helps establish proper two-way communication with some TV models
-		socket.subscribe('textReceived', (sender, message) => {
-			// Just acknowledge receipt - parsing done by TV feedback
-			// This ensures the socket is in listening mode for proper communication
-		});
 	}
 
 	/**
