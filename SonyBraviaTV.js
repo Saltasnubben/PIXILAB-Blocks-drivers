@@ -47,6 +47,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
         }
         SonyBraviaTV.prototype.onConnectStateChanged = function (connected) {
             if (connected) {
+                console.warn('Sony Bravia: Connected, polling status');
                 this.pollPowerStatus();
                 this.pollVolumeStatus();
                 this.pollInputStatus();
@@ -68,7 +69,7 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     padded = padded.substring(0, 23);
                 }
                 var fullCommand = padded + '\n';
-                console.log('Sony Bravia: Sending command: ' + padded);
+                console.warn('Sony Bravia: Sending command: ' + padded);
                 this.socket.sendText(fullCommand);
             }
             catch (e) {
@@ -76,12 +77,15 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             }
         };
         SonyBraviaTV.prototype.pollPowerStatus = function () {
+            console.warn('Sony Bravia: Polling power status');
             this.sendCommand('*SEPOWR################');
         };
         SonyBraviaTV.prototype.pollVolumeStatus = function () {
+            console.warn('Sony Bravia: Polling volume status');
             this.sendCommand('*SEVOLU################');
         };
         SonyBraviaTV.prototype.pollInputStatus = function () {
+            console.warn('Sony Bravia: Polling input status');
             this.sendCommand('*SEINPT################');
         };
         Object.defineProperty(SonyBraviaTV.prototype, "power", {

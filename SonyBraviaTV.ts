@@ -36,6 +36,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 		if (connected) {
 			// Poll status to establish the connection and prime the protocol
 			// This helps with TV models that don't trigger connection events reliably
+			console.warn('Sony Bravia: Connected, polling status');
 			this.pollPowerStatus();
 			this.pollVolumeStatus();
 			this.pollInputStatus();
@@ -75,7 +76,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 			// Add LF (0x0A) at the end as required by SSIP
 			const fullCommand = padded + '\n';
-			console.log('Sony Bravia: Sending command: ' + padded);
+			console.warn('Sony Bravia: Sending command: ' + padded);
 			this.socket.sendText(fullCommand);
 		} catch (e) {
 			console.error('Failed to send command to Sony Bravia:', e);
@@ -87,6 +88,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 */
 	private pollPowerStatus() {
 		// SSIP Enquiry: *SEPOWR[################]
+		console.warn('Sony Bravia: Polling power status');
 		this.sendCommand('*SEPOWR################');
 	}
 
@@ -95,6 +97,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 */
 	private pollVolumeStatus() {
 		// SSIP Enquiry: *SEVOLU[################]
+		console.warn('Sony Bravia: Polling volume status');
 		this.sendCommand('*SEVOLU################');
 	}
 
@@ -103,6 +106,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 */
 	private pollInputStatus() {
 		// SSIP Enquiry: *SEINPT[################]
+		console.warn('Sony Bravia: Polling input status');
 		this.sendCommand('*SEINPT################');
 	}
 
