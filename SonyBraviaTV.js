@@ -95,11 +95,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 return this.mPower;
             },
             set: function (on) {
-                if (this.mPower !== on) {
-                    this.mPower = on;
-                    var value = on ? '0000000000000001' : '0000000000000000';
-                    this.sendCommand('*SCPOWR' + value);
-                }
+                this.mPower = on;
+                var value = on ? '0000000000000001' : '0000000000000000';
+                this.sendCommand('*SCPOWR' + value);
             },
             enumerable: false,
             configurable: true
@@ -113,12 +111,10 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     console.error('HDMI input must be between 1 and 4');
                     return;
                 }
-                if (this.mHdmiInput !== input) {
-                    this.mHdmiInput = input;
-                    var portStr = this.padLeft(String(input), 8, '0');
-                    var value = '00000001' + portStr;
-                    this.sendCommand('*SCINPT' + value);
-                }
+                this.mHdmiInput = input;
+                var portStr = this.padLeft(String(input), 8, '0');
+                var value = '00000001' + portStr;
+                this.sendCommand('*SCINPT' + value);
             },
             enumerable: false,
             configurable: true
@@ -132,11 +128,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     console.error('Volume must be between 0 and 100');
                     return;
                 }
-                if (this.mVolume !== level) {
-                    this.mVolume = level;
-                    var value = this.padLeft(String(level), 16, '0');
-                    this.sendCommand('*SCVOLU' + value);
-                }
+                this.mVolume = level;
+                var value = this.padLeft(String(level), 16, '0');
+                this.sendCommand('*SCVOLU' + value);
             },
             enumerable: false,
             configurable: true

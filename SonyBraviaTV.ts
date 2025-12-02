@@ -128,12 +128,11 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	}
 
 	public set power(on: boolean) {
-		if (this.mPower !== on) {
-			this.mPower = on;
-			// SSIP Control: *SCPOWR[16-digit value] (0=off, 1=on)
-			const value = on ? '0000000000000001' : '0000000000000000';
-			this.sendCommand('*SCPOWR' + value);
-		}
+		this.mPower = on;
+		// SSIP Control: *SCPOWR[16-digit value] (0=off, 1=on)
+		// Always send the command, even if the value hasn't changed
+		const value = on ? '0000000000000001' : '0000000000000000';
+		this.sendCommand('*SCPOWR' + value);
 	}
 
 	/**
@@ -151,13 +150,12 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 			return;
 		}
 
-		if (this.mHdmiInput !== input) {
-			this.mHdmiInput = input;
-			// SSIP Control: *SCINPT[16-digit value] where format is 00000001 + 8-digit port
-			const portStr = this.padLeft(String(input), 8, '0');
-			const value = '00000001' + portStr;
-			this.sendCommand('*SCINPT' + value);
-		}
+		this.mHdmiInput = input;
+		// SSIP Control: *SCINPT[16-digit value] where format is 00000001 + 8-digit port
+		// Always send the command, even if the value hasn't changed
+		const portStr = this.padLeft(String(input), 8, '0');
+		const value = '00000001' + portStr;
+		this.sendCommand('*SCINPT' + value);
 	}
 
 	/**
@@ -175,12 +173,11 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 			return;
 		}
 
-		if (this.mVolume !== level) {
-			this.mVolume = level;
-			// SSIP Control: *SCVOLU[16-digit value] left-padded with zeros
-			const value = this.padLeft(String(level), 16, '0');
-			this.sendCommand('*SCVOLU' + value);
-		}
+		this.mVolume = level;
+		// SSIP Control: *SCVOLU[16-digit value] left-padded with zeros
+		// Always send the command, even if the value hasn't changed
+		const value = this.padLeft(String(level), 16, '0');
+		this.sendCommand('*SCVOLU' + value);
 	}
 
 	/**
