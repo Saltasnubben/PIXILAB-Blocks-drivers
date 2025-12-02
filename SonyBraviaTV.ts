@@ -68,9 +68,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	/**
 	 * Send SSIP command to the TV
 	 * SSIP format: 23 characters of command + 0x0A (LF) newline = 24 bytes total
-	 *
-	 * Some TV models (particularly 40" models) may need a small delay before
-	 * accepting control commands after connection.
 	 */
 	private sendCommand(command: string): void {
 		try {
@@ -85,9 +82,9 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 				padded = padded.substring(0, 23);
 			}
 
-			// Add LF (0x0A) at the end as required by SSIP
-			const fullCommand = padded + '\n';
-			console.warn('Sony Bravia: Sending command: ' + padded);
+			// Add LF (0x0A) newline - use explicit character, not escape sequence
+			const fullCommand = padded + String.fromCharCode(0x0A);
+			console.warn('Sony Bravia: Sending command: ' + padded + ' (with LF)');
 			this.socket.sendText(fullCommand);
 		} catch (e) {
 			console.error('Failed to send command to Sony Bravia:', e);

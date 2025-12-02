@@ -73,8 +73,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 if (padded.length > 23) {
                     padded = padded.substring(0, 23);
                 }
-                var fullCommand = padded + '\n';
-                console.warn('Sony Bravia: Sending command: ' + padded);
+                var fullCommand = padded + String.fromCharCode(0x0A);
+                console.warn('Sony Bravia: Sending command: ' + padded + ' (with LF)');
                 this.socket.sendText(fullCommand);
             }
             catch (e) {
