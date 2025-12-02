@@ -74,7 +74,9 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 			}
 
 			// Add LF (0x0A) at the end as required by SSIP
-			this.socket.sendText(padded + '\n');
+			const fullCommand = padded + '\n';
+			console.log('Sony Bravia: Sending command: ' + padded);
+			this.socket.sendText(fullCommand);
 		} catch (e) {
 			console.error('Failed to send command to Sony Bravia:', e);
 		}
