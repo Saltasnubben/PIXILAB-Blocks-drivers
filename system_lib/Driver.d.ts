@@ -2,7 +2,7 @@ interface NetworkTCP {
 	connected: boolean;
 	autoConnect(): void;
 	subscribe(event: string, callback: (sender: any, message: any) => void): void;
-	sendText(text: string): any;
+	sendText(text: string, eol?: string): any;
 }
 
 declare module "system_lib/Driver" {

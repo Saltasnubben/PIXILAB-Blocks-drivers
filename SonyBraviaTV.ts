@@ -67,7 +67,7 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 	/**
 	 * Send SSIP command to the TV
-	 * SSIP format: 23 characters of command + 0x0A (LF) newline = 24 bytes total
+	 * SSIP format: 23 characters of command + LF newline (sent via eol parameter)
 	 */
 	private sendCommand(command: string): void {
 		try {
@@ -82,10 +82,10 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 				padded = padded.substring(0, 23);
 			}
 
-			// Add LF (0x0A) newline - use explicit character, not escape sequence
-			const fullCommand = padded + String.fromCharCode(0x0A);
-			console.warn('Sony Bravia: Sending command: ' + padded + ' (with LF)');
-			this.socket.sendText(fullCommand);
+			// Use sendText with explicit eol parameter to properly terminate the command
+			// This is the correct way to send SSIP commands in the Blocks framework
+			console.warn('Sony Bravia: Sending command: ' + padded);
+			this.socket.sendText(padded, '\n');
 		} catch (e) {
 			console.error('Failed to send command to Sony Bravia:', e);
 		}
