@@ -44,6 +44,9 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
             });
             socket.subscribe('textReceived', function (sender, message) {
+                if (message && message.text) {
+                    console.warn('Sony Bravia: Received: ' + message.text.trim());
+                }
             });
             return _this;
         }

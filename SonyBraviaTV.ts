@@ -30,11 +30,13 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 		// Subscribe to incoming text responses
 		// Some TV models (especially 40" units) need the socket in listening mode
-		// for commands to be properly transmitted. This empty handler keeps the
+		// for commands to be properly transmitted. This handler keeps the
 		// socket active without blocking command execution.
 		socket.subscribe('textReceived', (sender, message) => {
-			// Responses are handled passively through TV's unsolicited notifications
-			// Just having this listener ensures proper socket communication for all models
+			// Log responses to help diagnose communication issues
+			if (message && message.text) {
+				console.warn('Sony Bravia: Received: ' + message.text.trim());
+			}
 		});
 	}
 
