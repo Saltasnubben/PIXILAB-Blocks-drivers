@@ -43,6 +43,8 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                     _this.onConnectStateChanged(true);
                 }
             });
+            socket.subscribe('textReceived', function (sender, message) {
+            });
             return _this;
         }
         SonyBraviaTV.prototype.onConnectStateChanged = function (connected) {
