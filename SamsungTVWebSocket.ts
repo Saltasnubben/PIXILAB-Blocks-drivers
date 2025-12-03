@@ -51,7 +51,7 @@ class TVConnection {
 }
 
 export class SamsungTVWebSocket extends Script {
-	private tvConnections: Map<string, TVConnection> = new Map();
+	private tvConnections: { [key: string]: TVConnection } = {};
 	private defaultTvId: string = "";
 	private remoteName: string = "Blocks Remote";
 	private tokenFile: string = "samsung-tv-tokens.json";
@@ -71,15 +71,18 @@ export class SamsungTVWebSocket extends Script {
 				const tokensData = JSON.parse(data);
 
 				for (const tvId in tokensData) {
-					const tvData = tokensData[tvId];
-					const connection = new TVConnection(tvData.host, tvData.port, tvData.token);
-					this.tvConnections.set(tvId, connection);
-					console.log(`Loaded saved token for TV: ${tvId}`);
+					if (tokensData.hasOwnProperty(tvId)) {
+						const tvData = tokensData[tvId];
+						const connection = new TVConnection(tvData.host, tvData.port, tvData.token);
+						this.tvConnections[tvId] = connection;
+						console.log(`Loaded saved token for TV: ${tvId}`);
+					}
 				}
 
 				// Set default to first loaded TV
-				if (this.tvConnections.size > 0 && !this.defaultTvId) {
-					this.defaultTvId = Array.from(this.tvConnections.keys())[0];
+				const keys = Object.keys(this.tvConnections);
+				if (keys.length > 0 && !this.defaultTvId) {
+					this.defaultTvId = keys[0];
 				}
 			}
 		} catch (error) {
@@ -94,15 +97,18 @@ export class SamsungTVWebSocket extends Script {
 		try {
 			const tokensData: any = {};
 
-			this.tvConnections.forEach((connection, tvId) => {
-				if (connection.authToken) {
-					tokensData[tvId] = {
-						host: connection.host,
-						port: connection.port,
-						token: connection.authToken
-					};
+			for (const tvId in this.tvConnections) {
+				if (this.tvConnections.hasOwnProperty(tvId)) {
+					const connection = this.tvConnections[tvId];
+					if (connection.authToken) {
+						tokensData[tvId] = {
+							host: connection.host,
+							port: connection.port,
+							token: connection.authToken
+						};
+					}
 				}
-			});
+			}
 
 			await SimpleFile.write(this.tokenFile, JSON.stringify(tokensData, null, 2));
 			console.log("Tokens saved successfully");
@@ -121,7 +127,7 @@ export class SamsungTVWebSocket extends Script {
 			return null;
 		}
 
-		const connection = this.tvConnections.get(id);
+		const connection = this.tvConnections[id];
 		if (!connection) {
 			console.error(`TV connection not found: ${id}`);
 			return null;
@@ -143,11 +149,11 @@ export class SamsungTVWebSocket extends Script {
 		const tvId = `${host}:${tvPort}`;
 
 		// Check if already exists
-		let connection = this.tvConnections.get(tvId);
+		let connection = this.tvConnections[tvId];
 
 		if (!connection) {
 			connection = new TVConnection(host, tvPort, token || "");
-			this.tvConnections.set(tvId, connection);
+			this.tvConnections[tvId] = connection;
 		} else {
 			if (token) {
 				connection.authToken = token;
@@ -217,7 +223,7 @@ export class SamsungTVWebSocket extends Script {
 		@parameter("TV ID (host:port) or leave empty for all", true) tvId?: string
 	): void {
 		if (tvId) {
-			const connection = this.tvConnections.get(tvId);
+			const connection = this.tvConnections[tvId];
 			if (connection && connection.ws) {
 				try {
 					connection.ws.disconnect();
@@ -229,17 +235,20 @@ export class SamsungTVWebSocket extends Script {
 			}
 		} else {
 			// Disconnect all
-			this.tvConnections.forEach((connection, id) => {
-				if (connection.ws) {
-					try {
-						connection.ws.disconnect();
-					} catch (e) {
-						console.error(`Error disconnecting from ${id}:`, e);
+			for (const id in this.tvConnections) {
+				if (this.tvConnections.hasOwnProperty(id)) {
+					const connection = this.tvConnections[id];
+					if (connection.ws) {
+						try {
+							connection.ws.disconnect();
+						} catch (e) {
+							console.error(`Error disconnecting from ${id}:`, e);
+						}
+						connection.ws = null;
+						connection.connected = false;
 					}
-					connection.ws = null;
-					connection.connected = false;
 				}
-			});
+			}
 		}
 	}
 
@@ -357,7 +366,7 @@ export class SamsungTVWebSocket extends Script {
 	}
 
 	public set defaultTV(tvId: string) {
-		if (this.tvConnections.has(tvId)) {
+		if (this.tvConnections[tvId]) {
 			this.defaultTvId = tvId;
 			console.log(`Default TV set to: ${tvId}`);
 		} else {
@@ -368,11 +377,14 @@ export class SamsungTVWebSocket extends Script {
 	@property("Connected TVs (comma-separated)")
 	public get connectedTVs(): string {
 		const connected: string[] = [];
-		this.tvConnections.forEach((connection, id) => {
-			if (connection.connected) {
-				connected.push(id);
+		for (const id in this.tvConnections) {
+			if (this.tvConnections.hasOwnProperty(id)) {
+				const connection = this.tvConnections[id];
+				if (connection.connected) {
+					connected.push(id);
+				}
 			}
-		});
+		}
 		return connected.join(', ');
 	}
 
@@ -668,11 +680,14 @@ export class SamsungTVWebSocket extends Script {
 	@callable('List all configured TVs')
 	public listTVs(): string {
 		const tvList: string[] = [];
-		this.tvConnections.forEach((connection, id) => {
-			const status = connection.connected ? "connected" : "disconnected";
-			const isDefault = id === this.defaultTvId ? " (default)" : "";
-			tvList.push(`${id} - ${status}${isDefault}`);
-		});
+		for (const id in this.tvConnections) {
+			if (this.tvConnections.hasOwnProperty(id)) {
+				const connection = this.tvConnections[id];
+				const status = connection.connected ? "connected" : "disconnected";
+				const isDefault = id === this.defaultTvId ? " (default)" : "";
+				tvList.push(`${id} - ${status}${isDefault}`);
+			}
+		}
 		return tvList.join('\n') || 'No TVs configured';
 	}
 }

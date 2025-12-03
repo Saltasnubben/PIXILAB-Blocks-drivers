@@ -88,7 +88,7 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
         __extends(SamsungTVWebSocket, _super);
         function SamsungTVWebSocket(env) {
             var _this = _super.call(this, env) || this;
-            _this.tvConnections = new Map();
+            _this.tvConnections = {};
             _this.defaultTvId = "";
             _this.remoteName = "Blocks Remote";
             _this.tokenFile = "samsung-tv-tokens.json";
@@ -97,7 +97,7 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
         }
         SamsungTVWebSocket.prototype.loadTokens = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var data, tokensData, tvId, tvData, connection, error_1;
+                var data, tokensData, tvId, tvData, connection, keys, error_1;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -108,13 +108,16 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                             data = _a.sent();
                             tokensData = JSON.parse(data);
                             for (tvId in tokensData) {
-                                tvData = tokensData[tvId];
-                                connection = new TVConnection(tvData.host, tvData.port, tvData.token);
-                                this.tvConnections.set(tvId, connection);
-                                console.log("Loaded saved token for TV: ".concat(tvId));
+                                if (tokensData.hasOwnProperty(tvId)) {
+                                    tvData = tokensData[tvId];
+                                    connection = new TVConnection(tvData.host, tvData.port, tvData.token);
+                                    this.tvConnections[tvId] = connection;
+                                    console.log("Loaded saved token for TV: ".concat(tvId));
+                                }
                             }
-                            if (this.tvConnections.size > 0 && !this.defaultTvId) {
-                                this.defaultTvId = Array.from(this.tvConnections.keys())[0];
+                            keys = Object.keys(this.tvConnections);
+                            if (keys.length > 0 && !this.defaultTvId) {
+                                this.defaultTvId = keys[0];
                             }
                             _a.label = 2;
                         case 2: return [3, 4];
@@ -129,22 +132,25 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
         };
         SamsungTVWebSocket.prototype.saveTokens = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var tokensData_1, error_2;
+                var tokensData, tvId, connection, error_2;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             _a.trys.push([0, 2, , 3]);
-                            tokensData_1 = {};
-                            this.tvConnections.forEach(function (connection, tvId) {
-                                if (connection.authToken) {
-                                    tokensData_1[tvId] = {
-                                        host: connection.host,
-                                        port: connection.port,
-                                        token: connection.authToken
-                                    };
+                            tokensData = {};
+                            for (tvId in this.tvConnections) {
+                                if (this.tvConnections.hasOwnProperty(tvId)) {
+                                    connection = this.tvConnections[tvId];
+                                    if (connection.authToken) {
+                                        tokensData[tvId] = {
+                                            host: connection.host,
+                                            port: connection.port,
+                                            token: connection.authToken
+                                        };
+                                    }
                                 }
-                            });
-                            return [4, SimpleFile_1.SimpleFile.write(this.tokenFile, JSON.stringify(tokensData_1, null, 2))];
+                            }
+                            return [4, SimpleFile_1.SimpleFile.write(this.tokenFile, JSON.stringify(tokensData, null, 2))];
                         case 1:
                             _a.sent();
                             console.log("Tokens saved successfully");
@@ -164,7 +170,7 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                 console.error("No TV ID specified and no default TV set. Use connect() first.");
                 return null;
             }
-            var connection = this.tvConnections.get(id);
+            var connection = this.tvConnections[id];
             if (!connection) {
                 console.error("TV connection not found: ".concat(id));
                 return null;
@@ -179,10 +185,10 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                         case 0:
                             tvPort = port || 8001;
                             tvId = "".concat(host, ":").concat(tvPort);
-                            connection = this.tvConnections.get(tvId);
+                            connection = this.tvConnections[tvId];
                             if (!connection) {
                                 connection = new TVConnection(host, tvPort, token || "");
-                                this.tvConnections.set(tvId, connection);
+                                this.tvConnections[tvId] = connection;
                             }
                             else {
                                 if (token) {
@@ -253,7 +259,7 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
         };
         SamsungTVWebSocket.prototype.disconnect = function (tvId) {
             if (tvId) {
-                var connection = this.tvConnections.get(tvId);
+                var connection = this.tvConnections[tvId];
                 if (connection && connection.ws) {
                     try {
                         connection.ws.disconnect();
@@ -266,18 +272,21 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                 }
             }
             else {
-                this.tvConnections.forEach(function (connection, id) {
-                    if (connection.ws) {
-                        try {
-                            connection.ws.disconnect();
+                for (var id in this.tvConnections) {
+                    if (this.tvConnections.hasOwnProperty(id)) {
+                        var connection = this.tvConnections[id];
+                        if (connection.ws) {
+                            try {
+                                connection.ws.disconnect();
+                            }
+                            catch (e) {
+                                console.error("Error disconnecting from ".concat(id, ":"), e);
+                            }
+                            connection.ws = null;
+                            connection.connected = false;
                         }
-                        catch (e) {
-                            console.error("Error disconnecting from ".concat(id, ":"), e);
-                        }
-                        connection.ws = null;
-                        connection.connected = false;
                     }
-                });
+                }
             }
         };
         SamsungTVWebSocket.prototype.handleMessage = function (connection, text) {
@@ -375,7 +384,7 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                 return this.defaultTvId;
             },
             set: function (tvId) {
-                if (this.tvConnections.has(tvId)) {
+                if (this.tvConnections[tvId]) {
                     this.defaultTvId = tvId;
                     console.log("Default TV set to: ".concat(tvId));
                 }
@@ -389,11 +398,14 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
         Object.defineProperty(SamsungTVWebSocket.prototype, "connectedTVs", {
             get: function () {
                 var connected = [];
-                this.tvConnections.forEach(function (connection, id) {
-                    if (connection.connected) {
-                        connected.push(id);
+                for (var id in this.tvConnections) {
+                    if (this.tvConnections.hasOwnProperty(id)) {
+                        var connection = this.tvConnections[id];
+                        if (connection.connected) {
+                            connected.push(id);
+                        }
                     }
-                });
+                }
                 return connected.join(', ');
             },
             enumerable: false,
@@ -816,13 +828,15 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
             });
         };
         SamsungTVWebSocket.prototype.listTVs = function () {
-            var _this = this;
             var tvList = [];
-            this.tvConnections.forEach(function (connection, id) {
-                var status = connection.connected ? "connected" : "disconnected";
-                var isDefault = id === _this.defaultTvId ? " (default)" : "";
-                tvList.push("".concat(id, " - ").concat(status).concat(isDefault));
-            });
+            for (var id in this.tvConnections) {
+                if (this.tvConnections.hasOwnProperty(id)) {
+                    var connection = this.tvConnections[id];
+                    var status_1 = connection.connected ? "connected" : "disconnected";
+                    var isDefault = id === this.defaultTvId ? " (default)" : "";
+                    tvList.push("".concat(id, " - ").concat(status_1).concat(isDefault));
+                }
+            }
             return tvList.join('\n') || 'No TVs configured';
         };
         __decorate([
