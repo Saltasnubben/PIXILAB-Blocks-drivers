@@ -65,29 +65,39 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SamsungTVWebSocket = void 0;
+    var TVConnection = (function () {
+        function TVConnection(host, port, token) {
+            if (port === void 0) { port = 8001; }
+            if (token === void 0) { token = ""; }
+            this.ws = null;
+            this.authToken = "";
+            this.connected = false;
+            this.connecting = false;
+            this.powerState = false;
+            this.host = host;
+            this.port = port;
+            this.useSSL = port === 8002;
+            this.authToken = token;
+        }
+        TVConnection.prototype.getId = function () {
+            return "".concat(this.host, ":").concat(this.port);
+        };
+        return TVConnection;
+    }());
     var SamsungTVWebSocket = (function (_super) {
         __extends(SamsungTVWebSocket, _super);
         function SamsungTVWebSocket(env) {
             var _this = _super.call(this, env) || this;
-            _this.ws = null;
-            _this.tvHost = "";
-            _this.tvPort = 8001;
-            _this.useSSL = false;
-            _this.authToken = "";
+            _this.tvConnections = new Map();
+            _this.defaultTvId = "";
             _this.remoteName = "Blocks Remote";
-            _this.tokenFile = "samsung-tv-token.txt";
-            _this.mPower = false;
-            _this.mVolume = 50;
-            _this.mMuted = false;
-            _this.mSource = "HDMI1";
-            _this.connecting = false;
-            _this.connected = false;
-            _this.loadToken();
+            _this.tokenFile = "samsung-tv-tokens.json";
+            _this.loadTokens();
             return _this;
         }
-        SamsungTVWebSocket.prototype.loadToken = function () {
+        SamsungTVWebSocket.prototype.loadTokens = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var data, tokenData, error_1;
+                var data, tokensData, tvId, tvData, connection, error_1;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -96,64 +106,93 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                             return [4, SimpleFile_1.SimpleFile.read(this.tokenFile)];
                         case 1:
                             data = _a.sent();
-                            tokenData = JSON.parse(data);
-                            if (tokenData.token && tokenData.host) {
-                                this.authToken = tokenData.token;
-                                this.tvHost = tokenData.host;
-                                this.tvPort = tokenData.port || 8001;
-                                console.log("Loaded saved token for ".concat(this.tvHost, ":").concat(this.tvPort));
+                            tokensData = JSON.parse(data);
+                            for (tvId in tokensData) {
+                                tvData = tokensData[tvId];
+                                connection = new TVConnection(tvData.host, tvData.port, tvData.token);
+                                this.tvConnections.set(tvId, connection);
+                                console.log("Loaded saved token for TV: ".concat(tvId));
+                            }
+                            if (this.tvConnections.size > 0 && !this.defaultTvId) {
+                                this.defaultTvId = Array.from(this.tvConnections.keys())[0];
                             }
                             _a.label = 2;
                         case 2: return [3, 4];
                         case 3:
                             error_1 = _a.sent();
-                            console.warn("Could not load saved token:", error_1);
+                            console.warn("Could not load saved tokens:", error_1);
                             return [3, 4];
                         case 4: return [2];
                     }
                 });
             });
         };
-        SamsungTVWebSocket.prototype.saveToken = function () {
+        SamsungTVWebSocket.prototype.saveTokens = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var tokenData, error_2;
+                var tokensData_1, error_2;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             _a.trys.push([0, 2, , 3]);
-                            tokenData = {
-                                token: this.authToken,
-                                host: this.tvHost,
-                                port: this.tvPort
-                            };
-                            return [4, SimpleFile_1.SimpleFile.write(this.tokenFile, JSON.stringify(tokenData))];
+                            tokensData_1 = {};
+                            this.tvConnections.forEach(function (connection, tvId) {
+                                if (connection.authToken) {
+                                    tokensData_1[tvId] = {
+                                        host: connection.host,
+                                        port: connection.port,
+                                        token: connection.authToken
+                                    };
+                                }
+                            });
+                            return [4, SimpleFile_1.SimpleFile.write(this.tokenFile, JSON.stringify(tokensData_1, null, 2))];
                         case 1:
                             _a.sent();
-                            console.log("Token saved successfully");
+                            console.log("Tokens saved successfully");
                             return [3, 3];
                         case 2:
                             error_2 = _a.sent();
-                            console.error("Failed to save token:", error_2);
+                            console.error("Failed to save tokens:", error_2);
                             return [3, 3];
                         case 3: return [2];
                     }
                 });
             });
         };
+        SamsungTVWebSocket.prototype.getTVConnection = function (tvId) {
+            var id = tvId || this.defaultTvId;
+            if (!id) {
+                console.error("No TV ID specified and no default TV set. Use connect() first.");
+                return null;
+            }
+            var connection = this.tvConnections.get(id);
+            if (!connection) {
+                console.error("TV connection not found: ".concat(id));
+                return null;
+            }
+            return connection;
+        };
         SamsungTVWebSocket.prototype.connect = function (host, port, token) {
             return __awaiter(this, void 0, void 0, function () {
+                var tvPort, tvId, connection;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            if (this.connecting) {
-                                console.warn("Connection already in progress");
-                                return [2];
+                            tvPort = port || 8001;
+                            tvId = "".concat(host, ":").concat(tvPort);
+                            connection = this.tvConnections.get(tvId);
+                            if (!connection) {
+                                connection = new TVConnection(host, tvPort, token || "");
+                                this.tvConnections.set(tvId, connection);
                             }
-                            this.tvHost = host;
-                            this.tvPort = port || 8001;
-                            this.useSSL = this.tvPort === 8002;
-                            this.authToken = token || "";
-                            return [4, this.connectWebSocket()];
+                            else {
+                                if (token) {
+                                    connection.authToken = token;
+                                }
+                            }
+                            if (!this.defaultTvId) {
+                                this.defaultTvId = tvId;
+                            }
+                            return [4, this.connectWebSocket(connection)];
                         case 1:
                             _a.sent();
                             return [2];
@@ -161,117 +200,124 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                 });
             });
         };
-        SamsungTVWebSocket.prototype.disconnect = function () {
-            if (this.ws) {
-                try {
-                    this.ws.disconnect();
-                }
-                catch (e) {
-                    console.error("Error disconnecting:", e);
-                }
-                this.ws = null;
-                this.connected = false;
-            }
-        };
-        SamsungTVWebSocket.prototype.reconnect = function () {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            this.disconnect();
-                            return [4, this.connectWebSocket()];
-                        case 1:
-                            _a.sent();
-                            return [2];
-                    }
-                });
-            });
-        };
-        SamsungTVWebSocket.prototype.connectWebSocket = function () {
+        SamsungTVWebSocket.prototype.connectWebSocket = function (connection) {
             return __awaiter(this, void 0, void 0, function () {
                 var protocol, encodedName, url, headers, _a, error_3;
                 var _this = this;
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
-                            if (this.connecting || this.connected) {
+                            if (connection.connecting || connection.connected) {
                                 return [2];
                             }
-                            this.connecting = true;
+                            connection.connecting = true;
                             _b.label = 1;
                         case 1:
                             _b.trys.push([1, 3, 4, 5]);
-                            protocol = this.useSSL ? "wss" : "ws";
+                            protocol = connection.useSSL ? "wss" : "ws";
                             encodedName = this.base64Encode(this.remoteName);
-                            url = "".concat(protocol, "://").concat(this.tvHost, ":").concat(this.tvPort, "/api/v2/channels/samsung.remote.control?name=").concat(encodedName);
-                            if (this.authToken) {
-                                url += "&token=".concat(this.authToken);
+                            url = "".concat(protocol, "://").concat(connection.host, ":").concat(connection.port, "/api/v2/channels/samsung.remote.control?name=").concat(encodedName);
+                            if (connection.authToken) {
+                                url += "&token=".concat(connection.authToken);
                             }
-                            console.log("Connecting to Samsung TV at ".concat(url));
+                            console.log("Connecting to Samsung TV at ".concat(connection.getId()));
                             headers = {};
-                            _a = this;
+                            _a = connection;
                             return [4, SimpleWebsocket_1.SimpleWebsocket.connect(url, 65536, headers)];
                         case 2:
                             _a.ws = _b.sent();
-                            this.ws.subscribe('textReceived', function (sender, message) {
-                                _this.handleMessage(message.text);
+                            connection.ws.subscribe('textReceived', function (sender, message) {
+                                _this.handleMessage(connection, message.text);
                             });
-                            this.ws.subscribe('finish', function () {
-                                console.log("WebSocket connection closed");
-                                _this.connected = false;
-                                _this.ws = null;
+                            connection.ws.subscribe('finish', function () {
+                                console.log("WebSocket connection closed for ".concat(connection.getId()));
+                                connection.connected = false;
+                                connection.ws = null;
                             });
-                            this.connected = true;
-                            console.log("Connected to Samsung TV");
+                            connection.connected = true;
+                            console.log("Connected to Samsung TV: ".concat(connection.getId()));
                             return [3, 5];
                         case 3:
                             error_3 = _b.sent();
-                            console.error("Failed to connect to Samsung TV:", error_3);
-                            this.connected = false;
-                            this.ws = null;
+                            console.error("Failed to connect to Samsung TV ".concat(connection.getId(), ":"), error_3);
+                            connection.connected = false;
+                            connection.ws = null;
                             return [3, 5];
                         case 4:
-                            this.connecting = false;
+                            connection.connecting = false;
                             return [7];
                         case 5: return [2];
                     }
                 });
             });
         };
-        SamsungTVWebSocket.prototype.handleMessage = function (text) {
+        SamsungTVWebSocket.prototype.disconnect = function (tvId) {
+            if (tvId) {
+                var connection = this.tvConnections.get(tvId);
+                if (connection && connection.ws) {
+                    try {
+                        connection.ws.disconnect();
+                    }
+                    catch (e) {
+                        console.error("Error disconnecting from ".concat(tvId, ":"), e);
+                    }
+                    connection.ws = null;
+                    connection.connected = false;
+                }
+            }
+            else {
+                this.tvConnections.forEach(function (connection, id) {
+                    if (connection.ws) {
+                        try {
+                            connection.ws.disconnect();
+                        }
+                        catch (e) {
+                            console.error("Error disconnecting from ".concat(id, ":"), e);
+                        }
+                        connection.ws = null;
+                        connection.connected = false;
+                    }
+                });
+            }
+        };
+        SamsungTVWebSocket.prototype.handleMessage = function (connection, text) {
             try {
                 var message = JSON.parse(text);
                 if (message.event === 'ms.channel.connect') {
-                    console.log("Connection established:", message.data);
+                    console.log("Connection established for ".concat(connection.getId(), ":"), message.data);
                     if (message.data && message.data.token) {
-                        this.authToken = message.data.token;
-                        console.log("Received auth token:", this.authToken);
-                        this.saveToken();
+                        connection.authToken = message.data.token;
+                        console.log("Received auth token for ".concat(connection.getId()));
+                        this.saveTokens();
                     }
                 }
                 else if (message.event === 'ms.channel.unauthorized') {
-                    console.warn("Unauthorized - TV may require pairing approval on TV screen");
+                    console.warn("Unauthorized for ".concat(connection.getId(), " - TV may require pairing approval on TV screen"));
                 }
                 else {
-                    console.log("Received message:", message);
+                    console.log("Received message from ".concat(connection.getId(), ":"), message);
                 }
             }
             catch (e) {
-                console.warn("Failed to parse message:", text);
+                console.warn("Failed to parse message from ".concat(connection.getId(), ":"), text);
             }
         };
-        SamsungTVWebSocket.prototype.sendKey = function (keyCode) {
+        SamsungTVWebSocket.prototype.sendKey = function (keyCode, tvId) {
             return __awaiter(this, void 0, void 0, function () {
-                var error_4, command;
+                var connection, error_4, command;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            if (!(!this.connected && this.tvHost)) return [3, 5];
-                            console.log("Not connected, attempting to reconnect...");
+                            connection = this.getTVConnection(tvId);
+                            if (!connection) {
+                                return [2];
+                            }
+                            if (!!connection.connected) return [3, 5];
+                            console.log("Not connected to ".concat(connection.getId(), ", attempting to reconnect..."));
                             _a.label = 1;
                         case 1:
                             _a.trys.push([1, 4, , 5]);
-                            return [4, this.connectWebSocket()];
+                            return [4, this.connectWebSocket(connection)];
                         case 2:
                             _a.sent();
                             return [4, new Promise(function (resolve) { return setTimeout(resolve, 1000); })];
@@ -280,12 +326,11 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                             return [3, 5];
                         case 4:
                             error_4 = _a.sent();
-                            console.error("Failed to reconnect:", error_4);
-                            console.warn("Not connected to TV. Use connect() first to set up the TV.");
+                            console.error("Failed to reconnect to ".concat(connection.getId(), ":"), error_4);
                             return [2];
                         case 5:
-                            if (!this.connected || !this.ws) {
-                                console.error("Still not connected after reconnection attempt. Please check TV is on and use connect() method.");
+                            if (!connection.connected || !connection.ws) {
+                                console.error("Still not connected to ".concat(connection.getId(), ". Please check TV is on."));
                                 return [2];
                             }
                             command = {
@@ -298,11 +343,11 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
                                 }
                             };
                             try {
-                                this.ws.sendText(JSON.stringify(command));
-                                console.log("Sent command: ".concat(keyCode));
+                                connection.ws.sendText(JSON.stringify(command));
+                                console.log("Sent command to ".concat(connection.getId(), ": ").concat(keyCode));
                             }
                             catch (error) {
-                                console.error("Failed to send key:", error);
+                                console.error("Failed to send key to ".concat(connection.getId(), ":"), error);
                             }
                             return [2];
                     }
@@ -325,179 +370,460 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
             }
             return result;
         };
-        Object.defineProperty(SamsungTVWebSocket.prototype, "isConnected", {
+        Object.defineProperty(SamsungTVWebSocket.prototype, "defaultTV", {
             get: function () {
-                return this.connected;
+                return this.defaultTvId;
             },
-            enumerable: false,
-            configurable: true
-        });
-        Object.defineProperty(SamsungTVWebSocket.prototype, "power", {
-            get: function () {
-                return this.mPower;
-            },
-            set: function (on) {
-                this.mPower = on;
-                if (on) {
-                    this.sendKey('KEY_POWERON');
+            set: function (tvId) {
+                if (this.tvConnections.has(tvId)) {
+                    this.defaultTvId = tvId;
+                    console.log("Default TV set to: ".concat(tvId));
                 }
                 else {
-                    this.sendKey('KEY_POWEROFF');
+                    console.error("TV not found: ".concat(tvId));
                 }
             },
             enumerable: false,
             configurable: true
         });
-        Object.defineProperty(SamsungTVWebSocket.prototype, "volume", {
+        Object.defineProperty(SamsungTVWebSocket.prototype, "connectedTVs", {
             get: function () {
-                return this.mVolume;
-            },
-            set: function (level) {
-                if (level < 0 || level > 100) {
-                    console.error('Volume must be between 0 and 100');
-                    return;
-                }
-                this.mVolume = level;
+                var connected = [];
+                this.tvConnections.forEach(function (connection, id) {
+                    if (connection.connected) {
+                        connected.push(id);
+                    }
+                });
+                return connected.join(', ');
             },
             enumerable: false,
             configurable: true
         });
-        Object.defineProperty(SamsungTVWebSocket.prototype, "muted", {
-            get: function () {
-                return this.mMuted;
-            },
-            set: function (mute) {
-                if (this.mMuted !== mute) {
-                    this.mMuted = mute;
-                    this.sendKey('KEY_MUTE');
-                }
-            },
-            enumerable: false,
-            configurable: true
-        });
-        Object.defineProperty(SamsungTVWebSocket.prototype, "source", {
-            get: function () {
-                return this.mSource;
-            },
-            set: function (src) {
-                this.mSource = src;
-                this.sendKey('KEY_SOURCE');
-            },
-            enumerable: false,
-            configurable: true
-        });
-        SamsungTVWebSocket.prototype.powerOn = function () {
-            this.power = true;
+        SamsungTVWebSocket.prototype.powerOn = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                var connection;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            connection = this.getTVConnection(tvId);
+                            if (!connection)
+                                return [2];
+                            if (!!connection.powerState) return [3, 2];
+                            return [4, this.sendKey('KEY_POWER', tvId)];
+                        case 1:
+                            _a.sent();
+                            connection.powerState = true;
+                            _a.label = 2;
+                        case 2: return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.powerOff = function () {
-            this.power = false;
+        SamsungTVWebSocket.prototype.powerOff = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                var connection;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            connection = this.getTVConnection(tvId);
+                            if (!connection)
+                                return [2];
+                            if (!connection.powerState) return [3, 2];
+                            return [4, this.sendKey('KEY_POWER', tvId)];
+                        case 1:
+                            _a.sent();
+                            connection.powerState = false;
+                            _a.label = 2;
+                        case 2: return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.powerToggle = function () {
-            this.sendKey('KEY_POWER');
-            this.mPower = !this.mPower;
+        SamsungTVWebSocket.prototype.powerToggle = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                var connection;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            connection = this.getTVConnection(tvId);
+                            if (!connection)
+                                return [2];
+                            return [4, this.sendKey('KEY_POWER', tvId)];
+                        case 1:
+                            _a.sent();
+                            connection.powerState = !connection.powerState;
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.volumeUp = function () {
-            this.sendKey('KEY_VOLUP');
-            if (this.mVolume < 100) {
-                this.mVolume++;
-            }
+        SamsungTVWebSocket.prototype.volumeUp = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_VOLUP', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.volumeDown = function () {
-            this.sendKey('KEY_VOLDOWN');
-            if (this.mVolume > 0) {
-                this.mVolume--;
-            }
+        SamsungTVWebSocket.prototype.volumeDown = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_VOLDOWN', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.toggleMute = function () {
-            this.mMuted = !this.mMuted;
-            this.sendKey('KEY_MUTE');
+        SamsungTVWebSocket.prototype.toggleMute = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_MUTE', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.channelUp = function () {
-            this.sendKey('KEY_CHUP');
+        SamsungTVWebSocket.prototype.channelUp = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_CHUP', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.channelDown = function () {
-            this.sendKey('KEY_CHDOWN');
+        SamsungTVWebSocket.prototype.channelDown = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_CHDOWN', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.previousChannel = function () {
-            this.sendKey('KEY_PRECH');
+        SamsungTVWebSocket.prototype.previousChannel = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_PRECH', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.up = function () {
-            this.sendKey('KEY_UP');
+        SamsungTVWebSocket.prototype.up = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_UP', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.down = function () {
-            this.sendKey('KEY_DOWN');
+        SamsungTVWebSocket.prototype.down = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_DOWN', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.left = function () {
-            this.sendKey('KEY_LEFT');
+        SamsungTVWebSocket.prototype.left = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_LEFT', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.right = function () {
-            this.sendKey('KEY_RIGHT');
+        SamsungTVWebSocket.prototype.right = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_RIGHT', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.enter = function () {
-            this.sendKey('KEY_ENTER');
+        SamsungTVWebSocket.prototype.enter = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_ENTER', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.back = function () {
-            this.sendKey('KEY_RETURN');
+        SamsungTVWebSocket.prototype.back = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_RETURN', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.exit = function () {
-            this.sendKey('KEY_EXIT');
+        SamsungTVWebSocket.prototype.exit = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_EXIT', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.menu = function () {
-            this.sendKey('KEY_MENU');
+        SamsungTVWebSocket.prototype.menu = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_MENU', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.home = function () {
-            this.sendKey('KEY_HOME');
+        SamsungTVWebSocket.prototype.home = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_HOME', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.tools = function () {
-            this.sendKey('KEY_TOOLS');
+        SamsungTVWebSocket.prototype.tools = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_TOOLS', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.info = function () {
-            this.sendKey('KEY_INFO');
+        SamsungTVWebSocket.prototype.info = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_INFO', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.changeSource = function () {
-            this.sendKey('KEY_SOURCE');
+        SamsungTVWebSocket.prototype.changeSource = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_SOURCE', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.play = function () {
-            this.sendKey('KEY_PLAY');
+        SamsungTVWebSocket.prototype.play = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_PLAY', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.pause = function () {
-            this.sendKey('KEY_PAUSE');
+        SamsungTVWebSocket.prototype.pause = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_PAUSE', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.stop = function () {
-            this.sendKey('KEY_STOP');
+        SamsungTVWebSocket.prototype.stop = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_STOP', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.rewind = function () {
-            this.sendKey('KEY_REWIND');
+        SamsungTVWebSocket.prototype.rewind = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_REWIND', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.fastForward = function () {
-            this.sendKey('KEY_FF');
+        SamsungTVWebSocket.prototype.fastForward = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_FF', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.record = function () {
-            this.sendKey('KEY_REC');
+        SamsungTVWebSocket.prototype.record = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_REC', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.sendCommand = function (key) {
-            this.sendKey(key);
+        SamsungTVWebSocket.prototype.sendCommand = function (key, tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey(key, tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.selectHDMI = function (input) {
-            if (input < 1 || input > 4) {
-                console.error('HDMI input must be between 1 and 4');
-                return;
-            }
-            this.sendKey('KEY_HDMI' + input);
-            this.mSource = 'HDMI' + input;
+        SamsungTVWebSocket.prototype.selectHDMI = function (input, tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (input < 1 || input > 4) {
+                                console.error('HDMI input must be between 1 and 4');
+                                return [2];
+                            }
+                            return [4, this.sendKey('KEY_HDMI' + input, tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.pressNumber = function (num) {
-            if (num < 0 || num > 9) {
-                console.error('Number must be between 0 and 9');
-                return;
-            }
-            this.sendKey('KEY_' + num);
+        SamsungTVWebSocket.prototype.pressNumber = function (num, tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (num < 0 || num > 9) {
+                                console.error('Number must be between 0 and 9');
+                                return [2];
+                            }
+                            return [4, this.sendKey('KEY_' + num, tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.pictureMode = function () {
-            this.sendKey('KEY_PMODE');
+        SamsungTVWebSocket.prototype.pictureMode = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_PMODE', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
         };
-        SamsungTVWebSocket.prototype.pictureSize = function () {
-            this.sendKey('KEY_PICTURE_SIZE');
+        SamsungTVWebSocket.prototype.pictureSize = function (tvId) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4, this.sendKey('KEY_PICTURE_SIZE', tvId)];
+                        case 1:
+                            _a.sent();
+                            return [2];
+                    }
+                });
+            });
+        };
+        SamsungTVWebSocket.prototype.listTVs = function () {
+            var _this = this;
+            var tvList = [];
+            this.tvConnections.forEach(function (connection, id) {
+                var status = connection.connected ? "connected" : "disconnected";
+                var isDefault = id === _this.defaultTvId ? " (default)" : "";
+                tvList.push("".concat(id, " - ").concat(status).concat(isDefault));
+            });
+            return tvList.join('\n') || 'No TVs configured';
         };
         __decorate([
             (0, Metadata_1.callable)("Connect to Samsung TV"),
@@ -510,236 +836,254 @@ define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "sy
         ], SamsungTVWebSocket.prototype, "connect", null);
         __decorate([
             (0, Metadata_1.callable)("Disconnect from Samsung TV"),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) or leave empty for all", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
+            __metadata("design:paramtypes", [String]),
             __metadata("design:returntype", void 0)
         ], SamsungTVWebSocket.prototype, "disconnect", null);
         __decorate([
-            (0, Metadata_1.callable)("Reconnect to Samsung TV"),
-            __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", Promise)
-        ], SamsungTVWebSocket.prototype, "reconnect", null);
-        __decorate([
-            (0, Metadata_1.property)("Connection status"),
-            __metadata("design:type", Boolean),
-            __metadata("design:paramtypes", [])
-        ], SamsungTVWebSocket.prototype, "isConnected", null);
-        __decorate([
-            (0, Metadata_1.property)("Power state"),
-            __metadata("design:type", Boolean),
-            __metadata("design:paramtypes", [Boolean])
-        ], SamsungTVWebSocket.prototype, "power", null);
-        __decorate([
-            (0, Metadata_1.property)("Volume level (0-100)"),
-            __metadata("design:type", Number),
-            __metadata("design:paramtypes", [Number])
-        ], SamsungTVWebSocket.prototype, "volume", null);
-        __decorate([
-            (0, Metadata_1.property)("Mute status"),
-            __metadata("design:type", Boolean),
-            __metadata("design:paramtypes", [Boolean])
-        ], SamsungTVWebSocket.prototype, "muted", null);
-        __decorate([
-            (0, Metadata_1.property)("Current input source"),
+            (0, Metadata_1.property)("Default TV ID"),
             __metadata("design:type", String),
             __metadata("design:paramtypes", [String])
-        ], SamsungTVWebSocket.prototype, "source", null);
+        ], SamsungTVWebSocket.prototype, "defaultTV", null);
+        __decorate([
+            (0, Metadata_1.property)("Connected TVs (comma-separated)"),
+            __metadata("design:type", String),
+            __metadata("design:paramtypes", [])
+        ], SamsungTVWebSocket.prototype, "connectedTVs", null);
         __decorate([
             (0, Metadata_1.callable)('Power on the TV'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "powerOn", null);
         __decorate([
             (0, Metadata_1.callable)('Power off the TV'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "powerOff", null);
         __decorate([
             (0, Metadata_1.callable)('Toggle power state'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "powerToggle", null);
         __decorate([
             (0, Metadata_1.callable)('Increase volume'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "volumeUp", null);
         __decorate([
             (0, Metadata_1.callable)('Decrease volume'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "volumeDown", null);
         __decorate([
             (0, Metadata_1.callable)('Toggle mute'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "toggleMute", null);
         __decorate([
             (0, Metadata_1.callable)('Next channel'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "channelUp", null);
         __decorate([
             (0, Metadata_1.callable)('Previous channel'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "channelDown", null);
         __decorate([
             (0, Metadata_1.callable)('Return to previous channel'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "previousChannel", null);
         __decorate([
             (0, Metadata_1.callable)('Navigate up'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "up", null);
         __decorate([
             (0, Metadata_1.callable)('Navigate down'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "down", null);
         __decorate([
             (0, Metadata_1.callable)('Navigate left'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "left", null);
         __decorate([
             (0, Metadata_1.callable)('Navigate right'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "right", null);
         __decorate([
             (0, Metadata_1.callable)('Select/Enter'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "enter", null);
         __decorate([
             (0, Metadata_1.callable)('Back/Return'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "back", null);
         __decorate([
             (0, Metadata_1.callable)('Exit'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "exit", null);
         __decorate([
             (0, Metadata_1.callable)('Open main menu'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "menu", null);
         __decorate([
             (0, Metadata_1.callable)('Open home screen'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "home", null);
         __decorate([
             (0, Metadata_1.callable)('Open tools menu'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "tools", null);
         __decorate([
             (0, Metadata_1.callable)('Open info display'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "info", null);
         __decorate([
             (0, Metadata_1.callable)('Change input source'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "changeSource", null);
         __decorate([
             (0, Metadata_1.callable)('Play'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "play", null);
         __decorate([
             (0, Metadata_1.callable)('Pause'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "pause", null);
         __decorate([
             (0, Metadata_1.callable)('Stop'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "stop", null);
         __decorate([
             (0, Metadata_1.callable)('Rewind'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "rewind", null);
         __decorate([
             (0, Metadata_1.callable)('Fast forward'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "fastForward", null);
         __decorate([
             (0, Metadata_1.callable)('Record'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "record", null);
         __decorate([
             (0, Metadata_1.callable)('Send custom key command'),
             __param(0, (0, Metadata_1.parameter)('Key command (e.g., KEY_HDMI, KEY_MENU)')),
+            __param(1, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", [String]),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String, String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "sendCommand", null);
         __decorate([
             (0, Metadata_1.callable)('Select HDMI input'),
             __param(0, (0, Metadata_1.parameter)('HDMI input number (1-4)')),
+            __param(1, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", [Number]),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [Number, String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "selectHDMI", null);
         __decorate([
             (0, Metadata_1.callable)('Press number key'),
             __param(0, (0, Metadata_1.parameter)('Number (0-9)')),
+            __param(1, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", [Number]),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [Number, String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "pressNumber", null);
         __decorate([
             (0, Metadata_1.callable)('Cycle picture mode'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
             __metadata("design:type", Function),
-            __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
         ], SamsungTVWebSocket.prototype, "pictureMode", null);
         __decorate([
             (0, Metadata_1.callable)('Toggle picture size'),
+            __param(0, (0, Metadata_1.parameter)("TV ID (host:port) - optional", true)),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Promise)
+        ], SamsungTVWebSocket.prototype, "pictureSize", null);
+        __decorate([
+            (0, Metadata_1.callable)('List all configured TVs'),
             __metadata("design:type", Function),
             __metadata("design:paramtypes", []),
-            __metadata("design:returntype", void 0)
-        ], SamsungTVWebSocket.prototype, "pictureSize", null);
+            __metadata("design:returntype", String)
+        ], SamsungTVWebSocket.prototype, "listTVs", null);
         return SamsungTVWebSocket;
     }(Script_1.Script));
     exports.SamsungTVWebSocket = SamsungTVWebSocket;
