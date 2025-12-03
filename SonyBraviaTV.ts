@@ -29,14 +29,8 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 		});
 
 		// Subscribe to incoming text responses
-		// Some TV models (especially 40" units) need the socket in listening mode
-		// for commands to be properly transmitted. This handler keeps the
-		// socket active without blocking command execution.
 		socket.subscribe('textReceived', (sender, message) => {
-			// Log responses to help diagnose communication issues
-			if (message && message.text) {
-				console.warn('Sony Bravia: Received: ' + message.text.trim());
-			}
+			// Process responses silently
 		});
 	}
 
@@ -84,7 +78,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 
 			// Use sendText with explicit eol parameter to properly terminate the command
 			// This is the correct way to send SSIP commands in the Blocks framework
-			console.warn('Sony Bravia: Sending command: ' + padded);
 			this.socket.sendText(padded, '\n');
 		} catch (e) {
 			console.error('Failed to send command to Sony Bravia:', e);
@@ -96,7 +89,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 */
 	private pollPowerStatus() {
 		// SSIP Enquiry: *SEPOWR[################]
-		console.warn('Sony Bravia: Polling power status');
 		this.sendCommand('*SEPOWR################');
 	}
 
@@ -105,7 +97,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 */
 	private pollVolumeStatus() {
 		// SSIP Enquiry: *SEVOLU[################]
-		console.warn('Sony Bravia: Polling volume status');
 		this.sendCommand('*SEVOLU################');
 	}
 
@@ -114,7 +105,6 @@ export class SonyBraviaTV extends Driver<NetworkTCP> {
 	 */
 	private pollInputStatus() {
 		// SSIP Enquiry: *SEINPT[################]
-		console.warn('Sony Bravia: Polling input status');
 		this.sendCommand('*SEINPT################');
 	}
 

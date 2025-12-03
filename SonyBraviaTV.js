@@ -44,9 +44,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 }
             });
             socket.subscribe('textReceived', function (sender, message) {
-                if (message && message.text) {
-                    console.warn('Sony Bravia: Received: ' + message.text.trim());
-                }
             });
             return _this;
         }
@@ -73,7 +70,6 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
                 if (padded.length > 23) {
                     padded = padded.substring(0, 23);
                 }
-                console.warn('Sony Bravia: Sending command: ' + padded);
                 this.socket.sendText(padded, '\n');
             }
             catch (e) {
@@ -81,15 +77,12 @@ define(["require", "exports", "system_lib/Driver", "system_lib/Metadata"], funct
             }
         };
         SonyBraviaTV.prototype.pollPowerStatus = function () {
-            console.warn('Sony Bravia: Polling power status');
             this.sendCommand('*SEPOWR################');
         };
         SonyBraviaTV.prototype.pollVolumeStatus = function () {
-            console.warn('Sony Bravia: Polling volume status');
             this.sendCommand('*SEVOLU################');
         };
         SonyBraviaTV.prototype.pollInputStatus = function () {
-            console.warn('Sony Bravia: Polling input status');
             this.sendCommand('*SEINPT################');
         };
         Object.defineProperty(SonyBraviaTV.prototype, "power", {
