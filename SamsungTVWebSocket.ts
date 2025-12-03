@@ -17,6 +17,7 @@
  */
 
 import { SimpleWebsocket } from "system/SimpleWebsocket";
+import { SimpleFile } from "system/SimpleFile";
 import { callable, parameter, property } from "system_lib/Metadata";
 import { Script, ScriptEnv } from "system_lib/Script";
 
@@ -27,6 +28,7 @@ export class SamsungTVWebSocket extends Script {
 	private useSSL: boolean = false;
 	private authToken: string = "";
 	private remoteName: string = "Blocks Remote";
+	private tokenFile: string = "samsung-tv-token.txt";
 
 	private mPower: boolean = false;
 	private mVolume: number = 50;
@@ -37,6 +39,44 @@ export class SamsungTVWebSocket extends Script {
 
 	public constructor(env: ScriptEnv) {
 		super(env);
+		this.loadToken();
+	}
+
+	/**
+	 * Load saved authentication token from disk
+	 */
+	private async loadToken(): Promise<void> {
+		try {
+			if (SimpleFile.exists(this.tokenFile) === 1) {
+				const data = await SimpleFile.read(this.tokenFile);
+				const tokenData = JSON.parse(data);
+				if (tokenData.token && tokenData.host) {
+					this.authToken = tokenData.token;
+					this.tvHost = tokenData.host;
+					this.tvPort = tokenData.port || 8001;
+					console.log(`Loaded saved token for ${this.tvHost}:${this.tvPort}`);
+				}
+			}
+		} catch (error) {
+			console.warn("Could not load saved token:", error);
+		}
+	}
+
+	/**
+	 * Save authentication token to disk
+	 */
+	private async saveToken(): Promise<void> {
+		try {
+			const tokenData = {
+				token: this.authToken,
+				host: this.tvHost,
+				port: this.tvPort
+			};
+			await SimpleFile.write(this.tokenFile, JSON.stringify(tokenData));
+			console.log("Token saved successfully");
+		} catch (error) {
+			console.error("Failed to save token:", error);
+		}
 	}
 
 	/**
@@ -149,12 +189,14 @@ export class SamsungTVWebSocket extends Script {
 				if (message.data && message.data.token) {
 					this.authToken = message.data.token;
 					console.log("Received auth token:", this.authToken);
+					// Save token to disk for future use
+					this.saveToken();
 				}
 			}
 
 			// Handle unauthorized event
 			else if (message.event === 'ms.channel.unauthorized') {
-				console.warn("Unauthorized - TV may require pairing approval");
+				console.warn("Unauthorized - TV may require pairing approval on TV screen");
 			}
 
 			// Handle other events
@@ -169,10 +211,25 @@ export class SamsungTVWebSocket extends Script {
 
 	/**
 	 * Send a remote control key to the TV
+	 * Automatically reconnects if not connected
 	 */
-	private sendKey(keyCode: string): void {
+	private async sendKey(keyCode: string): Promise<void> {
+		// Auto-reconnect if we have a saved host but not connected
+		if (!this.connected && this.tvHost) {
+			console.log("Not connected, attempting to reconnect...");
+			try {
+				await this.connectWebSocket();
+				// Wait a bit for connection to establish
+				await new Promise(resolve => setTimeout(resolve, 1000));
+			} catch (error) {
+				console.error("Failed to reconnect:", error);
+				console.warn("Not connected to TV. Use connect() first to set up the TV.");
+				return;
+			}
+		}
+
 		if (!this.connected || !this.ws) {
-			console.warn("Not connected to TV. Use connect() first.");
+			console.error("Still not connected after reconnection attempt. Please check TV is on and use connect() method.");
 			return;
 		}
 
@@ -188,6 +245,7 @@ export class SamsungTVWebSocket extends Script {
 
 		try {
 			this.ws.sendText(JSON.stringify(command));
+			console.log(`Sent command: ${keyCode}`);
 		} catch (error) {
 			console.error("Failed to send key:", error);
 		}

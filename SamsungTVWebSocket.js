@@ -61,7 +61,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-define(["require", "exports", "system/SimpleWebsocket", "system_lib/Metadata", "system_lib/Script"], function (require, exports, SimpleWebsocket_1, Metadata_1, Script_1) {
+define(["require", "exports", "system/SimpleWebsocket", "system/SimpleFile", "system_lib/Metadata", "system_lib/Script"], function (require, exports, SimpleWebsocket_1, SimpleFile_1, Metadata_1, Script_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SamsungTVWebSocket = void 0;
@@ -75,14 +75,71 @@ define(["require", "exports", "system/SimpleWebsocket", "system_lib/Metadata", "
             _this.useSSL = false;
             _this.authToken = "";
             _this.remoteName = "Blocks Remote";
+            _this.tokenFile = "samsung-tv-token.txt";
             _this.mPower = false;
             _this.mVolume = 50;
             _this.mMuted = false;
             _this.mSource = "HDMI1";
             _this.connecting = false;
             _this.connected = false;
+            _this.loadToken();
             return _this;
         }
+        SamsungTVWebSocket.prototype.loadToken = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var data, tokenData, error_1;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            _a.trys.push([0, 3, , 4]);
+                            if (!(SimpleFile_1.SimpleFile.exists(this.tokenFile) === 1)) return [3, 2];
+                            return [4, SimpleFile_1.SimpleFile.read(this.tokenFile)];
+                        case 1:
+                            data = _a.sent();
+                            tokenData = JSON.parse(data);
+                            if (tokenData.token && tokenData.host) {
+                                this.authToken = tokenData.token;
+                                this.tvHost = tokenData.host;
+                                this.tvPort = tokenData.port || 8001;
+                                console.log("Loaded saved token for ".concat(this.tvHost, ":").concat(this.tvPort));
+                            }
+                            _a.label = 2;
+                        case 2: return [3, 4];
+                        case 3:
+                            error_1 = _a.sent();
+                            console.warn("Could not load saved token:", error_1);
+                            return [3, 4];
+                        case 4: return [2];
+                    }
+                });
+            });
+        };
+        SamsungTVWebSocket.prototype.saveToken = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var tokenData, error_2;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            _a.trys.push([0, 2, , 3]);
+                            tokenData = {
+                                token: this.authToken,
+                                host: this.tvHost,
+                                port: this.tvPort
+                            };
+                            return [4, SimpleFile_1.SimpleFile.write(this.tokenFile, JSON.stringify(tokenData))];
+                        case 1:
+                            _a.sent();
+                            console.log("Token saved successfully");
+                            return [3, 3];
+                        case 2:
+                            error_2 = _a.sent();
+                            console.error("Failed to save token:", error_2);
+                            return [3, 3];
+                        case 3: return [2];
+                    }
+                });
+            });
+        };
         SamsungTVWebSocket.prototype.connect = function (host, port, token) {
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
@@ -132,7 +189,7 @@ define(["require", "exports", "system/SimpleWebsocket", "system_lib/Metadata", "
         };
         SamsungTVWebSocket.prototype.connectWebSocket = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var protocol, encodedName, url, headers, _a, error_1;
+                var protocol, encodedName, url, headers, _a, error_3;
                 var _this = this;
                 return __generator(this, function (_b) {
                     switch (_b.label) {
@@ -168,8 +225,8 @@ define(["require", "exports", "system/SimpleWebsocket", "system_lib/Metadata", "
                             console.log("Connected to Samsung TV");
                             return [3, 5];
                         case 3:
-                            error_1 = _b.sent();
-                            console.error("Failed to connect to Samsung TV:", error_1);
+                            error_3 = _b.sent();
+                            console.error("Failed to connect to Samsung TV:", error_3);
                             this.connected = false;
                             this.ws = null;
                             return [3, 5];
@@ -189,10 +246,11 @@ define(["require", "exports", "system/SimpleWebsocket", "system_lib/Metadata", "
                     if (message.data && message.data.token) {
                         this.authToken = message.data.token;
                         console.log("Received auth token:", this.authToken);
+                        this.saveToken();
                     }
                 }
                 else if (message.event === 'ms.channel.unauthorized') {
-                    console.warn("Unauthorized - TV may require pairing approval");
+                    console.warn("Unauthorized - TV may require pairing approval on TV screen");
                 }
                 else {
                     console.log("Received message:", message);
@@ -203,25 +261,53 @@ define(["require", "exports", "system/SimpleWebsocket", "system_lib/Metadata", "
             }
         };
         SamsungTVWebSocket.prototype.sendKey = function (keyCode) {
-            if (!this.connected || !this.ws) {
-                console.warn("Not connected to TV. Use connect() first.");
-                return;
-            }
-            var command = {
-                method: "ms.remote.control",
-                params: {
-                    Cmd: "Click",
-                    DataOfCmd: keyCode,
-                    Option: "false",
-                    TypeOfRemote: "SendRemoteKey"
-                }
-            };
-            try {
-                this.ws.sendText(JSON.stringify(command));
-            }
-            catch (error) {
-                console.error("Failed to send key:", error);
-            }
+            return __awaiter(this, void 0, void 0, function () {
+                var error_4, command;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!(!this.connected && this.tvHost)) return [3, 5];
+                            console.log("Not connected, attempting to reconnect...");
+                            _a.label = 1;
+                        case 1:
+                            _a.trys.push([1, 4, , 5]);
+                            return [4, this.connectWebSocket()];
+                        case 2:
+                            _a.sent();
+                            return [4, new Promise(function (resolve) { return setTimeout(resolve, 1000); })];
+                        case 3:
+                            _a.sent();
+                            return [3, 5];
+                        case 4:
+                            error_4 = _a.sent();
+                            console.error("Failed to reconnect:", error_4);
+                            console.warn("Not connected to TV. Use connect() first to set up the TV.");
+                            return [2];
+                        case 5:
+                            if (!this.connected || !this.ws) {
+                                console.error("Still not connected after reconnection attempt. Please check TV is on and use connect() method.");
+                                return [2];
+                            }
+                            command = {
+                                method: "ms.remote.control",
+                                params: {
+                                    Cmd: "Click",
+                                    DataOfCmd: keyCode,
+                                    Option: "false",
+                                    TypeOfRemote: "SendRemoteKey"
+                                }
+                            };
+                            try {
+                                this.ws.sendText(JSON.stringify(command));
+                                console.log("Sent command: ".concat(keyCode));
+                            }
+                            catch (error) {
+                                console.error("Failed to send key:", error);
+                            }
+                            return [2];
+                    }
+                });
+            });
         };
         SamsungTVWebSocket.prototype.base64Encode = function (str) {
             var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';

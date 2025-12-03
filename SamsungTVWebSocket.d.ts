@@ -6,6 +6,7 @@ export declare class SamsungTVWebSocket extends Script {
     private useSSL;
     private authToken;
     private remoteName;
+    private tokenFile;
     private mPower;
     private mVolume;
     private mMuted;
@@ -13,6 +14,8 @@ export declare class SamsungTVWebSocket extends Script {
     private connecting;
     private connected;
     constructor(env: ScriptEnv);
+    private loadToken;
+    private saveToken;
     connect(host: string, port?: number, token?: string): Promise<void>;
     disconnect(): void;
     reconnect(): Promise<void>;
