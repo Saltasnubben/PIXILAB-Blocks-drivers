@@ -116,39 +116,16 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
 
     // Debug-läge: visa all info
     if (isset($_GET['debug'])) {
-        $debugBookings = [];
-        foreach ($assignments as $assignment) {
-            $projectRef = $assignment['project'] ?? null;
-            preg_match('/\/projects\/(\d+)/', $projectRef, $matches);
-            $projectId = $matches[1] ?? null;
-
-            $projectInfo = null;
-            if ($projectId) {
-                try {
-                    $projectData = $rentman->get("/projects/$projectId");
-                    $projectInfo = $projectData['data'] ?? $projectData;
-                } catch (Exception $e) {
-                    $projectInfo = ['error' => $e->getMessage()];
-                }
-            }
-
-            $debugBookings[] = [
-                'assignment_id' => $assignment['id'],
-                'project_ref' => $projectRef,
-                'project_id' => $projectId,
-                'project_start' => $projectInfo['planperiod_start'] ?? null,
-                'project_end' => $projectInfo['planperiod_end'] ?? null,
-                'project_name' => $projectInfo['displayname'] ?? $projectInfo['name'] ?? null,
-                'filter_start' => $startDate,
-                'filter_end' => $endDate,
-            ];
-        }
+        // Visa första 3 råa assignments för att se vilka fält som finns
+        $sampleAssignments = array_slice($assignments, 0, 3);
 
         $response->json([
             'debug' => true,
             'assignments_count' => count($assignments),
-            'assignments_raw' => $debugBookings,
-            'filter' => ['startDate' => $startDate, 'endDate' => $endDate],
+            'sample_raw_data' => $sampleAssignments,
+            'available_fields' => !empty($assignments) ? array_keys($assignments[0]) : [],
+            'filter_used' => $params,
+            'crew_id_searched' => $id,
         ]);
         return;
     }
