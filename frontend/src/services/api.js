@@ -5,7 +5,7 @@ const API_BASE = '/api';
 
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 30000,
+  timeout: 120000, // 2 min timeout for slow API calls
   headers: {
     'Content-Type': 'application/json'
   }
@@ -28,20 +28,51 @@ export async function fetchCrewMember(id) {
 }
 
 /**
- * Fetch bookings for selected crew members within a date range
+ * Fetch bookings for a single crew member within a date range
  */
-export async function fetchBookings({ crewIds, startDate, endDate }) {
+export async function fetchCrewBookings(crewId, startDate, endDate) {
   const params = {
     startDate: format(startDate, 'yyyy-MM-dd'),
     endDate: format(endDate, 'yyyy-MM-dd')
   };
 
-  if (crewIds && crewIds.length > 0) {
-    params.crewIds = crewIds.join(',');
+  const response = await api.get(`/crew/${crewId}/bookings`, { params });
+  return response.data;
+}
+
+/**
+ * Fetch bookings for multiple crew members within a date range
+ * Fetches each crew member's bookings in parallel
+ */
+export async function fetchBookings({ crewIds, startDate, endDate }) {
+  if (!crewIds || crewIds.length === 0) {
+    return { data: [], count: 0 };
   }
 
-  const response = await api.get('/bookings', { params });
-  return response.data;
+  // Fetch bookings for each crew member in parallel
+  const promises = crewIds.map(crewId =>
+    fetchCrewBookings(crewId, startDate, endDate)
+      .then(result => ({
+        crewId,
+        bookings: result.data || []
+      }))
+      .catch(err => {
+        console.warn(`Failed to fetch bookings for crew ${crewId}:`, err);
+        return { crewId, bookings: [] };
+      })
+  );
+
+  const results = await Promise.all(promises);
+
+  // Combine all bookings and add crewId to each
+  const allBookings = results.flatMap(({ crewId, bookings }) =>
+    bookings.map(booking => ({ ...booking, crewId }))
+  );
+
+  return {
+    data: allBookings,
+    count: allBookings.length
+  };
 }
 
 /**
