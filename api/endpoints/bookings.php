@@ -27,14 +27,32 @@ function handleBookingsEndpoint(RentmanClient $rentman, ApiResponse $response): 
         $selectedCrewIds = array_map('intval', array_filter(explode(',', $crewIdsParam)));
     }
 
-    // Hämta projekt inom datumintervallet
-    $projectParams = [
-        'planperiod_end[gte]' => $startDate,
-        'planperiod_start[lte]' => $endDate,
-    ];
+    // Hämta projekt (planperiod_* är genererade fält och kan inte filtreras i API)
+    $projects = $rentman->fetchAllPages('/projects', [], 10);
 
-    // Använd mindre batchstorlek för att undvika 6MB-gränsen
-    $projects = $rentman->fetchAllPages('/projects', $projectParams, 15);
+    // Filtrera på datum lokalt
+    $projects = array_filter($projects, function($project) use ($startDate, $endDate) {
+        $projectStart = $project['planperiod_start'] ?? null;
+        $projectEnd = $project['planperiod_end'] ?? null;
+
+        // Projekt utan datum inkluderas inte
+        if (!$projectStart || !$projectEnd) {
+            return false;
+        }
+
+        // Projekt slutar innan vårt startdatum
+        if ($projectEnd < $startDate) {
+            return false;
+        }
+
+        // Projekt startar efter vårt slutdatum
+        if ($projectStart > $endDate) {
+            return false;
+        }
+
+        return true;
+    });
+    $projects = array_values($projects);
 
     if (empty($projects)) {
         $response->json([

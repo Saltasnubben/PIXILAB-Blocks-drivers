@@ -22,27 +22,43 @@ function handleGetAllProjects(RentmanClient $rentman, ApiResponse $response): vo
 {
     $params = [];
 
-    // Datumfilter (rekommenderas starkt för prestanda)
-    if (!empty($_GET['startDate'])) {
-        $params['planperiod_end[gte]'] = $_GET['startDate'];
-    }
-    if (!empty($_GET['endDate'])) {
-        $params['planperiod_start[lte]'] = $_GET['endDate'];
-    }
-
     // Statusfilter
     if (!empty($_GET['status'])) {
         $params['status'] = $_GET['status'];
     }
 
-    // Om inga datumfilter, begränsa till senaste 30 dagarna för att undvika timeout
-    if (empty($_GET['startDate']) && empty($_GET['endDate'])) {
-        $params['planperiod_start[gte]'] = date('Y-m-d', strtotime('-30 days'));
-        $params['planperiod_end[lte]'] = date('Y-m-d', strtotime('+60 days'));
-    }
+    // Hämta projekt (planperiod_* är genererade fält och kan inte filtreras)
+    // Begränsar till 50 projekt för prestanda, filtrering görs efteråt
+    $projects = $rentman->fetchAllPages('/projects', $params, 10);
 
-    // Hämta projekt med mindre batchstorlek för att undvika 6MB-gränsen
-    $projects = $rentman->fetchAllPages('/projects', $params, 15);
+    // Filtrera på datum lokalt om angivet
+    $startDate = $_GET['startDate'] ?? null;
+    $endDate = $_GET['endDate'] ?? null;
+
+    if ($startDate || $endDate) {
+        $projects = array_filter($projects, function($project) use ($startDate, $endDate) {
+            $projectStart = $project['planperiod_start'] ?? null;
+            $projectEnd = $project['planperiod_end'] ?? null;
+
+            // Projekt utan datum inkluderas inte vid datumfiltrering
+            if (!$projectStart || !$projectEnd) {
+                return false;
+            }
+
+            // Projekt slutar innan vårt startdatum
+            if ($startDate && $projectEnd < $startDate) {
+                return false;
+            }
+
+            // Projekt startar efter vårt slutdatum
+            if ($endDate && $projectStart > $endDate) {
+                return false;
+            }
+
+            return true;
+        });
+        $projects = array_values($projects); // Återindexera
+    }
 
     // Mappa till förenklat format
     $simplifiedProjects = array_map(function ($project) {
