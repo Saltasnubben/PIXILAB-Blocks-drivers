@@ -114,6 +114,17 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
     $params = ['crewmember' => "/crew/$id"];
     $assignments = $rentman->fetchAllPages("/projectcrew", $params, 25);
 
+    // Debug: om inga assignments, returnera debug-info
+    if (empty($assignments) && isset($_GET['debug'])) {
+        $response->json([
+            'debug' => true,
+            'message' => 'No assignments found from /projectcrew',
+            'params_used' => $params,
+            'crewId' => $id,
+        ]);
+        return;
+    }
+
     // För varje assignment, hämta projektinfo för att få datum
     $bookings = [];
     foreach ($assignments as $assignment) {
