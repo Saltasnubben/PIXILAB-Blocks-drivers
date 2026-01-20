@@ -72,7 +72,7 @@ function Timeline({ crew, bookings, dateRange, loading }) {
       {/* Timeline header with days */}
       <div className="flex border-b border-gray-200 bg-gray-50">
         {/* Crew name column */}
-        <div className="w-48 flex-shrink-0 px-4 py-3 font-medium text-gray-700 border-r border-gray-200">
+        <div className="w-56 flex-shrink-0 px-4 py-3 font-medium text-gray-700 border-r border-gray-200">
           Crewmedlem
         </div>
 
@@ -103,16 +103,18 @@ function Timeline({ crew, bookings, dateRange, loading }) {
       <div className="divide-y divide-gray-100">
         {crew.map(member => {
           const memberBookings = bookingsByCrew[member.id] || [];
+          // Beräkna radhöjd baserat på antal bokningar
+          const rowHeight = Math.max(80, memberBookings.length * 52 + 16);
 
           return (
-            <div key={member.id} className="flex min-h-[60px]">
+            <div key={member.id} className="flex" style={{ minHeight: `${rowHeight}px` }}>
               {/* Crew name */}
-              <div className="w-48 flex-shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2">
+              <div className="w-56 flex-shrink-0 px-4 py-3 border-r border-gray-200 flex items-start gap-2 bg-gray-50/50">
                 <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  className="w-3 h-3 rounded-full flex-shrink-0 mt-1"
                   style={{ backgroundColor: member.color || '#3b82f6' }}
                 />
-                <span className="font-medium text-gray-900 truncate">
+                <span className="font-medium text-gray-900">
                   {member.name}
                 </span>
               </div>
@@ -140,31 +142,38 @@ function Timeline({ crew, bookings, dateRange, loading }) {
                     Inga bokningar
                   </div>
                 ) : (
-                  <div className="relative h-full min-h-[40px]">
+                  <div className="relative h-full">
                     {memberBookings.map((booking, index) => (
                       <div
                         key={booking.id}
-                        className="absolute h-8 rounded-md shadow-sm cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md group"
+                        className="absolute rounded-md shadow-sm cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md group"
                         style={{
                           ...getBookingStyle(booking),
-                          top: `${index * 36 + 4}px`
+                          top: `${index * 52 + 4}px`,
+                          height: '48px'
                         }}
-                        title={`${booking.projectName}\n${booking.role}\n${format(parseISO(booking.start), 'yyyy-MM-dd')} - ${format(parseISO(booking.end), 'yyyy-MM-dd')}`}
+                        title={`${booking.projectName}\n${booking.role}\n${format(parseISO(booking.start), 'HH:mm')} - ${format(parseISO(booking.end), 'HH:mm')}`}
                       >
-                        <div className="h-full px-2 flex items-center overflow-hidden">
-                          <span className="text-white text-xs font-medium truncate drop-shadow-sm">
+                        <div className="h-full px-3 py-1 flex flex-col justify-center overflow-hidden">
+                          <span className="text-white text-sm font-semibold truncate drop-shadow-sm">
                             {booking.projectName}
+                          </span>
+                          <span className="text-white/80 text-xs truncate drop-shadow-sm">
+                            {booking.role !== booking.projectName ? booking.role : ''}
+                            {format(parseISO(booking.start), 'HH:mm')} - {format(parseISO(booking.end), 'HH:mm')}
                           </span>
                         </div>
 
                         {/* Tooltip */}
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                           <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
-                            <div className="font-semibold">{booking.projectName}</div>
-                            <div className="text-gray-300">{booking.role}</div>
+                            <div className="font-semibold text-sm">{booking.projectName}</div>
+                            {booking.role && booking.role !== booking.projectName && (
+                              <div className="text-gray-300">{booking.role}</div>
+                            )}
                             <div className="text-gray-400 mt-1">
-                              {format(parseISO(booking.start), 'd MMM', { locale: sv })} -{' '}
-                              {format(parseISO(booking.end), 'd MMM', { locale: sv })}
+                              {format(parseISO(booking.start), 'd MMM HH:mm', { locale: sv })} -{' '}
+                              {format(parseISO(booking.end), 'HH:mm', { locale: sv })}
                             </div>
                             {booking.location && (
                               <div className="text-gray-400 flex items-center gap-1 mt-1">
@@ -173,6 +182,11 @@ function Timeline({ crew, bookings, dateRange, loading }) {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                                 {booking.location}
+                              </div>
+                            )}
+                            {booking.remark && (
+                              <div className="text-gray-400 mt-1 max-w-xs truncate">
+                                💬 {booking.remark}
                               </div>
                             )}
                             <div className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-900" />
