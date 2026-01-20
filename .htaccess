@@ -1,0 +1,54 @@
+# Rentman Booking Visualizer - one.com Deployment
+# ================================================
+# Denna fil ska ligga i webroot på one.com
+
+# Aktivera URL-omskrivning
+RewriteEngine On
+
+# Sätt rätt charset
+AddDefaultCharset UTF-8
+
+# API-anrop -> PHP backend
+RewriteCond %{REQUEST_URI} ^/api(/.*)?$
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# Statiska filer (JS, CSS, bilder) - servera direkt
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# SPA routing: Alla andra requests -> index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api
+RewriteRule ^ index.html [L]
+
+# Säkerhet: Neka åtkomst till känsliga filer
+<FilesMatch "(^\.htaccess|\.git|\.env|config\.php)">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Komprimering för bättre prestanda
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache-inställningar för statiska filer
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType application/font-woff2 "access plus 1 month"
+</IfModule>
+
+# Förhindra directory listing
+Options -Indexes
+
+# Skydda mot clickjacking
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
