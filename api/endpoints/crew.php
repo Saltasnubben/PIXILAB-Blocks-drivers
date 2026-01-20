@@ -106,12 +106,67 @@ function handleGetCrewAvailability(RentmanClient $rentman, ApiResponse $response
  */
 function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, string $id): void
 {
-    // Hämta crewmedlems projektuppdrag direkt från Rentman
-    $assignments = $rentman->fetchAllPages("/crew/$id/projectcrew", [], 50);
+    $startDate = $_GET['startDate'] ?? date('Y-m-d');
+    $endDate = $_GET['endDate'] ?? date('Y-m-d', strtotime('+7 days'));
+
+    // Hämta crewmedlems projektuppdrag (begränsa till 100 för prestanda)
+    $assignments = $rentman->fetchAllPages("/crew/$id/projectcrew", [], 25);
+
+    // För varje assignment, hämta projektinfo för att få datum
+    $bookings = [];
+    foreach ($assignments as $assignment) {
+        // Extrahera projekt-ID från referens
+        $projectRef = $assignment['project'] ?? null;
+        if (!$projectRef) continue;
+
+        preg_match('/\/projects\/(\d+)/', $projectRef, $matches);
+        if (empty($matches[1])) continue;
+
+        $projectId = $matches[1];
+
+        // Hämta projektdata (cacheas av RentmanClient)
+        try {
+            $projectData = $rentman->get("/projects/$projectId");
+            $project = $projectData['data'] ?? $projectData;
+
+            $projectStart = $project['planperiod_start'] ?? null;
+            $projectEnd = $project['planperiod_end'] ?? null;
+
+            // Filtrera på datum
+            if ($projectStart && $projectEnd) {
+                // Projekt slutar innan vårt startdatum - skippa
+                if ($projectEnd < $startDate) continue;
+                // Projekt startar efter vårt slutdatum - skippa
+                if ($projectStart > $endDate) continue;
+            }
+
+            $bookings[] = [
+                'id' => $assignment['id'],
+                'projectId' => (int)$projectId,
+                'projectName' => $project['displayname'] ?? $project['name'] ?? 'Unnamed',
+                'projectColor' => $project['color'] ?? '#3B82F6',
+                'projectStatus' => $project['status'] ?? null,
+                'start' => $projectStart,
+                'end' => $projectEnd,
+                'location' => $project['location'] ?? null,
+                'customer' => $project['account_name'] ?? null,
+                'role' => $assignment['crewfunction'] ?? 'Crew',
+                'remark' => $assignment['remark'] ?? null,
+            ];
+        } catch (Exception $e) {
+            // Skippa om projekt inte kan hämtas
+            error_log("Could not fetch project $projectId: " . $e->getMessage());
+            continue;
+        }
+    }
+
+    // Sortera efter startdatum
+    usort($bookings, fn($a, $b) => strcmp($a['start'] ?? '', $b['start'] ?? ''));
 
     $response->json([
-        'data' => $assignments,
-        'count' => count($assignments),
+        'data' => $bookings,
+        'count' => count($bookings),
         'crewId' => (int)$id,
+        'period' => ['startDate' => $startDate, 'endDate' => $endDate],
     ]);
 }
