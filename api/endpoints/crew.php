@@ -15,6 +15,9 @@ function handleCrewEndpoint(RentmanClient $rentman, ApiResponse $response, ?stri
     } elseif ($subEndpoint === 'availability') {
         // GET /api/crew/{id}/availability
         handleGetCrewAvailability($rentman, $response, $id);
+    } elseif ($subEndpoint === 'bookings' || $subEndpoint === 'projectcrew') {
+        // GET /api/crew/{id}/bookings - Hämta crewmedlems bokningar
+        handleGetCrewBookings($rentman, $response, $id);
     } else {
         // GET /api/crew/{id}
         handleGetCrewMember($rentman, $response, $id);
@@ -96,4 +99,19 @@ function handleGetCrewAvailability(RentmanClient $rentman, ApiResponse $response
 
     $result = $rentman->get("/crew/$id/crewavailability", $params);
     $response->json($result);
+}
+
+/**
+ * Hämtar bokningar/projektuppdrag för en crewmedlem
+ */
+function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, string $id): void
+{
+    // Hämta crewmedlems projektuppdrag direkt från Rentman
+    $assignments = $rentman->fetchAllPages("/crew/$id/projectcrew", [], 50);
+
+    $response->json([
+        'data' => $assignments,
+        'count' => count($assignments),
+        'crewId' => (int)$id,
+    ]);
 }
