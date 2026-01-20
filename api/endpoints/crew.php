@@ -109,8 +109,9 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
     $startDate = $_GET['startDate'] ?? date('Y-m-d');
     $endDate = $_GET['endDate'] ?? date('Y-m-d', strtotime('+7 days'));
 
-    // Hämta crewmedlems projektuppdrag (begränsa till 100 för prestanda)
-    $assignments = $rentman->fetchAllPages("/crew/$id/projectcrew", [], 25);
+    // Hämta projektuppdrag via globala /projectcrew med crew-filter
+    $params = ['crew' => $id];
+    $assignments = $rentman->fetchAllPages("/projectcrew", $params, 25);
 
     // För varje assignment, hämta projektinfo för att få datum
     $bookings = [];
