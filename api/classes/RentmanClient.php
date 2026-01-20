@@ -99,8 +99,7 @@ class RentmanClient
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
-
-        curl_close($ch);
+        $requestUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
 
         if ($error) {
             throw new Exception("cURL error: $error");
@@ -108,8 +107,13 @@ class RentmanClient
 
         if ($httpCode >= 400) {
             $errorData = json_decode($response, true);
-            $message = $errorData['message'] ?? "HTTP error $httpCode";
-            throw new Exception("Rentman API error: $message", $httpCode);
+            // Rentman kan returnera fel i olika format
+            $message = $errorData['message']
+                ?? $errorData['error']
+                ?? $errorData['detail']
+                ?? $response  // Visa råa svaret om inget annat
+                ?? "HTTP error $httpCode";
+            throw new Exception("Rentman API error ($httpCode) on $requestUrl: $message", $httpCode);
         }
 
         $data = json_decode($response, true);
