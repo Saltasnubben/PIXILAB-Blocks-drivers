@@ -114,13 +114,41 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
     $params = ['crewmember' => "/crew/$id"];
     $assignments = $rentman->fetchAllPages("/projectcrew", $params, 25);
 
-    // Debug: om inga assignments, returnera debug-info
-    if (empty($assignments) && isset($_GET['debug'])) {
+    // Debug-läge: visa all info
+    if (isset($_GET['debug'])) {
+        $debugBookings = [];
+        foreach ($assignments as $assignment) {
+            $projectRef = $assignment['project'] ?? null;
+            preg_match('/\/projects\/(\d+)/', $projectRef, $matches);
+            $projectId = $matches[1] ?? null;
+
+            $projectInfo = null;
+            if ($projectId) {
+                try {
+                    $projectData = $rentman->get("/projects/$projectId");
+                    $projectInfo = $projectData['data'] ?? $projectData;
+                } catch (Exception $e) {
+                    $projectInfo = ['error' => $e->getMessage()];
+                }
+            }
+
+            $debugBookings[] = [
+                'assignment_id' => $assignment['id'],
+                'project_ref' => $projectRef,
+                'project_id' => $projectId,
+                'project_start' => $projectInfo['planperiod_start'] ?? null,
+                'project_end' => $projectInfo['planperiod_end'] ?? null,
+                'project_name' => $projectInfo['displayname'] ?? $projectInfo['name'] ?? null,
+                'filter_start' => $startDate,
+                'filter_end' => $endDate,
+            ];
+        }
+
         $response->json([
             'debug' => true,
-            'message' => 'No assignments found from /projectcrew',
-            'params_used' => $params,
-            'crewId' => $id,
+            'assignments_count' => count($assignments),
+            'assignments_raw' => $debugBookings,
+            'filter' => ['startDate' => $startDate, 'endDate' => $endDate],
         ]);
         return;
     }
