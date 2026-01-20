@@ -35,7 +35,8 @@ function handleGetAllProjects(RentmanClient $rentman, ApiResponse $response): vo
         $params['status'] = $_GET['status'];
     }
 
-    $projects = $rentman->fetchAllPages('/projects', $params);
+    // Hämta projekt med mindre batchstorlek för att undvika 6MB-gränsen
+    $projects = $rentman->fetchAllPages('/projects', $params, 15);
 
     // Mappa till förenklat format
     $simplifiedProjects = array_map(function ($project) {

@@ -33,7 +33,8 @@ function handleBookingsEndpoint(RentmanClient $rentman, ApiResponse $response): 
         'planperiod_start[lte]' => $endDate,
     ];
 
-    $projects = $rentman->fetchAllPages('/projects', $projectParams);
+    // Använd mindre batchstorlek för att undvika 6MB-gränsen
+    $projects = $rentman->fetchAllPages('/projects', $projectParams, 15);
 
     if (empty($projects)) {
         $response->json([

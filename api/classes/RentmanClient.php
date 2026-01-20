@@ -55,10 +55,9 @@ class RentmanClient
     /**
      * Hämtar alla sidor från ett paginerat endpoint
      */
-    public function fetchAllPages(string $endpoint, array $params = []): array
+    public function fetchAllPages(string $endpoint, array $params = [], int $limit = 25): array
     {
         $allData = [];
-        $limit = 100;
         $offset = 0;
 
         do {
