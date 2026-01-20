@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
-    "dev:api": "php -S localhost:8080 -t api",
+    "dev:api": "php -S localhost:8080 api/router.php",
     "dev:frontend": "npm run dev --prefix frontend",
     "build": "npm run build --prefix frontend",
     "install:frontend": "npm install --prefix frontend"
