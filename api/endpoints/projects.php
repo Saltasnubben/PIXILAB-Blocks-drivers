@@ -22,7 +22,7 @@ function handleGetAllProjects(RentmanClient $rentman, ApiResponse $response): vo
 {
     $params = [];
 
-    // Datumfilter
+    // Datumfilter (rekommenderas starkt för prestanda)
     if (!empty($_GET['startDate'])) {
         $params['planperiod_end[gte]'] = $_GET['startDate'];
     }
@@ -33,6 +33,12 @@ function handleGetAllProjects(RentmanClient $rentman, ApiResponse $response): vo
     // Statusfilter
     if (!empty($_GET['status'])) {
         $params['status'] = $_GET['status'];
+    }
+
+    // Om inga datumfilter, begränsa till senaste 30 dagarna för att undvika timeout
+    if (empty($_GET['startDate']) && empty($_GET['endDate'])) {
+        $params['planperiod_start[gte]'] = date('Y-m-d', strtotime('-30 days'));
+        $params['planperiod_end[lte]'] = date('Y-m-d', strtotime('+60 days'));
     }
 
     // Hämta projekt med mindre batchstorlek för att undvika 6MB-gränsen

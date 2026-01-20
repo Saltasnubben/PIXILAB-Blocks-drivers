@@ -87,7 +87,7 @@ class RentmanClient
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT => 120,
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $this->apiToken,
                 'Content-Type: application/json',

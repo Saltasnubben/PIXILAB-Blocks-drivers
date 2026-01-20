@@ -5,6 +5,9 @@
  * Hanterar alla API-anrop och routar till rätt endpoint
  */
 
+// Öka tidsgräns för långa API-anrop
+set_time_limit(120);
+
 // Felhantering
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
