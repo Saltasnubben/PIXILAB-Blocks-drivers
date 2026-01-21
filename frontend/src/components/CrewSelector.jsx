@@ -1,6 +1,6 @@
 import Select from 'react-select';
 
-function CrewSelector({ crew, selected, onChange, loading }) {
+function CrewSelector({ crew, selected, onChange, loading, availableTags = [], onTagFilter }) {
   const options = crew.map(member => ({
     value: member.id,
     label: member.name,
@@ -13,11 +13,33 @@ function CrewSelector({ crew, selected, onChange, loading }) {
     data: member
   }));
 
+  const tagOptions = availableTags.map(tag => ({
+    value: tag,
+    label: tag
+  }));
+
   const handleChange = (newValue) => {
     const selectedMembers = newValue
       ? newValue.map(option => option.data)
       : [];
     onChange(selectedMembers);
+  };
+
+  const handleTagSelect = (selectedTag) => {
+    if (selectedTag) {
+      // Filtrera crew baserat på tag och lägg till alla
+      const crewWithTag = crew.filter(member =>
+        member.tags && member.tags.includes(selectedTag.value)
+      );
+      // Lägg till de som inte redan är valda
+      const newSelected = [...selected];
+      crewWithTag.forEach(member => {
+        if (!newSelected.find(s => s.id === member.id)) {
+          newSelected.push(member);
+        }
+      });
+      onChange(newSelected);
+    }
   };
 
   const customStyles = {
@@ -77,22 +99,64 @@ function CrewSelector({ crew, selected, onChange, loading }) {
     </div>
   );
 
+  const tagSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: '36px',
+      borderColor: state.isFocused ? '#10b981' : '#d1d5db',
+      boxShadow: state.isFocused ? '0 0 0 1px #10b981' : 'none',
+      '&:hover': {
+        borderColor: '#10b981'
+      }
+    }),
+    option: (base, { isSelected, isFocused }) => ({
+      ...base,
+      backgroundColor: isSelected
+        ? '#10b981'
+        : isFocused
+        ? '#d1fae5'
+        : 'white',
+      color: isSelected ? 'white' : '#1f2937',
+      cursor: 'pointer'
+    }),
+  };
+
   return (
-    <Select
-      isMulti
-      options={options}
-      value={selectedOptions}
-      onChange={handleChange}
-      isLoading={loading}
-      placeholder="Sök och välj crewmedlemmar..."
-      noOptionsMessage={() => 'Inga crewmedlemmar hittades'}
-      loadingMessage={() => 'Laddar...'}
-      styles={customStyles}
-      formatOptionLabel={formatOptionLabel}
-      closeMenuOnSelect={false}
-      className="crew-selector"
-      classNamePrefix="crew-select"
-    />
+    <div className="space-y-2">
+      {/* Tag filter */}
+      {availableTags.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500 whitespace-nowrap">Lägg till via tag:</span>
+          <Select
+            options={tagOptions}
+            onChange={handleTagSelect}
+            value={null}
+            placeholder="Välj tag..."
+            isClearable
+            styles={tagSelectStyles}
+            className="flex-1"
+            classNamePrefix="tag-select"
+          />
+        </div>
+      )}
+
+      {/* Crew selector */}
+      <Select
+        isMulti
+        options={options}
+        value={selectedOptions}
+        onChange={handleChange}
+        isLoading={loading}
+        placeholder="Sök och välj crewmedlemmar..."
+        noOptionsMessage={() => 'Inga crewmedlemmar hittades'}
+        loadingMessage={() => 'Laddar...'}
+        styles={customStyles}
+        formatOptionLabel={formatOptionLabel}
+        closeMenuOnSelect={false}
+        className="crew-selector"
+        classNamePrefix="crew-select"
+      />
+    </div>
   );
 }
 

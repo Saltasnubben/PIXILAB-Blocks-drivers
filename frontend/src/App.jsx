@@ -10,6 +10,7 @@ import { fetchCrew, fetchBookings } from './services/api';
 function App() {
   const [crew, setCrew] = useState([]);
   const [selectedCrew, setSelectedCrew] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
   const [dateRange, setDateRange] = useState({
     start: startOfDay(new Date()),
     end: startOfDay(addDays(new Date(), 7))
@@ -26,6 +27,7 @@ function App() {
         setLoading(true);
         const response = await fetchCrew();
         setCrew(response.data);
+        setAvailableTags(response.availableTags || []);
         setApiStatus('connected');
       } catch (err) {
         console.error('Failed to load crew:', err);
@@ -104,6 +106,7 @@ function App() {
                 selected={selectedCrew}
                 onChange={setSelectedCrew}
                 loading={loading && crew.length === 0}
+                availableTags={availableTags}
               />
             </div>
             <div>

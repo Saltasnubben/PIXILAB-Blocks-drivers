@@ -31,6 +31,29 @@ function handleGetAllCrew(RentmanClient $rentman, ApiResponse $response): void
 {
     $crew = $rentman->fetchAllPages('/crew');
 
+    // Debug: visa rådata för första crewmedlemmen
+    if (isset($_GET['debug']) && !empty($crew)) {
+        $response->json([
+            'debug' => true,
+            'sample_raw_data' => $crew[0],
+            'available_fields' => array_keys($crew[0]),
+            'total_crew' => count($crew),
+        ]);
+        return;
+    }
+
+    // Hämta alla unika tags
+    $allTags = [];
+    foreach ($crew as $member) {
+        $tags = $member['tags'] ?? [];
+        foreach ($tags as $tag) {
+            if (!in_array($tag, $allTags)) {
+                $allTags[] = $tag;
+            }
+        }
+    }
+    sort($allTags);
+
     // Mappa till förenklat format
     $simplifiedCrew = array_map(function ($member) {
         $firstName = $member['firstname'] ?? '';
@@ -47,6 +70,7 @@ function handleGetAllCrew(RentmanClient $rentman, ApiResponse $response): void
             'function' => $member['function'] ?? null,
             'color' => $member['color'] ?? '#3B82F6',
             'active' => ($member['active'] ?? true) !== false,
+            'tags' => $member['tags'] ?? [],
         ];
     }, $crew);
 
@@ -54,6 +78,13 @@ function handleGetAllCrew(RentmanClient $rentman, ApiResponse $response): void
     usort($simplifiedCrew, function ($a, $b) {
         return strcoll($a['name'], $b['name']);
     });
+
+    // Filtrera på tag om angiven
+    if (!empty($_GET['tag'])) {
+        $filterTag = $_GET['tag'];
+        $simplifiedCrew = array_filter($simplifiedCrew, fn($c) => in_array($filterTag, $c['tags']));
+        $simplifiedCrew = array_values($simplifiedCrew);
+    }
 
     // Filtrera endast aktiva om ?active=true
     if (isset($_GET['active']) && $_GET['active'] === 'true') {
@@ -64,6 +95,7 @@ function handleGetAllCrew(RentmanClient $rentman, ApiResponse $response): void
     $response->json([
         'data' => $simplifiedCrew,
         'count' => count($simplifiedCrew),
+        'availableTags' => $allTags,
     ]);
 }
 
