@@ -133,7 +133,8 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
 
         // Hämta projektfunktion för att få projektnamn
         $functionRef = $assignment['function'] ?? null;
-        $projectName = $assignment['displayname'] ?? 'Unnamed';
+        $roleName = $assignment['displayname'] ?? 'Unnamed';
+        $projectName = null;
         $projectId = null;
 
         if ($functionRef) {
@@ -142,13 +143,23 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
                 try {
                     $funcData = $rentman->get("/projectfunctions/" . $matches[1]);
                     $func = $funcData['data'] ?? $funcData;
-                    $projectName = $func['name'] ?? $projectName;
+                    $roleName = $func['name'] ?? $roleName;
 
-                    // Hämta projekt från funktionen
+                    // Hämta projekt från funktionen för att få projektnamn
                     $projectRef = $func['project'] ?? null;
                     if ($projectRef) {
                         preg_match('/\/projects\/(\d+)/', $projectRef, $projMatches);
                         $projectId = $projMatches[1] ?? null;
+
+                        if ($projectId) {
+                            try {
+                                $projectData = $rentman->get("/projects/" . $projectId);
+                                $project = $projectData['data'] ?? $projectData;
+                                $projectName = $project['displayname'] ?? $project['name'] ?? null;
+                            } catch (Exception $e) {
+                                // Ignorera fel
+                            }
+                        }
                     }
                 } catch (Exception $e) {
                     // Ignorera fel, använd displayname
@@ -159,10 +170,10 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
         $bookings[] = [
             'id' => $assignment['id'],
             'projectId' => $projectId ? (int)$projectId : null,
-            'projectName' => $projectName,
+            'projectName' => $projectName ?? $roleName,
             'start' => $assignmentStart,
             'end' => $assignmentEnd,
-            'role' => $projectName,
+            'role' => $roleName,
             'remark' => $assignment['remark'] ?? null,
             'visible' => $assignment['visible'] ?? true,
         ];
