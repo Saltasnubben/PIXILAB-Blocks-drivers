@@ -1,0 +1,26 @@
+# Rentman Booking Visualizer - Apache Configuration for one.com
+
+# ============================================
+# PASSWORD PROTECTION (Basic Auth)
+# ============================================
+AuthType Basic
+AuthName "Rentman Booking Visualizer"
+AuthUserFile /customers/path/to/.htpasswd
+Require valid-user
+
+# ============================================
+# URL REWRITING
+# ============================================
+RewriteEngine On
+
+# Force HTTPS (optional, uncomment if needed)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Handle API requests - forward to api/index.php
+RewriteRule ^api/(.*)$ api/index.php [L,QSA]
+
+# Handle SPA routing - serve index.html for non-existing files
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.html [L]
