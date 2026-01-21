@@ -1,6 +1,13 @@
 import Select from 'react-select';
+import { useTheme } from '../contexts/ThemeContext';
 
 function CrewSelector({ crew, selected, onChange, loading, availableTags = [], onTagFilter }) {
+  const { theme } = useTheme();
+
+  // Determine if we're in dark mode
+  const isDark = theme === 'dark' ||
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
   const options = crew.map(member => ({
     value: member.id,
     label: member.name,
@@ -46,28 +53,34 @@ function CrewSelector({ crew, selected, onChange, loading, availableTags = [], o
     control: (base, state) => ({
       ...base,
       minHeight: '44px',
-      borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+      backgroundColor: isDark ? '#374151' : 'white',
+      borderColor: state.isFocused ? '#3b82f6' : isDark ? '#4b5563' : '#d1d5db',
       boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
       '&:hover': {
         borderColor: '#3b82f6'
       }
     }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: isDark ? '#374151' : 'white',
+      border: isDark ? '1px solid #4b5563' : '1px solid #d1d5db',
+    }),
     multiValue: (base, { data }) => ({
       ...base,
-      backgroundColor: data.data?.color ? `${data.data.color}20` : '#dbeafe',
+      backgroundColor: data.data?.color ? `${data.data.color}20` : isDark ? '#1e40af' : '#dbeafe',
       borderRadius: '6px'
     }),
     multiValueLabel: (base, { data }) => ({
       ...base,
-      color: data.data?.color || '#1e40af',
+      color: isDark ? '#93c5fd' : (data.data?.color || '#1e40af'),
       fontWeight: 500
     }),
     multiValueRemove: (base, { data }) => ({
       ...base,
-      color: data.data?.color || '#1e40af',
+      color: isDark ? '#93c5fd' : (data.data?.color || '#1e40af'),
       ':hover': {
-        backgroundColor: data.data?.color ? `${data.data.color}40` : '#bfdbfe',
-        color: '#1e3a8a'
+        backgroundColor: data.data?.color ? `${data.data.color}40` : isDark ? '#1e3a8a' : '#bfdbfe',
+        color: isDark ? '#bfdbfe' : '#1e3a8a'
       }
     }),
     option: (base, { isSelected, isFocused }) => ({
@@ -75,15 +88,23 @@ function CrewSelector({ crew, selected, onChange, loading, availableTags = [], o
       backgroundColor: isSelected
         ? '#3b82f6'
         : isFocused
-        ? '#eff6ff'
-        : 'white',
-      color: isSelected ? 'white' : '#1f2937',
+        ? isDark ? '#4b5563' : '#eff6ff'
+        : isDark ? '#374151' : 'white',
+      color: isSelected ? 'white' : isDark ? '#f3f4f6' : '#1f2937',
       cursor: 'pointer'
     }),
     placeholder: (base) => ({
       ...base,
-      color: '#9ca3af'
-    })
+      color: isDark ? '#9ca3af' : '#9ca3af'
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: isDark ? '#f3f4f6' : '#1f2937'
+    }),
+    input: (base) => ({
+      ...base,
+      color: isDark ? '#f3f4f6' : '#1f2937'
+    }),
   };
 
   const formatOptionLabel = ({ label, data }) => (
@@ -103,21 +124,39 @@ function CrewSelector({ crew, selected, onChange, loading, availableTags = [], o
     control: (base, state) => ({
       ...base,
       minHeight: '36px',
-      borderColor: state.isFocused ? '#10b981' : '#d1d5db',
+      backgroundColor: isDark ? '#374151' : 'white',
+      borderColor: state.isFocused ? '#10b981' : isDark ? '#4b5563' : '#d1d5db',
       boxShadow: state.isFocused ? '0 0 0 1px #10b981' : 'none',
       '&:hover': {
         borderColor: '#10b981'
       }
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: isDark ? '#374151' : 'white',
+      border: isDark ? '1px solid #4b5563' : '1px solid #d1d5db',
     }),
     option: (base, { isSelected, isFocused }) => ({
       ...base,
       backgroundColor: isSelected
         ? '#10b981'
         : isFocused
-        ? '#d1fae5'
-        : 'white',
-      color: isSelected ? 'white' : '#1f2937',
+        ? isDark ? '#4b5563' : '#d1fae5'
+        : isDark ? '#374151' : 'white',
+      color: isSelected ? 'white' : isDark ? '#f3f4f6' : '#1f2937',
       cursor: 'pointer'
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: isDark ? '#9ca3af' : '#9ca3af'
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: isDark ? '#f3f4f6' : '#1f2937'
+    }),
+    input: (base) => ({
+      ...base,
+      color: isDark ? '#f3f4f6' : '#1f2937'
     }),
   };
 
@@ -126,7 +165,7 @@ function CrewSelector({ crew, selected, onChange, loading, availableTags = [], o
       {/* Tag filter */}
       {availableTags.length > 0 && (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 whitespace-nowrap">Lägg till via tag:</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">Lägg till via tag:</span>
           <Select
             options={tagOptions}
             onChange={handleTagSelect}

@@ -5,6 +5,7 @@ import CrewSelector from './components/CrewSelector';
 import DateRangePicker from './components/DateRangePicker';
 import Timeline from './components/Timeline';
 import StatusBar from './components/StatusBar';
+import ThemeSelector from './components/ThemeSelector';
 import { fetchCrew, fetchBookings } from './services/api';
 
 function App() {
@@ -71,9 +72,9 @@ function App() {
   }, [loadBookings]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -83,11 +84,14 @@ function App() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Rentman Booking Visualizer</h1>
-                <p className="text-sm text-gray-500">Översikt över crew-bokningar</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Rentman Booking Visualizer</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Översikt över crew-bokningar</p>
               </div>
             </div>
-            <StatusBar status={apiStatus} loading={loading} />
+            <div className="flex items-center gap-4">
+              <ThemeSelector />
+              <StatusBar status={apiStatus} loading={loading} />
+            </div>
           </div>
         </div>
       </header>
@@ -95,10 +99,10 @@ function App() {
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Controls */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Välj crewmedlemmar
               </label>
               <CrewSelector
@@ -110,7 +114,7 @@ function App() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Välj tidsperiod (1-14 dagar)
               </label>
               <DateRangePicker
@@ -125,24 +129,24 @@ function App() {
 
         {/* Error message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-red-700">{error}</span>
+              <span className="text-red-700 dark:text-red-400">{error}</span>
             </div>
           </div>
         )}
 
         {/* Empty state */}
         {selectedCrew.length === 0 && !error && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+            <svg className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Välj crewmedlemmar</h3>
-            <p className="text-gray-500">Välj en eller flera crewmedlemmar för att se deras bokningar.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Välj crewmedlemmar</h3>
+            <p className="text-gray-500 dark:text-gray-400">Välj en eller flera crewmedlemmar för att se deras bokningar.</p>
           </div>
         )}
 
@@ -159,36 +163,36 @@ function App() {
         {/* Stats */}
         {selectedCrew.length > 0 && bookings.length > 0 && (
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">{selectedCrew.length}</div>
-              <div className="text-sm text-gray-500">Valda crewmedlemmar</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{selectedCrew.length}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Valda crewmedlemmar</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-primary-600">{bookings.length}</div>
-              <div className="text-sm text-gray-500">Bokningar</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{bookings.length}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Bokningar</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {new Set(bookings.map(b => b.projectId)).size}
               </div>
-              <div className="text-sm text-gray-500">Unika projekt</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Unika projekt</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {Math.round((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24))}
               </div>
-              <div className="text-sm text-gray-500">Dagar</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Dagar</div>
             </div>
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-auto">
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
             Rentman Booking Visualizer &middot; Powered by{' '}
-            <a href="https://rentman.io" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+            <a href="https://rentman.io" target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">
               Rentman API
             </a>
           </p>

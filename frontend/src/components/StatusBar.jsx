@@ -33,7 +33,7 @@ function StatusBar({ status, loading }) {
   const { color, text, pulse } = getStatusDisplay();
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-600">
+    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
       <div className="relative">
         <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
         {pulse && (
