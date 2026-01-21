@@ -6,12 +6,14 @@ import DateRangePicker from './components/DateRangePicker';
 import Timeline from './components/Timeline';
 import StatusBar from './components/StatusBar';
 import ThemeSelector from './components/ThemeSelector';
+import ViewToggle from './components/ViewToggle';
 import { fetchCrew, fetchBookings } from './services/api';
 
 function App() {
   const [crew, setCrew] = useState([]);
   const [selectedCrew, setSelectedCrew] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
+  const [viewMode, setViewMode] = useState('crew'); // 'crew' or 'project'
   const [dateRange, setDateRange] = useState({
     start: startOfDay(new Date()),
     end: startOfDay(addDays(new Date(), 7))
@@ -150,14 +152,20 @@ function App() {
           </div>
         )}
 
-        {/* Timeline */}
+        {/* View toggle and Timeline */}
         {selectedCrew.length > 0 && (
-          <Timeline
-            crew={selectedCrew}
-            bookings={bookings}
-            dateRange={dateRange}
-            loading={loading}
-          />
+          <>
+            <div className="flex justify-end mb-4">
+              <ViewToggle view={viewMode} onChange={setViewMode} />
+            </div>
+            <Timeline
+              crew={selectedCrew}
+              bookings={bookings}
+              dateRange={dateRange}
+              loading={loading}
+              viewMode={viewMode}
+            />
+          </>
         )}
 
         {/* Stats */}
