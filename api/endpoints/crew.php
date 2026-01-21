@@ -42,13 +42,16 @@ function handleGetAllCrew(RentmanClient $rentman, ApiResponse $response): void
         return;
     }
 
-    // Hämta alla unika tags
+    // Hämta alla unika tags (tags är en kommaseparerad sträng i Rentman)
     $allTags = [];
     foreach ($crew as $member) {
-        $tags = $member['tags'] ?? [];
-        foreach ($tags as $tag) {
-            if (!in_array($tag, $allTags)) {
-                $allTags[] = $tag;
+        $tagsString = $member['tags'] ?? '';
+        if (!empty($tagsString)) {
+            $tags = array_map('trim', explode(',', $tagsString));
+            foreach ($tags as $tag) {
+                if (!empty($tag) && !in_array($tag, $allTags)) {
+                    $allTags[] = $tag;
+                }
             }
         }
     }
@@ -60,6 +63,11 @@ function handleGetAllCrew(RentmanClient $rentman, ApiResponse $response): void
         $lastName = $member['lastname'] ?? '';
         $displayName = $member['displayname'] ?? trim("$firstName $lastName");
 
+        // Konvertera tags från sträng till array
+        $tagsString = $member['tags'] ?? '';
+        $tagsArray = !empty($tagsString) ? array_map('trim', explode(',', $tagsString)) : [];
+        $tagsArray = array_filter($tagsArray); // Ta bort tomma värden
+
         return [
             'id' => $member['id'],
             'name' => $displayName ?: 'Unnamed',
@@ -70,7 +78,7 @@ function handleGetAllCrew(RentmanClient $rentman, ApiResponse $response): void
             'function' => $member['function'] ?? null,
             'color' => $member['color'] ?? '#3B82F6',
             'active' => ($member['active'] ?? true) !== false,
-            'tags' => $member['tags'] ?? [],
+            'tags' => $tagsArray,
         ];
     }, $crew);
 
