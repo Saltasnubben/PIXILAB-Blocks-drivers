@@ -8,7 +8,8 @@ import {
   startOfDay,
   parseISO,
   max,
-  min
+  min,
+  isWeekend
 } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -113,24 +114,24 @@ function Timeline({ crew, bookings, dateRange, loading, viewMode = 'crew' }) {
 
         {/* Days */}
         <div className="flex-1 flex">
-          {days.map((day, index) => (
-            <div
-              key={day.toISOString()}
-              className={`flex-1 px-2 py-3 text-center text-sm border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${
-                format(day, 'E', { locale: sv }) === 'lör' ||
-                format(day, 'E', { locale: sv }) === 'sön'
-                  ? 'bg-gray-100 dark:bg-gray-800'
-                  : ''
-              }`}
-            >
-              <div className="font-medium text-gray-900 dark:text-white">
-                {format(day, 'd', { locale: sv })}
+          {days.map((day, index) => {
+            const weekend = isWeekend(day);
+            return (
+              <div
+                key={day.toISOString()}
+                className={`flex-1 px-2 py-3 text-center text-sm border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${
+                  weekend ? 'bg-red-50 dark:bg-red-900/20' : ''
+                }`}
+              >
+                <div className={`font-medium ${weekend ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                  {format(day, 'd', { locale: sv })}
+                </div>
+                <div className={`text-xs ${weekend ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {format(day, 'EEE', { locale: sv })}
+                </div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {format(day, 'EEE', { locale: sv })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -161,10 +162,7 @@ function Timeline({ crew, bookings, dateRange, loading, viewMode = 'crew' }) {
                     <div
                       key={day.toISOString()}
                       className={`flex-1 border-r border-gray-50 dark:border-gray-700/50 last:border-r-0 ${
-                        format(day, 'E', { locale: sv }) === 'lör' ||
-                        format(day, 'E', { locale: sv }) === 'sön'
-                          ? 'bg-gray-50/50 dark:bg-gray-900/30'
-                          : ''
+                        isWeekend(day) ? 'bg-red-50/50 dark:bg-red-900/10' : ''
                       }`}
                     />
                   ))}
@@ -241,24 +239,24 @@ function Timeline({ crew, bookings, dateRange, loading, viewMode = 'crew' }) {
 
         {/* Days */}
         <div className="flex-1 flex">
-          {days.map((day) => (
-            <div
-              key={day.toISOString()}
-              className={`flex-1 px-2 py-3 text-center text-sm border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${
-                format(day, 'E', { locale: sv }) === 'lör' ||
-                format(day, 'E', { locale: sv }) === 'sön'
-                  ? 'bg-gray-100 dark:bg-gray-800'
-                  : ''
-              }`}
-            >
-              <div className="font-medium text-gray-900 dark:text-white">
-                {format(day, 'd', { locale: sv })}
+          {days.map((day) => {
+            const weekend = isWeekend(day);
+            return (
+              <div
+                key={day.toISOString()}
+                className={`flex-1 px-2 py-3 text-center text-sm border-r border-gray-100 dark:border-gray-700 last:border-r-0 ${
+                  weekend ? 'bg-red-50 dark:bg-red-900/20' : ''
+                }`}
+              >
+                <div className={`font-medium ${weekend ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                  {format(day, 'd', { locale: sv })}
+                </div>
+                <div className={`text-xs ${weekend ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {format(day, 'EEE', { locale: sv })}
+                </div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {format(day, 'EEE', { locale: sv })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -288,10 +286,7 @@ function Timeline({ crew, bookings, dateRange, loading, viewMode = 'crew' }) {
                     <div
                       key={day.toISOString()}
                       className={`flex-1 border-r border-gray-50 dark:border-gray-700/50 last:border-r-0 ${
-                        format(day, 'E', { locale: sv }) === 'lör' ||
-                        format(day, 'E', { locale: sv }) === 'sön'
-                          ? 'bg-gray-50/50 dark:bg-gray-900/30'
-                          : ''
+                        isWeekend(day) ? 'bg-red-50/50 dark:bg-red-900/10' : ''
                       }`}
                     />
                   ))}
