@@ -150,6 +150,13 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
     $endDate = $_GET['endDate'] ?? date('Y-m-d', strtotime('+7 days'));
     $includeAppointments = ($_GET['includeAppointments'] ?? 'true') !== 'false';
 
+    // Debug-läge för appointments
+    if (isset($_GET['debug']) && $_GET['debug'] === 'appointments') {
+        $debugInfo = debugAppointments($rentman, $id);
+        $response->json($debugInfo);
+        return;
+    }
+
     $bookings = [];
 
     // Hämta projektuppdrag via globala /projectcrew med crewmember-filter
@@ -284,4 +291,59 @@ function fetchCrewAppointments(RentmanClient $rentman, string $crewId, string $s
     }
 
     return $appointments;
+}
+
+/**
+ * Debug-funktion för att undersöka appointments API
+ */
+function debugAppointments(RentmanClient $rentman, string $crewId): array
+{
+    $debug = [
+        'crewId' => $crewId,
+        'tests' => []
+    ];
+
+    // Test 1: Hämta ALLA appointments (utan filter)
+    try {
+        $allAppointments = $rentman->get("/appointments", ['limit' => 10]);
+        $debug['tests']['all_appointments'] = [
+            'success' => true,
+            'count' => count($allAppointments['data'] ?? []),
+            'sample' => $allAppointments['data'][0] ?? null,
+            'available_fields' => !empty($allAppointments['data']) ? array_keys($allAppointments['data'][0]) : []
+        ];
+    } catch (Exception $e) {
+        $debug['tests']['all_appointments'] = [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+
+    // Test 2: Hämta appointments med crewmember-filter
+    try {
+        $filteredAppointments = $rentman->get("/appointments", ['crewmember' => "/crew/$crewId", 'limit' => 10]);
+        $debug['tests']['filtered_by_crewmember'] = [
+            'success' => true,
+            'count' => count($filteredAppointments['data'] ?? []),
+            'filter_used' => "/crew/$crewId"
+        ];
+    } catch (Exception $e) {
+        $debug['tests']['filtered_by_crewmember'] = [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+
+    // Test 3: Kolla om det finns ett annat fält för crew-koppling
+    if (!empty($debug['tests']['all_appointments']['sample'])) {
+        $sample = $debug['tests']['all_appointments']['sample'];
+        $debug['tests']['crew_related_fields'] = [];
+        foreach ($sample as $key => $value) {
+            if (stripos($key, 'crew') !== false || stripos($key, 'member') !== false || stripos($key, 'user') !== false) {
+                $debug['tests']['crew_related_fields'][$key] = $value;
+            }
+        }
+    }
+
+    return $debug;
 }
