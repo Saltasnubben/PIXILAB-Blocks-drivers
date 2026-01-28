@@ -319,30 +319,52 @@ function debugAppointments(RentmanClient $rentman, string $crewId): array
         ];
     }
 
-    // Test 2: Hämta appointments med crewmember-filter
+    // Test 2: Testa /crew/{id}/appointments som sub-resurs
     try {
-        $filteredAppointments = $rentman->get("/appointments", ['crewmember' => "/crew/$crewId", 'limit' => 10]);
-        $debug['tests']['filtered_by_crewmember'] = [
+        $crewAppointments = $rentman->get("/crew/$crewId/appointments", ['limit' => 10]);
+        $debug['tests']['crew_subresource_appointments'] = [
             'success' => true,
-            'count' => count($filteredAppointments['data'] ?? []),
-            'filter_used' => "/crew/$crewId"
+            'count' => count($crewAppointments['data'] ?? []),
+            'sample' => $crewAppointments['data'][0] ?? null,
+            'available_fields' => !empty($crewAppointments['data']) ? array_keys($crewAppointments['data'][0]) : []
         ];
     } catch (Exception $e) {
-        $debug['tests']['filtered_by_crewmember'] = [
+        $debug['tests']['crew_subresource_appointments'] = [
             'success' => false,
             'error' => $e->getMessage()
         ];
     }
 
-    // Test 3: Kolla om det finns ett annat fält för crew-koppling
-    if (!empty($debug['tests']['all_appointments']['sample'])) {
-        $sample = $debug['tests']['all_appointments']['sample'];
-        $debug['tests']['crew_related_fields'] = [];
-        foreach ($sample as $key => $value) {
-            if (stripos($key, 'crew') !== false || stripos($key, 'member') !== false || stripos($key, 'user') !== false) {
-                $debug['tests']['crew_related_fields'][$key] = $value;
-            }
-        }
+    // Test 3: Testa /crewavailability för denna crew
+    try {
+        $availability = $rentman->get("/crew/$crewId/crewavailability", ['limit' => 10]);
+        $debug['tests']['crew_availability'] = [
+            'success' => true,
+            'count' => count($availability['data'] ?? []),
+            'sample' => $availability['data'][0] ?? null,
+            'available_fields' => !empty($availability['data']) ? array_keys($availability['data'][0]) : []
+        ];
+    } catch (Exception $e) {
+        $debug['tests']['crew_availability'] = [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+
+    // Test 4: Testa /appointmentcrew (kanske finns en kopplingsresurs)
+    try {
+        $appointmentCrew = $rentman->get("/appointmentcrew", ['limit' => 10]);
+        $debug['tests']['appointmentcrew'] = [
+            'success' => true,
+            'count' => count($appointmentCrew['data'] ?? []),
+            'sample' => $appointmentCrew['data'][0] ?? null,
+            'available_fields' => !empty($appointmentCrew['data']) ? array_keys($appointmentCrew['data'][0]) : []
+        ];
+    } catch (Exception $e) {
+        $debug['tests']['appointmentcrew'] = [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
     }
 
     return $debug;
