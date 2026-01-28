@@ -148,6 +148,9 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
 {
     $startDate = $_GET['startDate'] ?? date('Y-m-d');
     $endDate = $_GET['endDate'] ?? date('Y-m-d', strtotime('+7 days'));
+    $includeAppointments = ($_GET['includeAppointments'] ?? 'true') !== 'false';
+
+    $bookings = [];
 
     // Hämta projektuppdrag via globala /projectcrew med crewmember-filter
     // Rentman använder referens-format för relationer
@@ -155,7 +158,6 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
     $assignments = $rentman->fetchAllPages("/projectcrew", $params, 25);
 
     // Filtrera assignments på datum (datum finns direkt i assignment)
-    $bookings = [];
     foreach ($assignments as $assignment) {
         $assignmentStart = $assignment['planperiod_start'] ?? null;
         $assignmentEnd = $assignment['planperiod_end'] ?? null;
@@ -209,6 +211,7 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
 
         $bookings[] = [
             'id' => $assignment['id'],
+            'type' => 'project',
             'projectId' => $projectId ? (int)$projectId : null,
             'projectName' => $projectName ?? $roleName,
             'start' => $assignmentStart,
@@ -217,6 +220,12 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
             'remark' => $assignment['remark'] ?? null,
             'visible' => $assignment['visible'] ?? true,
         ];
+    }
+
+    // Hämta kalenderbokningar (appointments) om aktiverat
+    if ($includeAppointments) {
+        $appointments = fetchCrewAppointments($rentman, $id, $startDate, $endDate);
+        $bookings = array_merge($bookings, $appointments);
     }
 
     // Sortera efter startdatum
@@ -228,4 +237,51 @@ function handleGetCrewBookings(RentmanClient $rentman, ApiResponse $response, st
         'crewId' => (int)$id,
         'period' => ['startDate' => $startDate, 'endDate' => $endDate],
     ]);
+}
+
+/**
+ * Hämtar kalenderbokningar (appointments) för en crewmedlem
+ */
+function fetchCrewAppointments(RentmanClient $rentman, string $crewId, string $startDate, string $endDate): array
+{
+    $appointments = [];
+
+    try {
+        // Hämta appointments med crewmember-filter
+        $params = ['crewmember' => "/crew/$crewId"];
+        $rawAppointments = $rentman->fetchAllPages("/appointments", $params, 25);
+
+        foreach ($rawAppointments as $apt) {
+            $aptStart = $apt['start'] ?? $apt['planperiod_start'] ?? null;
+            $aptEnd = $apt['end'] ?? $apt['planperiod_end'] ?? null;
+
+            // Hoppa över om datum saknas
+            if (!$aptStart || !$aptEnd) continue;
+
+            // Extrahera endast datumdelen för jämförelse
+            $aptStartDate = substr($aptStart, 0, 10);
+            $aptEndDate = substr($aptEnd, 0, 10);
+
+            // Filtrera på datum
+            if ($aptEndDate < $startDate) continue;
+            if ($aptStartDate > $endDate) continue;
+
+            $appointments[] = [
+                'id' => 'apt_' . $apt['id'],
+                'type' => 'appointment',
+                'projectId' => null,
+                'projectName' => $apt['displayname'] ?? $apt['name'] ?? 'Kalenderbokning',
+                'start' => $aptStart,
+                'end' => $aptEnd,
+                'role' => $apt['displayname'] ?? $apt['name'] ?? 'Möte',
+                'remark' => $apt['remark'] ?? $apt['description'] ?? null,
+                'visible' => true,
+            ];
+        }
+    } catch (Exception $e) {
+        // Logga fel men fortsätt (appointments är valfritt)
+        error_log("Failed to fetch appointments for crew $crewId: " . $e->getMessage());
+    }
+
+    return $appointments;
 }
