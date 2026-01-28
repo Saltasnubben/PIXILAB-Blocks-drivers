@@ -254,13 +254,12 @@ function fetchCrewAppointments(RentmanClient $rentman, string $crewId, string $s
     $appointments = [];
 
     try {
-        // Hämta appointments med crewmember-filter
-        $params = ['crewmember' => "/crew/$crewId"];
-        $rawAppointments = $rentman->fetchAllPages("/appointments", $params, 25);
+        // Hämta appointments via crew sub-resurs (korrekt endpoint)
+        $rawAppointments = $rentman->fetchAllPages("/crew/$crewId/appointments", [], 25);
 
         foreach ($rawAppointments as $apt) {
-            $aptStart = $apt['start'] ?? $apt['planperiod_start'] ?? null;
-            $aptEnd = $apt['end'] ?? $apt['planperiod_end'] ?? null;
+            $aptStart = $apt['start'] ?? null;
+            $aptEnd = $apt['end'] ?? null;
 
             // Hoppa över om datum saknas
             if (!$aptStart || !$aptEnd) continue;
@@ -281,7 +280,9 @@ function fetchCrewAppointments(RentmanClient $rentman, string $crewId, string $s
                 'start' => $aptStart,
                 'end' => $aptEnd,
                 'role' => $apt['displayname'] ?? $apt['name'] ?? 'Möte',
-                'remark' => $apt['remark'] ?? $apt['description'] ?? null,
+                'remark' => $apt['remark'] ?? null,
+                'location' => $apt['location'] ?? null,
+                'color' => $apt['color'] ?? null,
                 'visible' => true,
             ];
         }
