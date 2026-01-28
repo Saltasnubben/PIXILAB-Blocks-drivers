@@ -102,13 +102,21 @@ function Timeline({ crew, bookings, dateRange, loading, viewMode = 'crew' }) {
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
 
-    const baseColor = color || booking.projectColor || '#3b82f6';
     const isAppointment = booking.type === 'appointment';
+
+    // Use booking's own color if available, otherwise fall back to crew color
+    let baseColor;
+    if (booking.color) {
+      // Rentman colors don't have # prefix
+      baseColor = booking.color.startsWith('#') ? booking.color : `#${booking.color}`;
+    } else {
+      baseColor = color || booking.projectColor || '#3b82f6';
+    }
 
     return {
       left: `${Math.max(0, left)}%`,
       width: `${Math.min(100 - left, width)}%`,
-      backgroundColor: isAppointment ? lightenColor(baseColor, 40) : baseColor
+      backgroundColor: isAppointment ? lightenColor(baseColor, 20) : baseColor
     };
   };
 
