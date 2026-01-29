@@ -8,6 +8,112 @@ PIXILAB Blocks är ett professionellt styr- och automationssystem. Drivrutiner (
 
 ---
 
+## VIKTIGT: Kompilering och Begränsningar
+
+### Blocks kompilerar INTE TypeScript
+
+PIXILAB Blocks kör JavaScript direkt och kompilerar **inte** TypeScript automatiskt. Du måste alltid leverera **båda filerna**:
+
+| Fil | Syfte |
+|-----|-------|
+| `MyDriver.ts` | TypeScript källkod (för utveckling och läsbarhet) |
+| `MyDriver.js` | Kompilerad JavaScript (detta är vad Blocks faktiskt kör) |
+
+**Kompilera manuellt med:**
+```bash
+tsc MyDriver.ts
+```
+
+### AMD Module Format (Föråldrat)
+
+Blocks använder det äldre **AMD (Asynchronous Module Definition)** modulsystemet. Detta innebär begränsningar i vilka moderna JavaScript-funktioner som finns tillgängliga.
+
+### Förbjudna Array-metoder
+
+Följande ES6+ array-metoder **fungerar INTE** i Blocks:
+
+```typescript
+// FUNGERAR INTE - använd INTE dessa:
+array.map(x => x * 2)           // ❌
+array.filter(x => x > 0)        // ❌
+array.fill(0)                   // ❌
+array.find(x => x.id === 1)     // ❌
+array.findIndex(x => x.id === 1) // ❌
+array.includes(value)           // ❌
+Array.from(iterable)            // ❌
+[...spreadOperator]             // ❌
+```
+
+### Använd traditionella loopar istället
+
+```typescript
+// RÄTT - använd traditionella for-loopar:
+
+// Istället för map():
+const result: number[] = [];
+for (let i = 0; i < array.length; i++) {
+    result.push(array[i] * 2);
+}
+
+// Istället för filter():
+const filtered: number[] = [];
+for (let i = 0; i < array.length; i++) {
+    if (array[i] > 0) {
+        filtered.push(array[i]);
+    }
+}
+
+// Istället för fill():
+const filled: number[] = new Array(10);
+for (let i = 0; i < filled.length; i++) {
+    filled[i] = 0;
+}
+
+// Istället för find():
+let found: Item | undefined;
+for (let i = 0; i < array.length; i++) {
+    if (array[i].id === 1) {
+        found = array[i];
+        break;
+    }
+}
+
+// Istället för includes():
+let hasValue = false;
+for (let i = 0; i < array.length; i++) {
+    if (array[i] === value) {
+        hasValue = true;
+        break;
+    }
+}
+```
+
+### Andra begränsningar
+
+```typescript
+// FUNGERAR INTE:
+Object.keys(obj)                // ❌ (kan vara begränsat)
+Object.values(obj)              // ❌
+Object.entries(obj)             // ❌
+`template ${literals}`          // ✅ (fungerar i TypeScript, kompileras bort)
+async/await                     // ❌ (använd .then() istället)
+```
+
+### Promises fungerar
+
+Promises och `.then()` fungerar:
+
+```typescript
+// RÄTT:
+SimpleFile.readJson(path).then(data => {
+    this.processConfig(data);
+}).catch(err => {
+    console.error("Failed to load config:", err);
+});
+```
+
+---
+
 ## Grundläggande Drivrutinsstruktur
 
 ```typescript
@@ -477,9 +583,9 @@ Typisk struktur för en drivrutin:
 ```
 LICENSE                     # GPL v3
 README.md                   # Dokumentation (valfritt)
-MyDriver.ts                 # TypeScript källkod
-MyDriver.js                 # Kompilerad JavaScript
-MyDriver.d.ts               # TypeScript definitioner
+MyDriver.ts                 # TypeScript källkod (KRÄVS för utveckling)
+MyDriver.js                 # Kompilerad JavaScript (KRÄVS - detta kör Blocks!)
+MyDriver.d.ts               # TypeScript definitioner (genereras av tsc)
 tsconfig.json               # TypeScript konfiguration
 system/
   ├── Network.d.ts          # Nätverkstyper
@@ -490,15 +596,22 @@ system_lib/
   └── Script.d.ts           # Script-klass
 ```
 
+**VIKTIGT:** Blocks kör `.js`-filen, inte `.ts`-filen! Du måste alltid:
+1. Skriva kod i `.ts`-filen
+2. Kompilera med `tsc` för att generera `.js`-filen
+3. Leverera **båda** filerna
+
 ---
 
 ## TypeScript Konfiguration
+
+**VIKTIGT:** Använd `"module": "AMD"` eftersom Blocks använder AMD-modulsystemet.
 
 **tsconfig.json:**
 ```json
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "AMD",
     "target": "ES5",
     "declaration": true,
     "sourceMap": false,
@@ -511,6 +624,13 @@ system_lib/
   "exclude": ["node_modules"]
 }
 ```
+
+**Kompilera med:**
+```bash
+tsc
+```
+
+Detta genererar `.js` och `.d.ts` filer från dina `.ts` filer.
 
 ---
 
@@ -681,8 +801,11 @@ export class ProtocolGateway extends Driver<NetworkUDP> {
 - [ ] Hantera inkommande data i `textReceived` eller `bytesReceived`
 - [ ] Anropa `changed()` vid externa egenskapsändringar
 - [ ] Lägg till felhantering
+- [ ] **Undvik ES6+ metoder** (map, filter, fill, includes, etc.)
+- [ ] **Kompilera TypeScript** till JavaScript med `tsc`
+- [ ] **Leverera både .ts och .js filer**
 - [ ] Testa med faktisk enhet
 
 ---
 
-*Senast uppdaterad: 2026-01-29*
+*Senast uppdaterad: 2026-01-29 (v2 - AMD/ES5 begränsningar tillagda)*
