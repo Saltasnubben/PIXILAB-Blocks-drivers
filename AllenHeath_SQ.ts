@@ -9,11 +9,23 @@
  * - Channel mute control
  * - Real-time feedback from console
  * - Support for up to 48 input channels
+ * - Layer/fader mapping for physical strip control
+ * - Channel color configuration for visual feedback
  *
  * Connection:
  * - Connect to the SQ console's IP address on port 51325
  * - Configure MIDI channel on the console (default: channel 1)
  * - Set NRPN Fader Law to "Linear Taper" for high-resolution control
+ *
+ * Layer Mapping:
+ * - Configure layer mapping via the layerConfig property (JSON format)
+ * - Example: {"1":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],"2":[17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]}
+ * - Use setLayerFaderLevel/setLayerFaderMute to control by layer+fader position
+ *
+ * Channel Colors:
+ * - Configure colors via the colorConfig property (JSON format)
+ * - Example: {"1":"blue","2":"red","3":"green"}
+ * - Available colors: off, red, green, yellow, blue, magenta, cyan, white
  *
  * Copyright (c) 2024 PIXILAB Technologies AB, Sweden (http://pixilab.se).
  * All Rights Reserved.
@@ -27,6 +39,24 @@ import * as Meta from "system_lib/Metadata";
 export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 	private midiChannel: number = 0; // MIDI channel 1 (0-indexed)
+
+	// Layer mapping: layer number -> array of channel numbers for each fader position
+	// Example: layer 1 has channels 1-16 on faders 1-16, layer 2 has channels 17-32, etc.
+	private layerMapping: {[layer: number]: number[]} = {
+		1: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+		2: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
+		3: [33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48],
+		4: [], // Custom layer 4 (configure as needed)
+		5: [], // Custom layer 5 (configure as needed)
+		6: []  // Custom layer 6 (configure as needed)
+	};
+
+	// Channel colors: channel number -> color name
+	// Available colors: off, red, green, yellow, blue, magenta, cyan, white
+	private channelColors: {[channel: number]: string} = {};
+
+	// Valid color names
+	private static readonly VALID_COLORS = ['off', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'];
 
 	// Current state tracking
 	private currentScene: number = 1;
@@ -260,6 +290,177 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 
 	public get midiCh(): number {
 		return this.midiChannel + 1; // Return 1-indexed
+	}
+
+	// ========== Layer Mapping Configuration ==========
+
+	/**
+	 * Layer mapping configuration (JSON format)
+	 * Maps layer numbers to arrays of channel numbers for each fader position.
+	 * Example: {"1":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],"2":[17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]}
+	 */
+	@Meta.property("Layer mapping JSON: {\"layer\":[ch1,ch2,...]} - maps physical faders to channels per layer")
+	public get layerConfig(): string {
+		return JSON.stringify(this.layerMapping);
+	}
+
+	public set layerConfig(value: string) {
+		try {
+			const parsed = JSON.parse(value);
+			// Validate and convert string keys to numbers
+			const newMapping: {[layer: number]: number[]} = {};
+			for (const key of Object.keys(parsed)) {
+				const layerNum = parseInt(key);
+				if (layerNum >= 1 && layerNum <= 6 && Array.isArray(parsed[key])) {
+					// Validate all values are valid channel numbers
+					const channels = parsed[key].filter((ch: any) => 
+						typeof ch === 'number' && ch >= 1 && ch <= 48
+					);
+					newMapping[layerNum] = channels;
+				}
+			}
+			this.layerMapping = newMapping;
+			console.info("Layer mapping updated: " + JSON.stringify(this.layerMapping));
+		} catch (e) {
+			console.error("Invalid layer config JSON: " + e);
+		}
+	}
+
+	/**
+	 * Channel color configuration (JSON format)
+	 * Maps channel numbers to color names.
+	 * Available colors: off, red, green, yellow, blue, magenta, cyan, white
+	 * Example: {"1":"blue","2":"red","3":"green"}
+	 */
+	@Meta.property("Channel colors JSON: {\"channel\":\"color\"} - colors: off,red,green,yellow,blue,magenta,cyan,white")
+	public get colorConfig(): string {
+		return JSON.stringify(this.channelColors);
+	}
+
+	public set colorConfig(value: string) {
+		try {
+			const parsed = JSON.parse(value);
+			// Validate and convert string keys to numbers
+			const newColors: {[channel: number]: string} = {};
+			for (const key of Object.keys(parsed)) {
+				const channelNum = parseInt(key);
+				const color = String(parsed[key]).toLowerCase();
+				if (channelNum >= 1 && channelNum <= 48 && AllenHeath_SQ.VALID_COLORS.includes(color)) {
+					newColors[channelNum] = color;
+				}
+			}
+			this.channelColors = newColors;
+			console.info("Channel colors updated: " + JSON.stringify(this.channelColors));
+		} catch (e) {
+			console.error("Invalid color config JSON: " + e);
+		}
+	}
+
+	/**
+	 * Get the channel number for a given layer and fader position
+	 */
+	@Meta.callable("Get channel number for layer/fader position")
+	public getChannelForLayerFader(layer: number, fader: number): number {
+		if (layer < 1 || layer > 6) {
+			console.warn("Layer must be between 1 and 6");
+			return 0;
+		}
+		const layerChannels = this.layerMapping[layer];
+		if (!layerChannels || fader < 1 || fader > layerChannels.length) {
+			console.warn("Invalid fader position " + fader + " for layer " + layer);
+			return 0;
+		}
+		return layerChannels[fader - 1];
+	}
+
+	/**
+	 * Get the color for a channel
+	 */
+	@Meta.callable("Get color for channel")
+	public getChannelColor(channel: number): string {
+		if (channel < 1 || channel > 48) {
+			return "off";
+		}
+		return this.channelColors[channel] || "off";
+	}
+
+	/**
+	 * Get the color for a layer/fader position
+	 */
+	@Meta.callable("Get color for layer/fader position")
+	public getLayerFaderColor(layer: number, fader: number): string {
+		const channel = this.getChannelForLayerFader(layer, fader);
+		if (channel === 0) return "off";
+		return this.getChannelColor(channel);
+	}
+
+	/**
+	 * Set fader level by layer and fader position
+	 */
+	@Meta.callable("Set fader level by layer/fader position")
+	public setLayerFaderLevel(layer: number, fader: number, levelDB: number): void {
+		const channel = this.getChannelForLayerFader(layer, fader);
+		if (channel === 0) {
+			console.warn("No channel mapped to layer " + layer + " fader " + fader);
+			return;
+		}
+		this.setChannelLevel(channel, levelDB);
+	}
+
+	/**
+	 * Get fader level by layer and fader position
+	 */
+	@Meta.callable("Get fader level by layer/fader position")
+	public getLayerFaderLevel(layer: number, fader: number): number {
+		const channel = this.getChannelForLayerFader(layer, fader);
+		if (channel === 0) return -85;
+		return this.getChannelLevel(channel);
+	}
+
+	/**
+	 * Set fader mute by layer and fader position
+	 */
+	@Meta.callable("Set fader mute by layer/fader position")
+	public setLayerFaderMute(layer: number, fader: number, mute: boolean): void {
+		const channel = this.getChannelForLayerFader(layer, fader);
+		if (channel === 0) {
+			console.warn("No channel mapped to layer " + layer + " fader " + fader);
+			return;
+		}
+		this.setChannelMute(channel, mute);
+	}
+
+	/**
+	 * Get fader mute state by layer and fader position
+	 */
+	@Meta.callable("Get fader mute state by layer/fader position")
+	public getLayerFaderMute(layer: number, fader: number): boolean {
+		const channel = this.getChannelForLayerFader(layer, fader);
+		if (channel === 0) return false;
+		return this.getChannelMute(channel);
+	}
+
+	/**
+	 * Toggle fader mute by layer and fader position
+	 */
+	@Meta.callable("Toggle fader mute by layer/fader position")
+	public toggleLayerFaderMute(layer: number, fader: number): void {
+		const channel = this.getChannelForLayerFader(layer, fader);
+		if (channel === 0) {
+			console.warn("No channel mapped to layer " + layer + " fader " + fader);
+			return;
+		}
+		this.toggleChannelMute(channel);
+	}
+
+	/**
+	 * Get number of faders configured for a layer
+	 */
+	@Meta.callable("Get number of faders in a layer")
+	public getLayerFaderCount(layer: number): number {
+		if (layer < 1 || layer > 6) return 0;
+		const layerChannels = this.layerMapping[layer];
+		return layerChannels ? layerChannels.length : 0;
 	}
 
 	// ========== DCA Level Properties ==========
