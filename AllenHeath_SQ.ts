@@ -58,6 +58,10 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 	// Valid color names
 	private static readonly VALID_COLORS = ['off', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'];
 
+	// Active layer/fader selection for property-based control
+	private _activeLayer: number = 1;
+	private _activeFader: number = 1;
+
 	// Current state tracking
 	private currentScene: number = 1;
 	private channelLevels: {[channel: number]: number} = {}; // Channel -> level in dB
@@ -354,6 +358,110 @@ export class AllenHeath_SQ extends Driver<NetworkTCP> {
 		} catch (e) {
 			console.error("Invalid color config JSON: " + e);
 		}
+	}
+
+	// ========== Active Layer/Fader Selection Properties ==========
+
+	/**
+	 * Active layer for property-based control (1-6)
+	 */
+	@Meta.property("Active layer for layerFaderLevel/Mute/Color properties (1-6)")
+	@Meta.min(1)
+	@Meta.max(6)
+	public get activeLayer(): number {
+		return this._activeLayer;
+	}
+
+	public set activeLayer(value: number) {
+		if (value >= 1 && value <= 6) {
+			this._activeLayer = value;
+			// Notify that dependent properties may have changed
+			this.changed('layerFaderLevel');
+			this.changed('layerFaderMute');
+			this.changed('layerFaderColor');
+			this.changed('layerFaderChannel');
+		}
+	}
+
+	/**
+	 * Active fader position for property-based control (1-24, depends on console model)
+	 */
+	@Meta.property("Active fader position for layerFaderLevel/Mute/Color properties (1-24)")
+	@Meta.min(1)
+	@Meta.max(24)
+	public get activeFader(): number {
+		return this._activeFader;
+	}
+
+	public set activeFader(value: number) {
+		if (value >= 1 && value <= 24) {
+			this._activeFader = value;
+			// Notify that dependent properties may have changed
+			this.changed('layerFaderLevel');
+			this.changed('layerFaderMute');
+			this.changed('layerFaderColor');
+			this.changed('layerFaderChannel');
+		}
+	}
+
+	/**
+	 * Fader level for the currently selected layer/fader position (-85 to +10 dB)
+	 * Set activeLayer and activeFader first, then read/write this property
+	 */
+	@Meta.property("Fader level for active layer/fader (-85 to +10 dB)")
+	@Meta.min(-85)
+	@Meta.max(10)
+	public get layerFaderLevel(): number {
+		const channel = this.getChannelForLayerFader(this._activeLayer, this._activeFader);
+		if (channel === 0) return -85;
+		return this.channelLevels[channel] !== undefined ? this.channelLevels[channel] : -85;
+	}
+
+	public set layerFaderLevel(value: number) {
+		const channel = this.getChannelForLayerFader(this._activeLayer, this._activeFader);
+		if (channel === 0) {
+			console.warn("No channel mapped to layer " + this._activeLayer + " fader " + this._activeFader);
+			return;
+		}
+		this.setChannelLevel(channel, value);
+	}
+
+	/**
+	 * Mute state for the currently selected layer/fader position
+	 * Set activeLayer and activeFader first, then read/write this property
+	 */
+	@Meta.property("Mute state for active layer/fader")
+	public get layerFaderMute(): boolean {
+		const channel = this.getChannelForLayerFader(this._activeLayer, this._activeFader);
+		if (channel === 0) return false;
+		return this.channelMutes[channel] !== undefined ? this.channelMutes[channel] : false;
+	}
+
+	public set layerFaderMute(value: boolean) {
+		const channel = this.getChannelForLayerFader(this._activeLayer, this._activeFader);
+		if (channel === 0) {
+			console.warn("No channel mapped to layer " + this._activeLayer + " fader " + this._activeFader);
+			return;
+		}
+		this.setChannelMute(channel, value);
+	}
+
+	/**
+	 * Color for the currently selected layer/fader position (read-only)
+	 */
+	@Meta.property("Color for active layer/fader (read-only)")
+	public get layerFaderColor(): string {
+		const channel = this.getChannelForLayerFader(this._activeLayer, this._activeFader);
+		if (channel === 0) return "off";
+		return this.channelColors[channel] || "off";
+	}
+
+	/**
+	 * Channel number for the currently selected layer/fader position (read-only)
+	 */
+	@Meta.property("Channel number for active layer/fader (read-only)")
+	public get layerFaderChannel(): number {
+		return this.getChannelForLayerFader(this._activeLayer, this._activeFader);
 	}
 
 	/**
