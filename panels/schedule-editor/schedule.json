@@ -1,0 +1,140 @@
+{
+  "eventTypes": [
+    {
+      "name": "Teknika & Neutika",
+      "defaultDuration": 15
+    },
+    {
+      "name": "Test",
+      "defaultDuration": 10
+    },
+    {
+      "name": "Robothunden",
+      "defaultDuration": 30
+    },
+    {
+      "name": "Modelljärnvägen",
+      "defaultDuration": 30
+    },
+    {
+      "name": "Wisdome: Show1",
+      "defaultDuration": 60
+    },
+    {
+      "name": "Wisdome: Show2",
+      "defaultDuration": 60
+    },
+    {
+      "name": "av-verk",
+      "defaultDuration": 0
+    }
+  ],
+  "slots": [
+    {
+      "time": "10:00",
+      "days": [
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "11:30",
+      "days": [
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "12:15",
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "13:00",
+      "days": [
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "14:30",
+      "days": [
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "16:00",
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "17:30",
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "19:00",
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    },
+    {
+      "time": "20:30",
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ],
+      "name": "Teknika & Neutika",
+      "duration": 15
+    }
+  ]
+}

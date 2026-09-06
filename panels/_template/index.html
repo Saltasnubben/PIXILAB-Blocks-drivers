@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Panel</title>
+<style>
+  /* Byt 360x675 mot pekpanelens faktiska upplosning innan du borjar. */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  html, body {
+    width: 360px; height: 675px; overflow: hidden;
+    background: #1a1a1e; color: #eeeef2;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px; -webkit-font-smoothing: antialiased;
+  }
+
+  .top {
+    height: 50px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 1px solid #303038;
+  }
+  .top h1 { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+
+  .wrap { height: 625px; padding: 12px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Rad med switch. Stora traffytor: en tumme, inte en muspekare. */
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    height: 84px; padding: 0 14px;
+    background: #23232a; border-radius: 8px;
+  }
+  .row .lbl { flex: 1; min-width: 0; font-size: 16px; }
+  .row .hint { font-size: 12px; color: #7a7a84; margin-top: 3px; }
+  /* Vantar pa kvittens fran Blocks */
+  .row.wait { opacity: .55; }
+
+  .sw {
+    flex: none; width: 72px; height: 40px; border-radius: 20px;
+    background: #2f2f37; position: relative; transition: background .15s;
+  }
+  .sw::after {
+    content: ''; position: absolute; top: 5px; left: 5px;
+    width: 30px; height: 30px; border-radius: 50%; background: #6a6a72;
+    transition: transform .15s, background .15s;
+  }
+  .sw.on { background: #2e8552; }
+  .sw.on::after { transform: translateX(32px); background: #fff; }
+  /* Okant lage far INTE se ut som "av" -- da tror man att man vet nagot man inte vet */
+  .sw.unk { background: #2a2a31; }
+  .sw.unk::after { transform: translateX(16px); background: #55555e; width: 22px; height: 22px; top: 9px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+    background: #34343d; color: #eeeef2; font-size: 13px;
+    padding: 10px 16px; border-radius: 6px; opacity: 0; transition: opacity .2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .foot {
+    margin-top: auto; padding-top: 5px; text-align: center;
+    font-size: 10.5px; color: #6a6a72;
+    font-variant-numeric: tabular-nums;
+  }
+  .foot.stale { color: #f0a132; }
+</style>
+</head>
+<body>
+
+<div class="top"><h1>Panel</h1></div>
+<div class="wrap" id="wrap"></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import PubSubWebBlock from './PubSubWebBlock.js';
+
+/* ---------------------------------------------------------------
+   Sokvagar
+
+   VERIFIERA VARJE RAD MOT EN MODELLEXPORT FRAN BLOCKS.
+   En felstavad sokvag ger ingen felkod och ingen konsollogg --
+   panelen ser ut att fungera och visar tomt for alltid.
+
+   Hakparentesform sa fort namnet innehaller bindestreck,
+   mellanslag eller aao. Indexerade properties skrivs [N].
+   --------------------------------------------------------------- */
+const P = {
+  light: 'Realm.Studio.group.Lighting.KeyLight.running',
+  mute:  'Realm.Studio.variable.MonitorMute.value'
+};
+
+const ROWS = [
+  { key: 'light', label: 'Key light',   hint: 'Lighting/KeyLight' },
+  { key: 'mute',  label: 'Monitor mute', hint: 'MonitorMute' }
+];
+
+const ACK_TIMEOUT = 4000;   // sa lange far Blocks pa sig att kvittera
+const STALE_MS    = 300000; // sa lange far det vara tyst innan foten varnar
+
+const DEMO = /demo=[12]/.test(location.search);
+
+/* ---------------------------------------------------------------
+   Tillstand
+   --------------------------------------------------------------- */
+const st = {};                 // key -> varde (undefined = vet inte an)
+const pending = {};            // key -> { want, timer }
+let lastUpdate = null;
+
+const has = v => v !== undefined && v !== null;
+const isOn = v => v === true || v === 'true' || v === 1 || v === '1';
+
+const pubSub = new PubSubWebBlock();
+
+/* ---------------------------------------------------------------
+   Prenumerationer
+   --------------------------------------------------------------- */
+function sub(key, path) {
+  pubSub.subscribe(path, { dataReceived: v => {
+    st[key] = v;
+    lastUpdate = Date.now();
+    // Kvittens: fick vi tillbaka det vi bad om slapper vi vantelaget
+    if (pending[key] && String(pending[key].want) === String(v)) {
+      clearTimeout(pending[key].timer);
+      delete pending[key];
+    }
+    scheduleRender();
+  }});
+}
+
+if (!DEMO) {
+  for (const r of ROWS) sub(r.key, P[r.key]);
+} else {
+  // Demolage: ett pa, ett okant, sa att alla tre visuella lagen gar att granska
+  st.light = true;
+  lastUpdate = Date.now();
+}
+
+/* ---------------------------------------------------------------
+   Skrivning med kvittens
+
+   Utan kvittenskollen ser en dod pub-sub-koppling ut som en
+   fungerande knapp: reglaget slar om lokalt och ingenting hander.
+   --------------------------------------------------------------- */
+function put(key, value, label) {
+  if (DEMO) { st[key] = value; lastUpdate = Date.now(); scheduleRender(); return; }
+  pubSub.set(P[key], value);
+  if (pending[key]) clearTimeout(pending[key].timer);
+  pending[key] = { want: value, timer: setTimeout(() => {
+    delete pending[key];
+    toast('Inget svar från Blocks');
+    scheduleRender();
+  }, ACK_TIMEOUT) };
+  if (label) toast(label);
+  scheduleRender();
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ---------------------------------------------------------------
+   Rendering
+   --------------------------------------------------------------- */
+let dirty = false;
+function scheduleRender() {
+  if (dirty) return;
+  dirty = true;
+  requestAnimationFrame(() => { dirty = false; render(); });
+}
+
+function render() {
+  let h = '';
+  for (const r of ROWS) {
+    const v = st[r.key];
+    // Tre lagen: pa, av, vet inte. Aldrig tva.
+    const cls = !has(v) ? 'unk' : (isOn(v) ? 'on' : '');
+    h += '<div class="row' + (pending[r.key] ? ' wait' : '') + '" data-k="' + r.key + '">' +
+      '<div class="lbl">' + r.label + '<div class="hint">' + r.hint + '</div></div>' +
+      '<div class="sw ' + cls + '"></div>' +
+      '</div>';
+  }
+
+  const age = lastUpdate ? Date.now() - lastUpdate : null;
+  if (age === null) h += '<div class="foot">Väntar på data från Blocks…</div>';
+  else if (age > STALE_MS) h += '<div class="foot stale">Ingen ny data sedan ' + clock(lastUpdate) + '</div>';
+  else h += '<div class="foot">Uppdaterad ' + clock(lastUpdate) + '</div>';
+
+  const wrap = document.getElementById('wrap');
+  wrap.innerHTML = h;
+  // innerHTML slanger lyssnarna, koppla om dem varje gang
+  wrap.querySelectorAll('.row').forEach(el => {
+    const k = el.dataset.k;
+    el.addEventListener('click', () => put(k, !isOn(st[k]), ROWS.find(r => r.key === k).label));
+  });
+}
+
+function clock(ts) {
+  return new Date(ts).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Foten ska bli gul av sig sjalv nar det tystnar, utan att data kommer in
+setInterval(scheduleRender, 20000);
+render();
+</script>
+</body>
+</html>

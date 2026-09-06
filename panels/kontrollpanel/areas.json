@@ -1,0 +1,28 @@
+{
+  "areas": [
+    {
+      "key": "maskinhallen",
+      "name": "Maskinhallen",
+      "map": "map_maskinhallen.jpg",
+      "spotPrefix": "MH_",
+      "rpi": true,
+      "openVar": "MH.Maskinhallen_Open"
+    },
+    {
+      "key": "trahallen",
+      "name": "Trähallen",
+      "map": "",
+      "spotPrefix": "TH_",
+      "rpi": false,
+      "openVar": ""
+    },
+    {
+      "key": "entre",
+      "name": "Entré",
+      "map": "",
+      "spotPrefix": "EN_",
+      "rpi": false,
+      "openVar": ""
+    }
+  ]
+}

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Shellystatus</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Pekpanel: inga rullningslister */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  html, body {
+    width: 360px; height: 675px; overflow: hidden;
+    background: #1a1a1e; color: #eeeef2;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px; -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- Topprad ---- */
+  .top {
+    height: 50px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 1px solid #303038;
+  }
+  .top h1 { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+  .sum { display: flex; gap: 10px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .sum span { color: #8a8a92; }
+  .sum b { font-weight: 600; color: #eeeef2; }
+  .sum b.lit { color: #4ee08a; }
+
+  /* ---- Innehall ---- */
+  .wrap {
+    height: 625px; padding: 8px 12px 6px;
+    display: flex; flex-direction: column;
+  }
+
+  .sect {
+    font-size: 10.5px; color: #7a7a84; text-transform: uppercase;
+    letter-spacing: .11em; margin: 10px 2px 6px;
+  }
+  .sect:first-child { margin-top: 2px; }
+
+  /* ---- Enhetsrad ---- */
+  .row {
+    display: flex; align-items: center; gap: 9px;
+    height: 34px; padding: 0 9px; margin-bottom: 3px;
+    background: #23232a; border-radius: 6px;
+  }
+  /* Offline: dampas ner sa att blicken dras till det som faktiskt lever */
+  .row.offline { background: #221e1e; }
+
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%; flex: none;
+    background: #4a4a54;
+  }
+  .dot.up   { background: #2ecc71; }
+  .dot.down { background: #e74c3c; }
+
+  .nm {
+    flex: 1; min-width: 0; font-size: 14px; color: #d8d8e0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .row.offline .nm { color: #85858e; }
+
+  .pills { display: flex; gap: 5px; flex: none; }
+  .pill {
+    min-width: 42px; text-align: center; border-radius: 5px;
+    font-size: 11.5px; font-weight: 600; letter-spacing: .04em;
+    padding: 5px 6px; line-height: 1;
+    background: #2f2f37; color: #6a6a72;
+  }
+  .pill.on  { background: #1e5c38; color: #4ee08a; }
+  .pill.off { background: #2f2f37; color: #8a8a92; }
+  /* Okant lage ska inte kunna forvaxlas med "avstangd" */
+  .pill.unk { background: #2a2a31; color: #55555e; }
+
+  /* ---- Fot ---- */
+  .foot {
+    margin-top: auto; padding-top: 5px; text-align: center;
+    font-size: 10.5px; color: #6a6a72;
+  }
+  .foot.stale { color: #f0a132; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Shelly</h1>
+  <div class="sum" id="sum"></div>
+</div>
+
+<div class="wrap" id="wrap"></div>
+
+<script type="module">
+import PubSubWebBlock from './PubSubWebBlock.js';
+
+/* ---------------------------------------------------------------
+   Konfiguration
+
+   Enhetsnamn och antal relaer ar hamtade ur modellexporten
+   Blocks_Model_20260905. Alla 21 enheterna kor drivrutinen
+   ShellySwitchGen2. Drivrutinen skapar fyra utgangar som default,
+   men bara de relaer som listas har finns fysiskt och far feedback
+   fran enheten -- resten skulle bara ligga och vara tomma.
+   --------------------------------------------------------------- */
+const GROUPS = [
+  { title: 'Maskinhallen', strip: /^MH[_-]/, devices: [
+    /* MH_4 till MH_9 ar reservplugar for framtida utbyggnad och sitter inte
+       i drift an. De ar med i Blocks men utelamnas har -- sex rader som
+       alltid star pa AV drar bara uppmarksamhet fran det som betyder nagot.
+       Lagg tillbaka raden nedan nar de tas i bruk:
+       { name: 'MH_4', relays: 1 }, ... { name: 'MH_9', relays: 1 }, */
+    { name: 'MH_Gude_Dukkontroller',  relays: 1 },
+    { name: 'MH_Musiklandet_MacMini', relays: 1 },
+    { name: 'MH_Musiklandet_NUC',     relays: 1 },
+    { name: 'MH_Snillen_NUC',         relays: 1 },
+    { name: 'MH_Angmaskin',           relays: 2 },
+    { name: 'MH_Angmask_ZonD',        relays: 2 },
+    { name: 'MH_U_Gangbro',           relays: 2 },
+    { name: 'Tårta_Ljud',             relays: 1 }
+  ]},
+  { title: 'SS', strip: /^SS[_-]/, devices: [
+    { name: 'SS-Skarm1',          relays: 1 },
+    { name: 'SS-Skarm2',          relays: 1 },
+    { name: 'SS-Skarm3',          relays: 1 },
+    { name: 'SS-Skarm4',          relays: 1 },
+    { name: 'SS-Skarm5',          relays: 1 },
+    { name: 'SS-Skarm6',          relays: 1 },
+    { name: 'SS_Monterbelysning', relays: 1 }
+  ]}
+];
+
+// Sa lange far det ga utan en enda uppdatering innan foten varnar.
+const STALE_MS = 300000;
+
+const ALL = GROUPS.reduce((a, g) => a.concat(g.devices), []);
+
+/* Namnet som visas i listan. Gruppens prefix ar redan sagt i rubriken,
+   sa det tas bort for att ge plats at det som faktiskt skiljer raderna at.
+   Undantag: MH_4 till MH_9 har inget namn bakom prefixet, och en rad som
+   bara sager "4" gar inte att koppla till nagot i Blocks. Da star det kvar. */
+function label(dev, group) {
+  const short = dev.name.replace(group.strip, '');
+  const use = /^\d+$/.test(short) ? dev.name : short;
+  return use.replace(/[_-]/g, ' ');
+}
+
+/* ---------------------------------------------------------------
+   Tillstand
+   --------------------------------------------------------------- */
+const state = {};
+for (const d of ALL) state[d.name] = { connected: undefined, on: [] };
+
+let lastUpdate = null;
+
+const has = v => v !== undefined && v !== null;
+
+/* ---------------------------------------------------------------
+   Prenumerationer
+
+   MqttSwitchBase exponerar connected som "ansluten till broker OCH
+   enheten online", vilket ar precis den signal vi vill visa.
+   Relaets lage ligger pa output[N].on -- hakparentesform, samma
+   skrivsatt som Blocks anvander i propPath.
+   --------------------------------------------------------------- */
+const pubSub = new PubSubWebBlock();
+
+function touch() { lastUpdate = Date.now(); scheduleRender(); }
+
+if (!location.search.includes('demo=1')) {
+  for (const d of ALL) {
+    pubSub.subscribe('Network[\'' + d.name + '\'].connected', {
+      dataReceived: v => { state[d.name].connected = v; touch(); }
+    });
+    for (let i = 0; i < d.relays; ++i) {
+      const ix = i;
+      pubSub.subscribe('Network[\'' + d.name + '\'].output[' + ix + '].on', {
+        dataReceived: v => { state[d.name].on[ix] = v; touch(); }
+      });
+    }
+  }
+} else {
+  /* Demolage: nagot av varje, sa att alla tre pill-lagen gar att granska.
+     Plockar ut offline och okand pa position i stallet for pa namn, sa att
+     lagena overlever att enheter laggs till eller tas bort ur listan. */
+  const OFFLINE_IX = 2;
+  const UNKNOWN_IX = ALL.length - 4;
+  ALL.forEach((d, i) => {
+    const s = state[d.name];
+    if (i === UNKNOWN_IX) return;          // aldrig hord av, connected forblir undefined
+    s.connected = i !== OFFLINE_IX;
+    for (let r = 0; r < d.relays; ++r) s.on[r] = (i + r) % 3 !== 0;
+  });
+  lastUpdate = Date.now();
+}
+
+/* ---------------------------------------------------------------
+   Rendering
+   --------------------------------------------------------------- */
+let pending = false;
+function scheduleRender() {
+  if (pending) return;
+  pending = true;
+  requestAnimationFrame(() => { pending = false; render(); });
+}
+
+function pill(devState, ix, relays) {
+  const online = devState.connected === true;
+  const v = devState.on[ix];
+  // Ett gammalt relalage fran innan enheten forsvann sager ingenting
+  // om hur det ser ut just nu, sa offline nollstaller visningen.
+  if (!online || !has(v)) return '<div class="pill unk">' + (relays > 1 ? (ix + 1) + ' ?' : '?') + '</div>';
+  const txt = v ? 'PÅ' : 'AV';
+  return '<div class="pill ' + (v ? 'on' : 'off') + '">' +
+    (relays > 1 ? (ix + 1) + ' ' + txt : txt) + '</div>';
+}
+
+function render() {
+  let h = '';
+  let up = 0, down = 0, onCount = 0;
+
+  for (const g of GROUPS) {
+    h += '<div class="sect">' + g.title + '</div>';
+    for (const d of g.devices) {
+      const s = state[d.name];
+      const online = s.connected === true;
+      if (has(s.connected)) { online ? ++up : ++down; }
+
+      let pills = '';
+      for (let i = 0; i < d.relays; ++i) {
+        if (online && s.on[i] === true) ++onCount;
+        pills += pill(s, i, d.relays);
+      }
+
+      const dot = !has(s.connected) ? '' : (online ? ' up' : ' down');
+      h += '<div class="row' + (has(s.connected) && !online ? ' offline' : '') + '">' +
+        '<div class="dot' + dot + '"></div>' +
+        '<div class="nm">' + label(d, g) + '</div>' +
+        '<div class="pills">' + pills + '</div>' +
+        '</div>';
+    }
+  }
+
+  const age = lastUpdate ? Date.now() - lastUpdate : null;
+  if (age === null) h += '<div class="foot">Väntar på data från Blocks…</div>';
+  else if (age > STALE_MS) h += '<div class="foot stale">Ingen ny data sedan ' + clockStr(lastUpdate) + '</div>';
+  else h += '<div class="foot">' + ALL.length + ' enheter · uppdaterad ' + clockStr(lastUpdate) + '</div>';
+
+  document.getElementById('wrap').innerHTML = h;
+
+  // Enheter utan svar raknas varken som uppe eller nere, bara som okanda
+  const unknown = ALL.length - up - down;
+  document.getElementById('sum').innerHTML =
+    '<span><b class="lit">' + onCount + '</b> på</span>' +
+    (down ? '<span style="color:#e74c3c"><b>' + down + '</b> offline</span>' : '') +
+    (unknown ? '<span><b>' + unknown + '</b> okänd</span>' : '');
+}
+
+function clockStr(ts) {
+  return new Date(ts).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Foten ska bli gul av sig sjalv nar det tystnar, utan att data kommer in
+setInterval(scheduleRender, 20000);
+render();
+</script>
+</body>
+</html>

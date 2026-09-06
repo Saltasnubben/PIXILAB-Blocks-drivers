@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schema-editor — Tekniska Museet</title>
+<style>
+  :root {
+    --bg:        #0f1117;
+    --surface:   #1a1d27;
+    --surface2:  #232635;
+    --border:    #2e3248;
+    --accent:    #4f8ef7;
+    --accent-dim:#2a4a8a;
+    --success:   #3ecf8e;
+    --danger:    #f75f5f;
+    --warn:      #f5a623;
+    --text:      #e8eaf0;
+    --text-muted:#8890aa;
+    --radius:    8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ── Header ────────────────────────────────────────────────── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header-logo-img {
+    height: 26px;
+    width: auto;
+    flex-shrink: 0;
+    display: block;
+  }
+  .header-title {
+    color: var(--text-muted);
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .header-spacer { flex: 1; }
+
+  /* ── Status bar ─────────────────────────────────────────────── */
+  .status-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    min-height: 42px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .status-dot.ok   { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .status-dot.err  { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
+  .status-dot.warn { background: var(--warn);    box-shadow: 0 0 6px var(--warn); }
+  .status-conn { display: flex; align-items: center; gap: 8px; }
+  .status-live { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .status-live .badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .status-live .badge.active {
+    border-color: var(--success);
+    color: var(--success);
+  }
+  .status-live .badge.next {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Layout ─────────────────────────────────────────────────── */
+  .main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── Card ───────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .card-body { padding: 20px; }
+
+  /* ── Form elements ──────────────────────────────────────────── */
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  input[type="text"],
+  input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--accent); }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* ── Buttons ────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn-danger-ghost {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--danger);
+    padding: 4px 8px;
+    font-size: 16px;
+  }
+  .btn-danger-ghost:hover { background: rgba(247,95,95,0.12); border-color: var(--danger); }
+  .btn-success { background: var(--success); color: #0a1a11; }
+  .btn-success:hover:not(:disabled) { opacity: 0.88; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+  /* ── Inline day chips (per slot) ────────────────────────────── */
+  .slot-days {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 3px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .slot-day-chip { position: relative; }
+  .slot-day-chip input[type="checkbox"] { display: none; }
+  .slot-day-chip label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 26px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0;
+    text-transform: none;
+    margin: 0;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+    user-select: none;
+  }
+  .slot-day-chip input:checked + label {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Times table ────────────────────────────────────────────── */
+  .times-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .times-header h3 {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  #times-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    flex-wrap: wrap;
+  }
+  .time-row-idx {
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 18px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  /* Inline time input */
+  .time-row .time-input {
+    width: 82px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    padding: 0 0 2px;
+    font-family: var(--font);
+    outline: none;
+    cursor: text;
+  }
+  .time-row .time-input:focus { border-bottom-color: var(--accent); }
+  .time-row .time-input.invalid { color: var(--danger); border-bottom-color: var(--danger); }
+
+  /* Inline name input */
+  .time-row .name-input {
+    flex: 1;
+    min-width: 90px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text);
+    padding: 0 4px 2px;
+    font-family: var(--font);
+    outline: none;
+    cursor: text;
+  }
+  .time-row .name-input:focus { border-bottom-color: var(--accent); }
+  .time-row .name-input::placeholder { color: var(--text-muted); font-style: italic; }
+
+  /* Inline duration input */
+  .time-row .dur-input {
+    width: 38px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: right;
+    padding: 0 2px 2px;
+    font-family: var(--font);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .time-row .dur-input:focus { border-bottom-color: var(--accent); }
+  .time-row .dur-input::-webkit-outer-spin-button,
+  .time-row .dur-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .dur-suffix {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* ── Timeline preview ───────────────────────────────────────── */
+  .timeline-wrap {
+    position: relative;
+    height: 56px;
+    margin-top: 4px;
+  }
+  .timeline-track {
+    position: absolute;
+    top: 28px;
+    left: 0; right: 0;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .timeline-labels {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+  }
+  .timeline-markers { position: absolute; top: 0; left: 0; right: 0; height: 100%; }
+  .t-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    position: absolute;
+    top: 22px;
+    transform: translateX(-50%);
+  }
+  .t-dot.active-dot {
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    width: 12px; height: 12px;
+    top: 21px;
+  }
+  .t-active-bar {
+    position: absolute;
+    top: 26px;
+    height: 8px;
+    background: rgba(62,207,142,0.25);
+    border-radius: 4px;
+    border: 1px solid var(--success);
+  }
+  .t-label {
+    position: absolute;
+    transform: translateX(-50%);
+    top: 0;
+    font-size: 9px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .t-label.active-label { color: var(--success); font-weight: 700; }
+  .t-tick-minor {
+    position: absolute;
+    top: 26px;
+    width: 1px;
+    height: 4px;
+    background: var(--border);
+    transform: translateX(-50%);
+  }
+  .timeline-day-note {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  /* ── Toast ──────────────────────────────────────────────────── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 14px;
+    color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 360px;
+    text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.toast-ok   { border-color: var(--success); color: var(--success); }
+  #toast.toast-err  { border-color: var(--danger);  color: var(--danger); }
+  #toast.toast-warn { border-color: var(--warn);    color: var(--warn); }
+
+  /* ── Footer actions ─────────────────────────────────────────── */
+  .actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .actions-info {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ── Spinner ────────────────────────────────────────────────── */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Misc ───────────────────────────────────────────────────── */
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+  .text-muted { color: var(--text-muted); }
+  .text-success { color: var(--success); }
+  .text-danger { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────── -->
+<div class="header">
+  <img class="header-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAtIAAABgCAYAAAAw95X9AAAc20lEQVR42u2de7BdZXnGf/t2TgIIBpNAtCoKgheUeqm2miiBgNpStTOtV2ZkOlZBiaCoFSHkSiIXJSQhqNUpdrC16rROq1YDAiFqx0ql3CQYBEIQEgggSEPOOfvSP7736/nYOSdn772+tc9aez2/mTMnl3PZe13e71nv9z7vW2q1WgghUqMEtN9k7wKeAzTt/yrADmBTB9+bJ6pAHTgCuBr4e+BuYHPb/wshxFS8DzigLW5uBX46YO/Tx8XXAmuBq4BbgV/Y/5ftGIisLPKtVutIHYa+0TJxtBt4IiWh5H/mXOBZwe8UE5+Lx4DHUz4XBwF/BnwEaACLJvjaOnCDBdGLgOuA0RyL6Yq91+ebcH6R/fvT9sBwKvBU8HVpP8gcDMzR/TDl/bAHeCjF665kD1blDs9FP19XC3guMDMQak3g08Axdp2WC3htNO19PwZ82D6nGZdK9vvmAO8E3mOv4cQJvvYp4Od2rs4HfhZcM60ci+hXAdfYOg7wO+D7wDJLRvRDTNeAFyhmdiaklZLuP58BLrELdSyFi38M+KYFILF/lgHLUzgXZQs+h1sAPC74v8YE4rHatkhvAd4B/D7IwOSFIXsIOAK4FjjS/u4FdgW4Cfgq8OWUxbQ/r2cAG3W5T8l1Jlhi7xZ4YTPTEgkHZOR1tQuYzcCbdRlMyqW2flVTWLvaz8X3gT8N/n1sgjg41Pb37wLvte/PW9ycSET79xy+zzOAL6WkH8KM91HANl3ynZ24hg5D3xgDhu2Jvh+/q2UCpqpDP+m5qKeYVWkALzQRPRII5coE56TVFhQX4Mo/fhdk78hJJnoUmAf8GHixva9q8D5HgdfZxzx7mEm7zKNhv3vEFiCx7/GpBQ88aTJigrrRQaarn68L+z3+XqwwnpEtOqPADNzuXb9i0Ygd+xGLD5VJrg8vmGu4srkZjO/45gUvil8OXA8c2nYNhsmXK+3fr0g5M92yj4Yy0lMLaR2g/h5vcNtj38FlG9Pcqgw/xOTHJ+0FyG+NVqZ4PZUggDVyVj/st2MbwErgA7hyjvYHuVIgmhvAUlv0LuuDmNb9kI1j001s6vc5m+i1VXR5MGyf34/zOuxKuXyiisvCloNdrP3FTV9+8GQOSzp8dv84XCa6XUSHcRP7vw0WW6+yY1RXzJw+yjoE03K8X8+4aUIMvkAp95jZLeXs2m7gSjXONxFd389uSNk+xuzB8jnBvwkhsnd/t4BXALNs7SqlWN5wMvC2HnZUKzmtiX4ZzjsyZwIRPdG5GAW+gtvxrOthT0Kagm6TSUSLQXlQqJmI3mCieMSCe7nDh4WX4mobR3U4hSDrxsN6nwRmpQA71HXglbjOI3M7ENFhcqaJ28mbJUOghLSOuxD5LgcYw5lfPgbsNWFd7uJeGMXt0iy0xUHZFSGyu3aV+tRFpggi2hsLZ3Uootvj5inAaRY35YWSoBNC5ExE+/ZgG3Gt/UbY10VPF50+PokreVJmRQgxqNSCco7rgcO6FNHhz2nguqjMtp+p2CkhLYTIkYiu45zjZyTshlGz7z8FOLrDshAhhCDHxsIbmNhY2K1+OxyXiFAr42nuIiGEEN0E8DrOWPhhXDnHEMlbEW4Fduas3Z8QFKxGWvdmHGPh3AQiGlw2ugr8F24wjeKmMtKFC0ZCkGNj4XoT0aMJRXTdvn8rMN+ENFoQhMisZlACrncRfSzdGQun0hCbcYOKnlTclJAuGkOqZRI5beM3hhsIcCYuE12NIKJ/hRub/mhQdy2EIFMDe8q4CZM7g97NorvuHL0YC5nAiOmz0WfgstFVxc3pn2wol3x/8C1q7sDVhGZRTNcLEiDHUp4KNag10RuB0xMaC0MRfTdwAm7AQ0WTVkWO48mgv7+ZuLrex+ze1b1KxxMLX2oPIbMTimj/UDMM/C1wTx8GWYkOhHQtw0GglCBrnsVaLl8LuhY3ajWLx36IYk3qOkhhYMp70Btk1uMyIKMJx2x7EX1nTkR0Q23KxBT3yHBB4mUp5YmGg2gsfBVwbQQR7UfXzwCWABdn+FzksZa+Z71ZBX6Cq01kwOqJqxl9OgU3xY2MZsyvAvYUIFj6rbEtqlvvqJzjS7gWd3sjZaJ/DZzE+DZxI+N14ciLISa5PvYC/zDAGdqWxYHHgQsDQSemLud4OZ1PLOxkzZoBnAt8Pmijp0YW0xwzq7jaxFdmbDKOF3F/APyrXUClLg5EFTgVuCtj2/f+GO8IREWWFoQm8KGCbtlpm3LyTPQ6E9GxjIV32cP77gyL6Ja9tl24tnx5W8DPA97Vw4hl0b3A/F9cuZMQ4T34ClyiJkZNdB23K7AkENFjGRWiWdVf7GfCbgM4Hrikl5hZxdU63pTRN/hAgolIN9mJzHogzhrzTDwUZfuuoczdfjPRG3HlHLEy0XfiMtG7c1ITPZrh+Lg/HpKLv6/3y4EFGHHfUi1uV8bCTRGNhcPA+bgdgSyX4+ZJf7Uzu9eYWU1Yh0yK9X1N4FkJfsZBdvFmcbHOcv3QmH2oDk7Gwo3BsJUYIvo3uJronTkyFpZyZsb2i+yQLuVpiZtCIvoY4MfEK+cYAj4LXJTxco686K/JztuBSX5AK4NvtGViM0mmsBm8L23bC9F9OUcaxsKdOezO0ciZybChh2Ahpi0THUNEh8bCC0xEV3P0sJYn/VVKujOt2jkhxER9ok+neMZCIYRIOrEwRia6aSL6c8Aai6Pa8ZCzUgiRk0x0zD7Rv8YZCx+RiBZCDHB3ji3AoZGNhWtwO4KjOtRosqEQItM1wGPABmCxieiY5RwS0WLQ0VAzlXPEFtGrclbOoYy0EKLQxsIrg0x0DBF9D3AirnuERLRgwLtZPI0mpRZRRB+NG7YyN+LEQt8nWuUcKCMthMh+OUcduNxEdCxj4VbgTRLRogD3UB04GPiUieiaJkoWRkQfixtoNzdCJtr36F9qIrpq/ybTsIS0ECLD977vE/1xnLGwKmOhED3t6lyCa1E2pp3ewtREX0PciYXnASssjipuqrRDCJEDY+HlxO0TvQ1YADwsES0KdD+17B5aY39fk/GhGSJ5d44YxkLs+31N9GoZC1FGWgiRG2PhelwmOmlNdCMwFi6UiBYFva+8AFoNfNruMZV5DGY5x3WRjIVeRF+AjIXKSAshyEtngfaJhbWEvU5rwL3AIuBBiWiRcxoJ76+9wMW2tq4JBJjIv4h+Cc5YeFikPtEyFqKMtBCCXGXM6m3lHLUIY+5vA94oES0GhGcnMHiVTBD5zPSn7J5TZnowMtE/jSCiW4Gpe5mMhRLSQoh8GQuvYNxYWEv4M71A+AjOWFiViBbkt9+yFzH/EkH0VkwYXQJ8RgbEgTAWbkrBWLhcxkIJaSEEuchEN3CZ6I+S3FiILSYzgLXALUG2W4ipeCqjmbem3S9XAL8L7pskXoQR4CLGu3nUdPpzJ6JfCtwIzIsgor0pu91YqEy0hLQQIuPGwnXEMRZigX/YBMcngD2q7RNdrDUfBA4wUVHKWEa6ZNfzAtw0zqRi2nfuWIMr8xgzIaUyj3wZC58TyVjo+0TLWCghLYQgP8bCK4gz9hv7eTNw2e0zVfspelhr3mYPYvWMZqUBbgfeCuyOULJUtnvP95ke1TjxXIjoo3DGwnkRjYXqEy0hLYQgX8bCtbhyjtEIItpnVDYAZwcLjrYlRTc8EVynZFRM14CbgeOJU+bht/DXAOcE/gKRTRH9CuBnxDcWqpxDQloIkSNj4QbgLFw2rBqpnGMDLrvtu3NoMRAMiNmw/aGxCtwBnIDrjV6L0BpvFLiUcQOixHQxJhYuwRkL5SWRkBZCkA9j4VrgY5HLOdaaiK4x3vpOiEGlbuLqf4CTkQGxCCL6GGAz8Y2Fq4J6ecVNCWkhRA6MhWdFNBYOAVfijIUVLQaigGL6FmA+rmY6pgHxHBkQyYqX5FjgemB2RGPhMhPRFRkLNdlQCJEfY+FHUzAWnq1tSVFwMX0HLjO9CdfFoZ5AbHkD4qV2X30+xcx0U8a2jiYWXgMcHtFYeD5wYYEnFlbtmq7kIGFbDZJREtKCWNlN/1EEWgNQzjEKXBbZWDgsY6EQzxg+dDOwENiCm4DYq+hqNyCOAV8g3Z3npk7jpDXRN5C8JrplP28YVw99YXCOi8gjdjzz8BDhX+NjEtIiFnstKEg0kYvSrFFgPa4dXaxyjhmMt82TsVCIcQPi7SamY0y681v+lwLPB3aZyG5FykRXgF/gsq3D6haRurFwGLgAWBmU8FDARFwLV7b0YE4e4vxrfLm99rKEtCDBE3XZAm+9AO+1AmzHbdeWcrbAlIJyjrURRfRk5RxafIXY14B4Pckz0/4+Pov0Sjv+Avi3NqFTdBF9NOOZ6NGEWmgyYyEFTe60bE3KI81e7mUJadHOUQV6rzNzbCz0IvqsyJnoK4NyDhlkhJhcTM/HdXlIOvmunFK2uGX39LeAb+CmKz5e4FKPStAnOsxEVyOVc2hi4TPXk1YOHwIqKu0QsRaKQadp1/6eHC8GG4jX4m7MFtz1uFHiVRmUhOjYgPijCAbEtNbihr2mv8Z1png7rha0UrB7vN1YOC9iOUfRjYWF15ZqfycmuiaK9JEXU2XJAnUd+KKJ6NjGwlBEq5xDiKkNiL/EDW15MsLQlrTiRhl4Gni9icgD7XWWCyaiX4abWDgvYou7FW3GQsVN9ZEWgqLVhbdyIqL99u86XE/nvREnFm7EGQvLqokWomsD4m24ceKPZFRMY/f5CPAaXG3wLNzOXLlgxsLZETPRS+2jpky0hLQQRe128SJcZreV8a2oSjCxcLEtiEMJhXkTV86xzo5BTQJaCJLUTL+V5BMQ08RnTV8H/BA4uFdzVQ7LOa4HnmfvP6mI9sbCFRLRQkJaUPBsdA1nOCGjJR5hJvoy4hkLfSbtcvuZGl8rRHIxfTPOgPio3VPNjIrLEVyZx2bgkAEs8/AdqMZwmejNwNyExkIvomvA51B3DiEhLcT/B9yRHPS3vALXSWNvihPQhBDxDIi7M2za9ZnpP8QZJWcNUGa6hcsYN3GZ6GuJYywUQkJaiAkCbgm3vUkGM9EN4GFgNeMTC4eIt5D63rWX2yJTK9A0SyHSNiCeSHYNiJjIHwXewDMNiHkXmzXcjsBLiGMsZIIBOqtxnTrGlNgQEtKi6GUdjwI/CIRrloT0GHA1cG6EgQGTbX3uxXXquMJ+n4S0EEQpm7oVZ0DcnXExPQK8lnEDYt7LPJ4CXo3LRM9OIRNdsXi8EjfFUGJaSEiLwgrpCs5lv4Xx3tJZen3DwDsY3zJOgyFbSD+K6yHt+2tLUAtBlJrpvBkQD8lpmYc3UB8I3Ai8IMVyjorFzeX2ITGNmmYLUbQ2d03GWz+VyabJrpVwwEM3C+kIbqRrC/WSFiKmmP4lsABneDvURGtaCaxyBAPi9bhM+pM5nYA4jOtGlGbsLAUPIBfY53Agi+JmPidnlugxiSQhLZhga3LQqE0SVGfaDV/KcNu7fh2fvbjWelVchrpakCmXQqQtpm/nmRMQ04zdlYSZ6VcDm3ATEB/P4QTEVh/7Y/vMtO/gsUxxM/fasikhLWI90TOAGemtJphbQWnHdp1uwjKPUeAM+3x2YEpUhkWIZGL6v4E/Aj4IvCeisa8U9ME/yn5fOYIBcRPwFmBPDsV0qY+/xz+ALLVjr7Z4jvtwyZlSDtYP/xoPAp4bNCKQkBY915itxhk2SgMgoHyt363A96YQ2oPWjaTXhXQvrptHFVfuUbHjKDEtRO9iugzci8taLkvp9/wz8G67h4cSlnm8DldrvAhX413O6XY9feyAstJi78oCi2nfa/sUXCvIPHEK8O+9zGqQkBbtIuyCnGUfkmYpWgNWl1ZJ6Lz3BkQ/8XGxaqaFiHJvllOKOb628z0m2t+fcHCTz7K+FmdAfCvwRA4z07087JQTlnmssD8vK3hmetiuyTxcM74cZ0hmQxGLecCuAclIh4tYg8FfqKvBVnKSLV6/kJ5px01lHkJk14DVCkTLB+y+f29CMe0z028ArsMZEH8/YOsCbWO//Z972dErBcJ5qX0usgGx1faRl9eK2t8JIhlWBu2jUZA6zHuBE4C7I5hewjKPjXYcFS+EyLbJrgS8D1fmMWwPxCR8oH4NrmZ6zgAObmrae/oacH+EDGo5MCAuTblLi0B9pIUQcUT0EHAPMB/XF3sBsM3+vR7JgHhZUP+mPtNCZNcfUTUx/Q3GW8EleaB+GvhjXA3pIAlDPzxnFfAhXAlL0gE6oQFxGW4CYkN9piWkhRDZFtHbcJnoB+3vO3Ejiu+KIKZ9Zvps3NAWn5mWmBaCzJaxlYBTgW8H5QVJH6g34Nr45X2UeMuOxzCupnkJrhXqVlynkociDNAJDYjhOHHFTQlpIUTGRPT9Jpq3B+NrK8AOE9f3RspM+6Et64OFVIuCoId6VJG+UMTu0XcD/2iicSxBlrWCy27/B3BkH3s1p3UNDuNKL5ZafHvaxO+vgJNwU2+TiumKJSFWMl43LV+ahLQQIkPmmLuBN5porgZBv2F/fxBX7uEz040I9ZJnAmuDumyJadENhwxgtxwympn2XXxOBb4ZQUz7bkC1nJ6/lsWwIVw5x4ogcxx6Te6wuLorQpmH3w1YBnzO/jykuCkhLYRgWjPRNVxN9CLgt7ZY1if4uoqJ6ZNMdNciGhA3qMxD9NCx4oe43Q1l5vpvQPxWBDGdhy4M+0tAzDBRu2SS5IIX03dbfI1R5uENiBcyPlK8ostTQloIMX3lHPfiMs3bp3CZN4Iyj/m2OMQq8/gY4wZEZaZFp0L667hpeVWUle5nmUcV1xIvRpkHOTUWDuHKLJYHO2ytKUa7nwA8GtGAuBxXM12XAVFCWgjBtJRzbAMW4jIlnbRq8mJ6ly0KMQyINRPTZwPrbJFSzbTohIN0nUyrAfEDwHdMTDcK8iDhjYWrcBnhagcPEl5MbwXenIIBUWUeEtJCCPpfzrEDt924va0mmg7F9A6cMfG+iGJ6Ma7Moy4xLWQ2zIUB8a+Aqy2GDPrY72ZgLFzSpVekHhgQTyauAfHCoM+0yjwkpIUQfTIW/gmuS0cvw1Z8CcZvcUaaX0c0IPoyDxkQhci2qPSC+oIBv0+9sbAGrOaZxsJWD8OubgfeRHwD4meDkj3FTQlpIQTpGQtP2o+xsJufV8FtUy6KbEBs7zMthMgmJeDZA/7AUMcZC5cD5yUUv15Mb7O4uTOiAXENLlOuzLSEtBAihcVgCFeGscA+VyNsjbcbEH8Tuc/0FzUBUQiynq1tDPB7q+LKOVbisr41e8BvJUxqhAbExyIZEEdw2XIZECWkhRCRRXQJV35xPK6FXSWh2J3MgLiQeH2mR4BPAJfLgCiEmKa4eRNwGq58pZxwquNEYvpOXHIjRma6JgOihLQQglS2XivAO+neWNhLZtobGGuRDIgfx5V51LVdKYSgP5lob+R7O67NYhpmynqKExDVZ1pCWggRmT12jzZTNDJWgQdwRsZtxOvm4cs86irzEEL0KQHRMlFaTbF8JSzzmA88HMmA6PtMy4AoIS2EiESlD+2pJjIgxhDTe3FlHutkQBRC9Dlu1kk/blZx5XexDIiVwIB4vjLTEtJCCKL1fqUPLfaquNZ6b8Z1CYllQFyMDIhCiMGLm15M34brzx/DgFi1uLlSBkQJaSEEuWu15zPTxxOvz7Q3IF6GDIhCiMGLm75mej7JM9OloMvISuBcGRAlpIUQ5Gr4S2hAvC+iAdGPE5cBUQgxiGL6TuJNQCzjyuNWoz7TmaeqQyCEmKDMYwduAuKNwFEWyKsJWzwtxmVXzgkEekuHXJA909qgJpnKA/7+pltM34ZrjbcFmBPswiUxIK6wzxcpbkpIi3xQY7yWddBv1lYfTCl5L/NYBFwbQUx7I80n7WecZf/W0OEWGez8MKjXpX9fT+lUpyam78LVTG8CDk8gpn3cHAU+bz/7QsZLP4SEtMgoD0nciCAzvR1nQPwZcEQCMV1q6zPdMFGtDIvImog+GDjGrtHygL7Ho3S6U89ML8JlpmclzEz7JMQq+/sqiWkJaUFms7Ml4Ku4/sWDnJFu2QL5CLC0INn3pJnptwDXAEcnzLCEBsSSffY9X3UOxHQKzBIw267z4yjGJECVeKQnpu/AGRCvAw5LKKbDCYh1XIZaSQgJaZHRxeS0Ar3fR01IC6Y0IN6Py7DcSLLMdLsBsYLLUFdVZiOmOfZ5YXmcXd/lARYpqpPuXzePk3HlcXMilHnsxfWZruIy04qbEtIig4wW4Am3adf+w2op1JMBcQtwZEQD4ijwKZy5ZkwZFjFNwhJcuzEvqCU0RVIxXQNuxZXHbcHteMQwIK60zxcrMy0hLXRNTKeQLgclLaLzMo8TiWNA9MMHzrE/n63DLKZZSL/e4oJ8IiIGYxbbtgInENeAeJH9eY0y06iPtBDTJKYPAJ7XtpAKOjIgHo/rMz0Uqc/0WcAX7O/qlyqmC3WzEGkaEE8CHo8wtMUbEFcD56k/v4S0ENNx3Y8BzwdOx2WltTvT3aLwW5wBcVskMT2K6+LxhgHtliC0JgrFzduBN+HKCmNNQFxlsbMhMa2gIcR08LQOQc9lHvcHExCTimm/I/Dn2iEQQhRgAuLDESYgNk1M/6XipoS0EExzbaSgpzKP+3EGxN8kENPeJPMEboy42hEKQWZbh4rkBsRbcOVxjyUU01X7/nMDYS0kpIWg35McRZwJiHf3KKZH7Tx8zX5WVQuCEGS53zZ98LA0B9yAeCewENjVo5hu2Lm4FviJxWLFTQlpIeiX0XAIZ5rzGVA5nkmUmb7PFoXtXYrpJjAT+AXOfa6x7SILI7TFxA/NXwLu6cPD7swB7+PtyzxupTcDom/R+BDwdjtOEtES0mj7SdDnzMoIbmtN10ycReEBYAGdZ6Z979OtwNuA3SrrENPMIToE+518+xBuB6mU8rTFnwM3m7hsFqCbRzcGRC+aK7iuHXXFTQlpTW0Sg7xN2WumIG8js33GagedGRD9rkAN+EpQK6isCsqsTmPy5dpgy1zsyyz6M7Z8B3CX/bk5wNd9uwHxkQ7EtI+dHwY22vfrfp/GcqJyTgJcpx/NwLS0t+DBsKWPjj/SZChYDJoW8JoT3MCN4P9aJkqrOe4z/UbcFvBQW5BvBYvHLmA5cJn9fSyj90QeeXZwbWXt/WbxPPifvy5oIabY6D78fb0TWB8IwLSTHIcFv78xSXKhPW4enMN1fzIDYn2C9+q/9kzg7yb5OsVMEpUTdR0zqznJGHb7Oq8G7gj6LFJQE10JGNaDJhNNhiLlY+PF8HYLkMexr8EuFNvtbAEezaGBZKIJiEfafVgKxtzehKvt221fX+/DOS8BM7r8vuEcZlUAvg282xaHbu6JoT68xuEu4nq/Xpe/Xxt27y1QmNznHDTs4TjtUjgvUP4J57uY2fZ/Y/uJnd+1JFre4qY3IP4KNwHxR/YgUTdxVw/e6+nAl/ugb3rRX5UcdsPyuyC34HZSj+j6QLVarayLwRd0McbZf90TBa639O95LvAsjcDe73Uyhmvflva5OBiYgxuBfSyuDvPVwdftxDXqr9kifhXwIK7HdV6vYS9K/gC4EXgR4327NwGn4qbIVVLelmw/B93Gkro9DOWRF9oi2Ml79l+zxx6C0rruSrZQlTP2usJrZQg3rKmpEsF97oUdfRaoLwaWmQ6o42qJw4fhzfb6vmcienvOa4Z9PJwDnAZcbEmXIeAHwGJ7mCn34Tx0q7/Ca+UBnAcpb7rpUFz5Ule6KetCWohBebChbQvp/Sbka8B/Wiaik+/NE1Vb1I4AfgncAFxuix8yyPRlQRbJ71fBtHm42sXiQhPXvlTu6wP+vlcAS4C/we207w3iqkj/euuI/wN+oeMjwJ1NKgAAAABJRU5ErkJggg==" alt="Tekniska Museet">
+  <div class="header-title">Schema-editor · Maskinhallen</div>
+  <div class="header-spacer"></div>
+</div>
+
+<!-- ── Status bar ──────────────────────────────────────────── -->
+<div class="status-bar">
+  <div class="status-conn">
+    <div class="status-dot" id="conn-dot"></div>
+    <span id="conn-text" class="text-muted">Ansluter…</span>
+  </div>
+  <div class="status-live" id="live-badges">
+    <span id="badge-active" class="badge" style="display:none"></span>
+    <span id="badge-next"   class="badge next" style="display:none"></span>
+  </div>
+</div>
+
+<!-- ── Main ────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- Times card -->
+  <div class="card">
+    <div class="card-header">Tidtabell</div>
+    <div class="card-body">
+      <div class="times-header">
+        <h3>Visningstider</h3>
+        <button class="btn btn-ghost btn-sm" id="btn-add-time">+ Lägg till tid</button>
+      </div>
+      <div id="times-list">
+        <!-- rows injected by JS -->
+      </div>
+      <p id="no-times" class="text-muted" style="font-size:13px;display:none">Inga tider tillagda. Klicka "+ Lägg till tid" för att börja.</p>
+
+      <hr class="divider">
+
+      <div class="section-label" id="preview-label">Event idag</div>
+      <div class="timeline-wrap" id="timeline">
+        <div class="timeline-track"></div>
+        <div class="timeline-labels" id="tl-labels"></div>
+        <div class="timeline-markers" id="tl-markers"></div>
+      </div>
+      <div class="timeline-day-note" id="tl-day-note"></div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <span class="actions-info" id="last-saved"></span>
+    <button class="btn btn-ghost" id="btn-reload">Hämta om schema</button>
+    <button class="btn btn-success" id="btn-save">Spara schema</button>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ─── Constants ─────────────────────────────────────────── */
+const DAY_KEYS   = ['mon','tue','wed','thu','fri','sat','sun'];
+const DAY_LABELS = ['Mån','Tis','Ons','Tor','Fre','Lör','Sön'];
+const TIMELINE_START = 8;   // 08:00
+const TIMELINE_END   = 22;  // 22:00
+
+/* ─── State ──────────────────────────────────────────────── */
+let schedule = null;
+let pubSubInstance = null;
+
+/* ─── DOM refs ───────────────────────────────────────────── */
+const $connDot      = document.getElementById('conn-dot');
+const $connText     = document.getElementById('conn-text');
+const $liveBadges   = document.getElementById('live-badges');
+const $badgeActive  = document.getElementById('badge-active');
+const $badgeNext    = document.getElementById('badge-next');
+const $timesList    = document.getElementById('times-list');
+const $noTimes      = document.getElementById('no-times');
+const $btnAdd       = document.getElementById('btn-add-time');
+const $btnSave      = document.getElementById('btn-save');
+const $btnReload    = document.getElementById('btn-reload');
+const $lastSaved    = document.getElementById('last-saved');
+const $tlLabels     = document.getElementById('tl-labels');
+const $tlMarkers    = document.getElementById('tl-markers');
+const $tlDayNote    = document.getElementById('tl-day-note');
+const $previewLabel = document.getElementById('preview-label');
+const $toast        = document.getElementById('toast');
+
+/* ─── Helpers ────────────────────────────────────────────── */
+function pad2(n) { return String(n).padStart(2,'0'); }
+
+function timeToMinutes(hhmm) {
+  const [h,m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function nowMinutes() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function todayDayKey() {
+  const d = new Date().getDay();
+  return DAY_KEYS[d === 0 ? 6 : d - 1];
+}
+
+function todayDayLabel() {
+  const d = new Date().getDay();
+  return DAY_LABELS[d === 0 ? 6 : d - 1];
+}
+
+let toastTimeout;
+function showToast(msg, type = 'ok', duration = 3000) {
+  $toast.textContent = msg;
+  $toast.className = 'show toast-' + type;
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => { $toast.className = ''; }, duration);
+}
+
+/* ─── Inline day chips for a slot row ───────────────────── */
+function buildSlotDayChips(rowId, selectedDays) {
+  const wrap = document.createElement('div');
+  wrap.className = 'slot-days';
+  DAY_KEYS.forEach((key, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'slot-day-chip';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = rowId + '-day-' + key;
+    cb.value = key;
+    cb.checked = Array.isArray(selectedDays) && selectedDays.includes(key);
+    cb.addEventListener('change', () => { updateTimeline(); });
+    const lbl = document.createElement('label');
+    lbl.htmlFor = rowId + '-day-' + key;
+    lbl.textContent = DAY_LABELS[i];
+    chip.appendChild(cb);
+    chip.appendChild(lbl);
+    wrap.appendChild(chip);
+  });
+  return wrap;
+}
+
+function getSlotDays(row) {
+  return DAY_KEYS.filter(k => {
+    const cb = row.querySelector('input[type="checkbox"][value="' + k + '"]');
+    return cb && cb.checked;
+  });
+}
+
+/* ─── Times list ─────────────────────────────────────────── */
+
+/**
+ * @param {Array<{time,days,name,duration}>} slots
+ */
+function renderTimesList(slots) {
+  $timesList.innerHTML = '';
+  slots.forEach((slot, i) => {
+    addTimeRow(slot.time, slot.days, slot.name, slot.duration, i + 1);
+  });
+  updateNoTimesMsg();
+  updateTimeline();
+}
+
+let _rowCounter = 0;
+
+/**
+ * @param {string} timeValue   HH:MM
+ * @param {string[]} selectedDays
+ * @param {string} nameValue   event name
+ * @param {number} durationValue minutes
+ * @param {number|null} idx    display index
+ */
+function addTimeRow(timeValue, selectedDays, nameValue, durationValue, idx) {
+  _rowCounter++;
+  const rowId = 'tr' + _rowCounter;
+
+  const row = document.createElement('div');
+  row.className = 'time-row';
+  row.dataset.rowId = rowId;
+
+  // Index
+  const idxLabel = document.createElement('span');
+  idxLabel.className = 'time-row-idx';
+  idxLabel.textContent = (idx != null ? idx : $timesList.children.length + 1);
+
+  // Time input
+  const timeInp = document.createElement('input');
+  timeInp.type = 'text';
+  timeInp.placeholder = 'HH:MM';
+  timeInp.pattern = '[0-2][0-9]:[0-5][0-9]';
+  timeInp.maxLength = 5;
+  timeInp.className = 'time-input';
+  timeInp.value = timeValue || '';
+  timeInp.addEventListener('change', () => { updateTimeline(); renumberRows(); });
+  timeInp.addEventListener('blur', () => {
+    const v = timeInp.value.trim();
+    if (v && /^\d:[0-5]\d$/.test(v)) { timeInp.value = '0' + v; }
+    if (timeInp.value && !/^([01]\d|2[0-3]):[0-5]\d$/.test(timeInp.value)) {
+      timeInp.classList.add('invalid');
+    } else {
+      timeInp.classList.remove('invalid');
+    }
+    updateTimeline();
+    renumberRows();
+  });
+
+  // Day chips
+  const dayChips = buildSlotDayChips(rowId, selectedDays || []);
+
+  // Name input
+  const nameInp = document.createElement('input');
+  nameInp.type = 'text';
+  nameInp.placeholder = 'Eventnamn';
+  nameInp.maxLength = 64;
+  nameInp.className = 'name-input';
+  nameInp.value = nameValue || '';
+  nameInp.addEventListener('input', updateTimeline);
+
+  // Duration input
+  const durInp = document.createElement('input');
+  durInp.type = 'number';
+  durInp.placeholder = '15';
+  durInp.min = 1;
+  durInp.max = 480;
+  durInp.className = 'dur-input';
+  durInp.value = durationValue != null && durationValue > 0 ? durationValue : '';
+  durInp.addEventListener('input', updateTimeline);
+
+  const durSuffix = document.createElement('span');
+  durSuffix.className = 'dur-suffix';
+  durSuffix.textContent = 'min';
+
+  // Delete button
+  const del = document.createElement('button');
+  del.className = 'btn btn-danger-ghost';
+  del.title = 'Ta bort';
+  del.textContent = '×';
+  del.addEventListener('click', () => {
+    row.remove();
+    renumberRows();
+    updateNoTimesMsg();
+    updateTimeline();
+  });
+
+  row.appendChild(idxLabel);
+  row.appendChild(timeInp);
+  row.appendChild(dayChips);
+  row.appendChild(nameInp);
+  row.appendChild(durInp);
+  row.appendChild(durSuffix);
+  row.appendChild(del);
+  $timesList.appendChild(row);
+}
+
+function renumberRows() {
+  Array.from($timesList.children).forEach((row, i) => {
+    row.querySelector('.time-row-idx').textContent = i + 1;
+  });
+}
+
+function updateNoTimesMsg() {
+  $noTimes.style.display = $timesList.children.length === 0 ? '' : 'none';
+}
+
+/**
+ * @returns {Array<{time,days,name,duration}>}
+ */
+function getTimesFromUI() {
+  return Array.from($timesList.children)
+    .map(row => {
+      const timeInp = row.querySelector('.time-input');
+      const nameInp = row.querySelector('.name-input');
+      const durInp  = row.querySelector('.dur-input');
+      const raw  = timeInp ? timeInp.value.trim() : '';
+      const time = /^([01]\d|2[0-3]):[0-5]\d$/.test(raw) ? raw : '';
+      const days = getSlotDays(row);
+      const name = nameInp ? nameInp.value.trim() : '';
+      const duration = durInp ? (parseInt(durInp.value, 10) || 0) : 0;
+      return { time, days, name, duration };
+    })
+    .filter(s => s.time)
+    .sort((a, b) => a.time.localeCompare(b.time));
+}
+
+/* ─── Timeline ───────────────────────────────────────────── */
+function updateTimeline() {
+  const slots    = getTimesFromUI();
+  const totalMin = (TIMELINE_END - TIMELINE_START) * 60;
+
+  $tlLabels.innerHTML  = '';
+  $tlMarkers.innerHTML = '';
+
+  // Hour ticks
+  for (let h = TIMELINE_START; h <= TIMELINE_END; h++) {
+    const pct = ((h - TIMELINE_START) * 60 / totalMin) * 100;
+
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'position:absolute;left:' + pct + '%;transform:translateX(-50%);font-size:10px;color:var(--text-muted);top:0';
+    lbl.textContent = pad2(h) + ':00';
+    $tlLabels.appendChild(lbl);
+
+    const tick = document.createElement('div');
+    tick.className = 't-tick-minor';
+    tick.style.left = pct + '%';
+    $tlMarkers.appendChild(tick);
+  }
+
+  const nowMin   = nowMinutes();
+  const todayKey = todayDayKey();
+  const todaySlots = slots.filter(s => s.days.includes(todayKey));
+
+  todaySlots.forEach(slot => {
+    const startMin = timeToMinutes(slot.time);
+    const duration = slot.duration || 0;
+    if (startMin < TIMELINE_START * 60 || startMin > TIMELINE_END * 60) return;
+
+    const pct = ((startMin - TIMELINE_START * 60) / totalMin) * 100;
+    const isActive = duration > 0 && nowMin >= startMin && nowMin < startMin + duration;
+
+    // Active bar
+    if (isActive) {
+      const endMin = Math.min(startMin + duration, TIMELINE_END * 60);
+      const pctEnd = ((endMin - TIMELINE_START * 60) / totalMin) * 100;
+      const bar = document.createElement('div');
+      bar.className = 't-active-bar';
+      bar.style.left  = pct + '%';
+      bar.style.width = (pctEnd - pct) + '%';
+      $tlMarkers.appendChild(bar);
+    }
+
+    // Dot
+    const dot = document.createElement('div');
+    dot.className = 't-dot' + (isActive ? ' active-dot' : '');
+    dot.style.left = pct + '%';
+    $tlMarkers.appendChild(dot);
+
+    // Label — show name if set, else time
+    const lbl = document.createElement('span');
+    lbl.className = 't-label' + (isActive ? ' active-label' : '');
+    lbl.style.left = pct + '%';
+    lbl.textContent = slot.name || slot.time;
+    $tlMarkers.appendChild(lbl);
+  });
+
+  // Preview label
+  const dayLabel = todayDayLabel();
+  $previewLabel.textContent = 'Event idag — ' + dayLabel;
+  $tlDayNote.textContent = 'Visar tider för ' + dayLabel;
+}
+
+/* ─── PubSub live status ─────────────────────────────────── */
+let pubsubConnected  = false;
+let liveScheduleEvent = '';
+let liveNextEvent     = '';
+let liveNextEventName = '';
+
+function updateLiveStatusBadges() {
+  if (liveScheduleEvent && liveScheduleEvent.trim() !== '') {
+    $badgeActive.textContent   = '▶ Pågår: ' + liveScheduleEvent;
+    $badgeActive.className     = 'badge active';
+    $badgeActive.style.display = '';
+  } else {
+    $badgeActive.style.display = 'none';
+  }
+
+  if (liveNextEvent && liveNextEvent.trim() !== '') {
+    const prefix = liveNextEventName ? liveNextEventName + ' ' : '';
+    $badgeNext.textContent   = 'Nästa: ' + prefix + liveNextEvent;
+    $badgeNext.className     = 'badge next';
+    $badgeNext.style.display = '';
+  } else {
+    $badgeNext.style.display = 'none';
+  }
+}
+
+async function initPubSub() {
+  try {
+    const mod  = await import('./PubSubWebBlock.js');
+    pubSubInstance = new mod.default();
+    const pubSub = pubSubInstance;
+
+    pubSub.subscribe('Script.user.ScheduleManager.scheduleEvent', {
+      dataReceived(value) {
+        liveScheduleEvent = (value !== undefined && value !== null) ? String(value) : '';
+        updateLiveStatusBadges();
+      }
+    });
+    pubSub.subscribe('Script.user.ScheduleManager.nextEvent', {
+      dataReceived(value) {
+        liveNextEvent = (value !== undefined && value !== null) ? String(value) : '';
+        updateLiveStatusBadges();
+      }
+    });
+    pubSub.subscribe('Script.user.ScheduleManager.nextEventName', {
+      dataReceived(value) {
+        liveNextEventName = (value !== undefined && value !== null) ? String(value) : '';
+        updateLiveStatusBadges();
+      }
+    });
+
+    pubsubConnected = true;
+    $connDot.className    = 'status-dot ok';
+    $connText.textContent = 'Live-status aktiv';
+    $connText.className   = 'text-success';
+  } catch(e) {
+    $connDot.className    = 'status-dot warn';
+    $connText.textContent = 'Live-status ej tillgänglig';
+    $connText.className   = 'text-muted';
+    console.warn('PubSub init failed:', e);
+  }
+}
+
+/* ─── API calls ──────────────────────────────────────────── */
+async function fetchSchedule() {
+  const resp = await fetch('/public/schedule-editor/schedule.json');
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+  return resp.json();
+}
+
+async function postSchedule(data) {
+  const resp = await fetch('/rest/script/invoke/ScheduleManager/setSchedule', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+  return resp.text();
+}
+
+/* ─── Load schedule into UI ──────────────────────────────── */
+function applySchedule(data) {
+  schedule = data;
+  let slots = [];
+
+  if (Array.isArray(data.slots)) {
+    // New flat format
+    slots = data.slots;
+  } else if (data.events && data.events[0]) {
+    // Legacy events[] format — convert
+    const evt = data.events[0];
+    if (Array.isArray(evt.slots)) {
+      slots = evt.slots.map(s => ({
+        time:     s.time,
+        days:     s.days || evt.days || [],
+        name:     evt.name || '',
+        duration: evt.duration || 0
+      }));
+    } else if (Array.isArray(evt.times)) {
+      slots = evt.times.map(t => ({
+        time:     t,
+        days:     evt.days || [],
+        name:     evt.name || '',
+        duration: evt.duration || 0
+      }));
+    }
+  }
+
+  renderTimesList(slots);
+}
+
+/* ─── Build payload from UI ──────────────────────────────── */
+function buildPayload() {
+  const slots = getTimesFromUI();
+  if (slots.length === 0) throw new Error('Lägg till minst en visningstid.');
+  const hasAnyDay = slots.some(s => s.days.length > 0);
+  if (!hasAnyDay) throw new Error('Välj minst en aktiv dag för någon tid.');
+  return { slots };
+}
+
+/* ─── Event handlers ─────────────────────────────────────── */
+$btnReload.addEventListener('click', async () => {
+  $btnReload.disabled = true;
+  $btnReload.innerHTML = '<span class="spinner"></span>';
+  try {
+    const data = await fetchSchedule();
+    applySchedule(data);
+    showToast('Schema hämtat.', 'ok');
+  } catch(e) {
+    showToast('Fel vid hämtning: ' + e.message, 'err', 5000);
+  } finally {
+    $btnReload.disabled = false;
+    $btnReload.textContent = 'Hämta om schema';
+  }
+});
+
+$btnSave.addEventListener('click', async () => {
+  let payload;
+  try { payload = buildPayload(); }
+  catch(e) { showToast(e.message, 'warn', 4000); return; }
+
+  $btnSave.disabled = true;
+  $btnSave.innerHTML = '<span class="spinner"></span> Sparar…';
+  try {
+    await postSchedule(payload);
+    schedule = payload;
+    const now = new Date();
+    $lastSaved.textContent = 'Sparat ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
+    showToast('Schema sparat!', 'ok');
+    updateTimeline();
+  } catch(e) {
+    showToast('Fel vid sparning: ' + e.message, 'err', 5000);
+  } finally {
+    $btnSave.disabled = false;
+    $btnSave.textContent = 'Spara schema';
+  }
+});
+
+$btnAdd.addEventListener('click', () => {
+  addTimeRow('', [], '', null, $timesList.children.length + 1);
+  updateNoTimesMsg();
+  updateTimeline();
+  const last = $timesList.lastElementChild;
+  if (last) last.querySelector('.time-input').focus();
+});
+
+/* ─── Init ───────────────────────────────────────────────── */
+renderTimesList([]);
+updateTimeline();
+initPubSub();
+
+(async () => {
+  try {
+    const data = await fetchSchedule();
+    applySchedule(data);
+  } catch(e) {
+    showToast('Kunde inte hämta schema: ' + e.message, 'err', 5000);
+  }
+})();
+
+setInterval(updateTimeline, 60 * 1000);
+</script>
+</body>
+</html>

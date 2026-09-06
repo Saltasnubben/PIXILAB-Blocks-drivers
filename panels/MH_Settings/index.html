@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Maskinhallen — inställningar</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Pekpanel: inga rullningslister */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  html, body {
+    width: 360px; height: 675px; overflow: hidden;
+    background: #1a1a1e; color: #eeeef2;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px; -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+
+  /* ---- Topprad ---- */
+  .top {
+    height: 50px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 1px solid #303038;
+  }
+  .top h1 { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+  .top .sub { font-size: 12px; color: #8a8a92; font-variant-numeric: tabular-nums; }
+
+  .wrap { height: 625px; padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+
+  .lbl {
+    font-size: 10.5px; color: #7a7a84; text-transform: uppercase;
+    letter-spacing: .11em; margin-bottom: 8px;
+  }
+
+  /* ---- Stora tryckknappar ---- */
+  .big {
+    width: 100%; height: 104px; border: none; border-radius: 10px;
+    font-size: 19px; font-weight: 700; letter-spacing: .06em;
+    color: #fff; cursor: pointer; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; transition: transform .08s, filter .15s;
+  }
+  .big:active { transform: scale(.98); }
+  .big .hint { font-size: 12.5px; font-weight: 500; letter-spacing: .02em; opacity: .8; }
+  .big.show  { background: #e6007e; }
+  .big.light { background: #3a6ea8; }
+  /* Pagaende: knappen ska inte se ut att vanta pa ett nytt tryck */
+  .big.busy { filter: brightness(.62); }
+
+  /* ---- Segmentvaljare ---- */
+  .seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+  .seg button {
+    height: 80px; border: 1px solid #34343d; border-radius: 9px;
+    background: #26262c; color: #9a9aa4; font-size: 17px; font-weight: 600;
+    cursor: pointer; font-family: inherit; letter-spacing: .04em;
+    transition: transform .08s;
+  }
+  .seg button:active { transform: scale(.97); }
+  .seg button.sel { background: #1e5c38; border-color: #2e8552; color: #7bf0aa; }
+  /* Avstangt lage ar ett giltigt val, men ska inte lysa gront som "igang" */
+  .seg button.sel.zero { background: #3a3a42; border-color: #4c4c58; color: #e2e2ea; }
+
+  /* ---- Av/pa-rader ---- */
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    height: 84px; padding: 0 16px;
+    background: #26262c; border: 1px solid #303038; border-radius: 10px;
+    cursor: pointer;
+  }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .t1 { font-size: 16.5px; }
+  .row .t2 { font-size: 12px; color: #7a7a84; margin-top: 3px; }
+
+  .sw {
+    flex: none; width: 72px; height: 40px; border-radius: 20px;
+    background: #3a3a42; position: relative; transition: background .18s;
+  }
+  .sw::after {
+    content: ''; position: absolute; top: 4px; left: 4px;
+    width: 32px; height: 32px; border-radius: 50%; background: #d0d0d8;
+    transition: transform .18s, background .18s;
+  }
+  .sw.on { background: #2e8552; }
+  .sw.on::after { transform: translateX(32px); background: #fff; }
+  /* Okant lage far inte se ut som "av" -- da tror man att man vet nagot man inte vet */
+  .sw.unk { background: #2a2a31; }
+  .sw.unk::after { transform: translateX(16px); background: #55555e; width: 22px; height: 22px; top: 9px; }
+  .row.wait { opacity: .55; }
+
+  /* ---- Fot + kvitto ---- */
+  .foot { margin-top: auto; text-align: center; font-size: 10.5px; color: #6a6a72; }
+  #toast {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+    background: rgba(0,0,0,.88); border: 1px solid #3a3a42; color: #fff;
+    font-size: 12px; padding: 9px 16px; border-radius: 7px;
+    opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Maskinhallen</h1>
+  <div class="sub" id="clock">–</div>
+</div>
+
+<div class="wrap">
+  <div>
+    <button class="big show" id="btnShow">
+      <span id="showTxt">KÖR SHOW</span>
+      <span class="hint" id="showHint">&nbsp;</span>
+    </button>
+  </div>
+
+  <div>
+    <button class="big light" id="btnLight">
+      <span id="lightTxt">TÄND ALLA LAMPOR</span>
+      <span class="hint" id="lightHint">&nbsp;</span>
+    </button>
+  </div>
+
+  <div>
+    <div class="lbl">Ångmaskin under show</div>
+    <div class="seg" id="segAng"></div>
+  </div>
+
+  <div class="row" id="rowAudio">
+    <div class="txt">
+      <div class="t1">Musiklandet ljud</div>
+      <div class="t2" id="audioSub">–</div>
+    </div>
+    <div class="sw unk" id="swAudio"></div>
+  </div>
+
+  <div class="row" id="rowSched">
+    <div class="txt">
+      <div class="t1">Kör show enligt schema</div>
+      <div class="t2" id="schedSub">–</div>
+    </div>
+    <div class="sw unk" id="swSched"></div>
+  </div>
+
+  <div class="foot" id="foot">Väntar på data från Blocks…</div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import PubSubWebBlock from './PubSubWebBlock.js';
+
+/* ---------------------------------------------------------------
+   Konfiguration
+
+   Alla sökvägar är hämtade ur modellexporten Blocks_Model_20260905
+   och används i exakt den formen av befintliga tasks, så de är
+   verifierade mot verkligheten och inte gissade.
+   --------------------------------------------------------------- */
+const P = {
+  runShow:     'Realm.MH.group.MH_Show.RunShow.running',
+  showLeft:    'Realm.MH.variable.ShowTimeLeft.value',
+  lights:      'Realm.MH.group.ArtNet.Lights_Exhibition.running',
+  angMode:     'Realm.MH.variable.AngmaskMode.value',
+  useSchedule: 'Realm.MH.variable.UseShowSchedule.value',
+
+  /* "Musiklandet ljud" = Shelly-relät som Show_Start släcker och
+     Show_Stop tänder igen. Enheten heter Tårta_Ljud i Blocks men
+     sitter på MQTT-topicet shellyplugsg3-MH_Musikrum_Ljud.
+     Är det fel relä är det bara den här raden som ska ändras. */
+  audio:       'Network[\'Tårta_Ljud\'].output[0].on'
+};
+
+// Lagena som ÅngMaskShow faktiskt jamfor mot. Andras de i Blocks maste
+// strangarna har andras med, annars gor knapparna ingenting.
+const ANG_MODES = [
+  { v: 'OFF',  t: 'AV',   zero: true },
+  { v: '30s',  t: '30 s', zero: false },
+  { v: 'FULL', t: 'Hela', zero: false }
+];
+
+// Sa lange vi vantar pa att Blocks bekraftar ett tryck innan vi klagar.
+const ACK_TIMEOUT = 4000;
+
+/* ---------------------------------------------------------------
+   Tillstånd
+   --------------------------------------------------------------- */
+const st = {};
+let lastUpdate = null;
+const has = v => v !== undefined && v !== null;
+
+// Vad vi bett om men annu inte fatt bekraftat, per sokvag
+const pending = {};
+
+const pubSub = new PubSubWebBlock();
+const DEMO = /demo=[12]/.test(location.search);
+
+function sub(key, path) {
+  pubSub.subscribe(path, { dataReceived: v => {
+    st[key] = v;
+    lastUpdate = Date.now();
+    // Kom svaret vi vantade pa slapper vi vantelaget
+    if (pending[key] && String(pending[key].want) === String(v)) {
+      clearTimeout(pending[key].timer);
+      delete pending[key];
+    }
+    render();
+  }});
+}
+
+if (!DEMO) for (const k in P) sub(k, P[k]);
+else {
+  // demo=2 visar lagena mitt under en show, sa de gar att granska utan Blocks
+  const mid = location.search.indexOf('demo=2') >= 0;
+  Object.assign(st, mid
+    ? { runShow: true, showLeft: 443, lights: true, angMode: 'FULL', useSchedule: false, audio: false }
+    : { runShow: false, showLeft: 0, lights: false, angMode: '30s', useSchedule: true, audio: true });
+  lastUpdate = Date.now();
+}
+
+/* Skickar ett varde och haller reda pa att det faktiskt landade.
+   Utan den har koll ser en dod pub-sub-koppling ut som en fungerande
+   knapp: reglaget slar om lokalt och ingenting hander i hallen. */
+function put(key, value, label) {
+  if (DEMO) { st[key] = value; lastUpdate = Date.now(); render(); return; }
+  pubSub.set(P[key], value);
+  if (pending[key]) clearTimeout(pending[key].timer);
+  pending[key] = { want: value, timer: setTimeout(() => {
+    delete pending[key];
+    toast('Inget svar från Blocks');
+    render();
+  }, ACK_TIMEOUT) };
+  if (label) toast(label);
+  render();
+}
+
+/* Knapp som startar ett task. Tasket kvitterar genom att running blir
+   sant en stund, sa har finns inget varde att jamfora mot. */
+function trig(key, label) {
+  if (DEMO) { toast(label); return; }
+  pubSub.set(P[key], true);
+  toast(label);
+}
+
+/* ---------------------------------------------------------------
+   Rendering
+   --------------------------------------------------------------- */
+function mmss(sec) {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+function setSw(el, row, key) {
+  const v = st[key];
+  const waiting = !!pending[key];
+  el.className = 'sw' + (!has(v) ? ' unk' : (v === true ? ' on' : ''));
+  row.className = 'row' + (waiting ? ' wait' : '');
+}
+
+function render() {
+  // ---- Kör show ----
+  const running = st.runShow === true;
+  const btnShow = document.getElementById('btnShow');
+  btnShow.className = 'big show' + (running ? ' busy' : '');
+  document.getElementById('showTxt').textContent = running ? 'SHOW PÅGÅR' : 'KÖR SHOW';
+  // Innan schemaläget kommit in vet vi inte hur showen startas, och då
+  // ska raden vara tom i stället för att påstå "startas bara manuellt".
+  document.getElementById('showHint').textContent =
+    running ? (has(st.showLeft) ? mmss(st.showLeft) + ' kvar' : 'räknar…')
+    : !has(st.useSchedule) ? ' '
+    : st.useSchedule === true ? 'schemat kör också automatiskt'
+    : 'startas bara manuellt';
+
+  // ---- Tänd alla lampor ----
+  const fading = st.lights === true;
+  const btnLight = document.getElementById('btnLight');
+  btnLight.className = 'big light' + (fading ? ' busy' : '');
+  document.getElementById('lightTxt').textContent = fading ? 'TÄNDER…' : 'TÄND ALLA LAMPOR';
+  document.getElementById('lightHint').textContent = fading ? 'tonar upp' : 'utställningsljus';
+
+  // ---- Ångmaskin ----
+  const seg = document.getElementById('segAng');
+  if (!seg.dataset.built) {
+    seg.innerHTML = ANG_MODES.map(m =>
+      '<button data-v="' + m.v + '">' + m.t + '</button>').join('');
+    seg.dataset.built = '1';
+    seg.querySelectorAll('button').forEach(b => b.addEventListener('click',
+      () => put('angMode', b.dataset.v, 'Ångmaskin: ' + b.textContent)));
+  }
+  const cur = pending.angMode ? pending.angMode.want : st.angMode;
+  seg.querySelectorAll('button').forEach(b => {
+    const m = ANG_MODES.find(x => x.v === b.dataset.v);
+    b.className = (b.dataset.v === cur ? 'sel' + (m.zero ? ' zero' : '') : '');
+  });
+
+  // ---- Av/på-rader ----
+  setSw(document.getElementById('swAudio'), document.getElementById('rowAudio'), 'audio');
+  document.getElementById('audioSub').textContent =
+    !has(st.audio) ? 'väntar på status' : (st.audio ? 'ljudet är på' : 'ljudet är avstängt');
+
+  setSw(document.getElementById('swSched'), document.getElementById('rowSched'), 'useSchedule');
+  document.getElementById('schedSub').textContent =
+    !has(st.useSchedule) ? 'väntar på status'
+      : (st.useSchedule ? '8 shower per dag, 10:00–20:15' : 'schemat startar ingen show');
+
+  // ---- Fot ----
+  const f = document.getElementById('foot');
+  f.textContent = lastUpdate
+    ? 'Uppdaterad ' + new Date(lastUpdate).toLocaleTimeString('sv-SE',
+        { hour: '2-digit', minute: '2-digit' })
+    : 'Väntar på data från Blocks…';
+}
+
+/* ---------------------------------------------------------------
+   Händelser
+   --------------------------------------------------------------- */
+document.getElementById('btnShow').addEventListener('click', () => {
+  // Kör showen redan gör ett nytt tryck ingen nytta, bara förvirring
+  if (st.runShow === true) { toast('Showen kör redan'); return; }
+  trig('runShow', 'Startar show…');
+});
+
+document.getElementById('btnLight').addEventListener('click',
+  () => trig('lights', 'Tänder utställningsljus…'));
+
+document.getElementById('rowAudio').addEventListener('click',
+  () => put('audio', !(st.audio === true), null));
+
+document.getElementById('rowSched').addEventListener('click',
+  () => put('useSchedule', !(st.useSchedule === true), null));
+
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+tick(); setInterval(tick, 20000);
+render();
+</script>
+</body>
+</html>

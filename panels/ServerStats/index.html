@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Serverstatus</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Pekpanel: inga rullningslister */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  html, body {
+    width: 360px; height: 675px; overflow: hidden;
+    background: #1a1a1e; color: #eeeef2;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px; -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- Topprad ---- */
+  .top {
+    height: 50px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 1px solid #303038;
+  }
+  .top h1 { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+  .top .clock { font-size: 14px; color: #c8c8d0; font-variant-numeric: tabular-nums; }
+
+  /* ---- Innehall ---- */
+  .wrap {
+    height: 625px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .box {
+    background: #26262c; border: 1px solid #303038; border-radius: 8px;
+    padding: 12px 13px;
+  }
+  .box.warn { border-color: #6a5326; }
+  .box.bad  { border-color: #6a2f2f; }
+
+  .bLabel {
+    font-size: 10.5px; color: #8a8a92; text-transform: uppercase;
+    letter-spacing: .09em; margin-bottom: 6px;
+  }
+
+  /* Hjalte: CPU-temp */
+  .hero { text-align: center; padding: 16px 13px 18px; }
+  .heroVal {
+    font-size: 62px; font-weight: 600; line-height: 1;
+    font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  }
+  .heroVal .u { font-size: 26px; font-weight: 400; margin-left: 3px; }
+  .heroSub { font-size: 12px; color: #8a8a92; margin-top: 8px; }
+
+  /* Tva sma sida vid sida */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .miniVal {
+    font-size: 27px; font-weight: 600; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .miniVal .u { font-size: 13px; font-weight: 400; color: #8a8a92; margin-left: 3px; }
+
+  /* Matare med stapel */
+  .gTop {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    margin-bottom: 9px;
+  }
+  .gVal { font-size: 27px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .gVal .u { font-size: 13px; font-weight: 400; color: #8a8a92; margin-left: 3px; }
+  .gPct { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .bar { height: 9px; border-radius: 5px; background: #1f1f24; overflow: hidden; }
+  .barFill { height: 100%; border-radius: 5px; background: #2ecc71; transition: width .4s; }
+  .barFill.warn { background: #f0a132; }
+  .barFill.bad  { background: #e74c3c; }
+
+  .good { color: #2ecc71; }
+  .warn { color: #f0a132; }
+  .bad  { color: #e74c3c; }
+  .dim  { color: #6a6a72; }
+
+  /* ---- Graf ---- */
+  .graph { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .graph svg { flex: 1; width: 100%; min-height: 0; display: block; }
+  .gAxis {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #6a6a72; margin-top: 5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .gEmpty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #6a6a72;
+  }
+
+  /* ---- Fot ---- */
+  .foot {
+    margin-top: auto; text-align: center;
+    font-size: 11px; color: #6a6a72; line-height: 1.6;
+  }
+  .foot .stale { color: #f0a132; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Blocks-server</h1>
+  <div class="clock" id="clock">–</div>
+</div>
+
+<div class="wrap" id="wrap"></div>
+
+<script type="module">
+import PubSubWebBlock from './PubSubWebBlock.js';
+
+/* ---------------------------------------------------------------
+   Konfiguration
+   --------------------------------------------------------------- */
+// Namnet pa natverksenheten i Blocks som kor ServerStats-drivrutinen.
+const DEVICE = 'ServerStats';
+
+// Tröskelvärden för gul respektive röd.
+const CPU_WARN = 70,  CPU_ALARM = 80;   // °C
+const ACPI_WARN = 65, ACPI_ALARM = 75;  // °C
+const RAM_WARN = 80,  RAM_ALARM = 92;   // %
+const DISK_WARN = 80, DISK_ALARM = 90;  // %
+
+/* sensor_server.py skickar en JSON-rad var 15:e sekund, men drivrutinen
+   skickar bara vidare varden som faktiskt andrats. Temperatur och RAM
+   ror sig hela tiden, sa tystnad langre an sa har betyder problem. */
+const STALE_MS = 90000;
+
+const FIELDS = [
+  'cpuTemp', 'acpitzTemp', 'fanRpm',
+  'ramUsedGb', 'ramTotalGb', 'ramUsedPct',
+  'diskUsedGb', 'diskTotalGb', 'diskUsedPct'
+];
+
+const pubSub = new PubSubWebBlock();
+const st = {};
+let lastUpdate = 0;
+
+for (const f of FIELDS) {
+  pubSub.subscribe('Network.' + DEVICE + '.' + f, {
+    dataReceived: v => { st[f] = v; lastUpdate = Date.now(); scheduleRender(); }
+  });
+}
+
+/* ---------------------------------------------------------------
+   Hjalpare
+   --------------------------------------------------------------- */
+const has = v => v !== undefined && v !== null && v !== '';
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const dec = (n, d) => Number(n).toLocaleString('sv-SE',
+  { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function level(v, warn, alarm) {
+  if (!has(v)) return '';
+  return Number(v) >= alarm ? 'bad' : (Number(v) >= warn ? 'warn' : '');
+}
+
+/* sensor_server.py skickar 0 nar en sensor inte gar att lasa. Noll grader
+   och stillastaende flakt ar alltsa inte samma sak som "inget varde", och
+   utan den har koll visas "0 °C / Normal drift" nar sensorn ar borta. */
+function sensor(v) {
+  if (!has(v)) return null;
+  const n = Number(v);
+  return (isNaN(n) || n === 0) ? null : n;
+}
+
+function heroBox(label, v, unit, warn, alarm, sub) {
+  const cls = level(v, warn, alarm);
+  const val = has(v) ? esc(String(v)) : '–';
+  return '<div class="box hero ' + cls + '">' +
+    '<div class="bLabel">' + label + '</div>' +
+    '<div class="heroVal ' + (cls || (has(v) ? 'good' : 'dim')) + '">' + val +
+    '<span class="u">' + unit + '</span></div>' +
+    '<div class="heroSub">' + sub + '</div></div>';
+}
+
+function miniBox(label, txt, cls, unit) {
+  return '<div class="box ' + (cls === 'bad' || cls === 'warn' ? cls : '') + '">' +
+    '<div class="bLabel">' + label + '</div>' +
+    '<div class="miniVal ' + cls + '">' + esc(txt) +
+    (unit ? '<span class="u">' + unit + '</span>' : '') + '</div></div>';
+}
+
+function gaugeBox(label, used, total, pct, warn, alarm) {
+  // Totalsumma 0 betyder att matningen misslyckades, inte en tom disk.
+  // Utan den kollen visas "0 %" i gront som om allt var i sin ordning.
+  const ok = has(used) && has(total) && Number(total) > 0;
+  const cls = ok ? level(pct, warn, alarm) : '';
+  const p = ok && has(pct) ? Math.max(0, Math.min(100, Number(pct))) : 0;
+  return '<div class="box ' + cls + '">' +
+    '<div class="bLabel">' + label + '</div>' +
+    '<div class="gTop"><div class="gVal' + (ok ? '' : ' dim') + '">' +
+    (ok ? esc(dec(used, 1) + ' / ' + dec(total, 1)) : '–') +
+    '<span class="u">GB</span></div>' +
+    '<div class="gPct ' + (ok ? (cls || 'good') : 'dim') + '">' +
+    (ok && has(pct) ? dec(pct, 0) + ' %' : '–') + '</div></div>' +
+    '<div class="bar"><div class="barFill ' + cls + '" style="width:' + p + '%"></div></div>' +
+    '</div>';
+}
+
+/* ---------------------------------------------------------------
+   Temperaturhistorik. Ett varde per tick (15 s), en timmes fonster.
+   Ger en bild av om temperaturen kryper uppat over tid.
+   --------------------------------------------------------------- */
+const HIST_MAX = 240;
+const hist = [];
+function sampleHistory() {
+  const v = sensor(st.cpuTemp);
+  if (v === null) return;
+  hist.push(v);
+  if (hist.length > HIST_MAX) hist.shift();
+}
+
+function graphBox() {
+  let h = '<div class="box graph"><div class="bLabel">CPU-temp senaste timmen</div>';
+  if (hist.length < 2) {
+    h += '<div class="gEmpty">Samlar data…</div></div>';
+    return h;
+  }
+  // Minst 10 graders spann sa en stabil kurva inte ser ut att svaja vilt
+  let lo = Math.min.apply(null, hist), hi = Math.max.apply(null, hist);
+  const mid = (lo + hi) / 2;
+  if (hi - lo < 10) { lo = mid - 5; hi = mid + 5; }
+  lo = Math.floor(lo - 1); hi = Math.ceil(hi + 1);
+
+  const W = 300, H = 100;
+  const x = i => (hist.length === 1 ? 0 : (i / (hist.length - 1)) * W);
+  const y = v => H - ((v - lo) / (hi - lo)) * H;
+
+  const pts = hist.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+  const last = hist[hist.length - 1];
+  const cls = level(last, CPU_WARN, CPU_ALARM);
+  const stroke = cls === 'bad' ? '#e74c3c' : cls === 'warn' ? '#f0a132' : '#2ecc71';
+
+  h += '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">';
+  // Varningsnivan som referenslinje, om den ryms i skalan
+  if (CPU_WARN > lo && CPU_WARN < hi) {
+    h += '<line x1="0" y1="' + y(CPU_WARN).toFixed(1) + '" x2="' + W +
+         '" y2="' + y(CPU_WARN).toFixed(1) + '" stroke="#6a5326" stroke-width="1" ' +
+         'stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>';
+  }
+  h += '<polyline points="' + pts + '" fill="none" stroke="' + stroke +
+       '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" ' +
+       'vector-effect="non-scaling-stroke"/>';
+  h += '</svg>';
+
+  const mins = Math.round((hist.length - 1) * 15 / 60);
+  h += '<div class="gAxis"><span>' + (mins ? '−' + mins + ' min' : 'nu') + '</span>' +
+       '<span>' + lo + '–' + hi + ' °C</span><span>nu</span></div>';
+  return h + '</div>';
+}
+
+/* ---------------------------------------------------------------
+   Rendering
+   --------------------------------------------------------------- */
+let pending = false;
+function scheduleRender() {
+  if (pending) return;
+  pending = true;
+  requestAnimationFrame(() => { pending = false; render(); });
+}
+
+function render() {
+  let h = '';
+
+  const cpu = sensor(st.cpuTemp);
+  h += heroBox('CPU-temperatur', cpu, '°C', CPU_WARN, CPU_ALARM,
+    cpu === null
+      ? (has(st.cpuTemp) ? 'Sensor saknas' : 'Väntar på data…')
+      : (cpu >= CPU_ALARM ? 'För varm — kontrollera kylning'
+        : cpu >= CPU_WARN ? 'Förhöjd temperatur' : 'Normal drift'));
+
+  const acpi = sensor(st.acpitzTemp);
+  const fan  = sensor(st.fanRpm);
+
+  h += '<div class="duo">' +
+    miniBox('Moderkort',
+      acpi === null ? (has(st.acpitzTemp) ? 'ej mätt' : '–') : String(acpi),
+      acpi === null ? 'dim' : (level(acpi, ACPI_WARN, ACPI_ALARM) || 'good'),
+      acpi === null ? '' : '°C') +
+    miniBox('Fläkt',
+      fan === null ? (has(st.fanRpm) ? 'ej mätt' : '–') : dec(fan, 0),
+      fan === null ? 'dim' : '',
+      fan === null ? '' : 'rpm') +
+    '</div>';
+
+  h += gaugeBox('Minne', st.ramUsedGb, st.ramTotalGb, st.ramUsedPct, RAM_WARN, RAM_ALARM);
+  h += gaugeBox('Disk', st.diskUsedGb, st.diskTotalGb, st.diskUsedPct, DISK_WARN, DISK_ALARM);
+  h += graphBox();
+
+  // Fot: nar kom senaste vardet, och varning om det tystnat
+  const age = lastUpdate ? Date.now() - lastUpdate : null;
+  if (age === null) {
+    h += '<div class="foot">Ingen kontakt med ServerStats ännu</div>';
+  } else if (age > STALE_MS) {
+    h += '<div class="foot stale">Ingen ny data sedan ' + clockStr(lastUpdate) + '</div>';
+  } else {
+    h += '<div class="foot">Uppdaterad ' + clockStr(lastUpdate) + '</div>';
+  }
+
+  document.getElementById('wrap').innerHTML = h;
+}
+
+function clockStr(ts) {
+  return new Date(ts).toLocaleTimeString('sv-SE',
+    { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+/* ---- Klocka och foraldringskoll ---- */
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+  sampleHistory();
+  render();   // ritar om foten sa "ingen ny data" slar till av sig sjalv
+}
+tick(); setInterval(tick, 15000);
+
+/* ---- Demolage for forhandsgranskning utanfor Blocks: ?demo=1 ---- */
+if (new URLSearchParams(location.search).get('demo') === '1') {
+  Object.assign(st, {
+    cpuTemp: 63, acpitzTemp: 47, fanRpm: 2400,
+    ramUsedGb: 12.4, ramTotalGb: 31.2, ramUsedPct: 39.7,
+    diskUsedGb: 371.5, diskTotalGb: 456.9, diskUsedPct: 81.3
+  });
+  lastUpdate = Date.now();
+  // Fejkad historik sa grafen gar att granska utan att vanta en timme
+  for (let i = 0; i < 120; i++) {
+    hist.push(Math.round(55 + i * 0.07 + Math.sin(i / 7) * 2.5));
+  }
+  render();
+}
+</script>
+</body>
+</html>

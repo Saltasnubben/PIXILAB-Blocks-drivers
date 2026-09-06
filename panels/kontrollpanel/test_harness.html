@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style></head>
+<body>
+<iframe id="f" src="index.html?area=maskinhallen"></iframe>
+<script>
+const mock = {
+  'Script.user.SpotList.spotList': JSON.stringify([
+    { name: 'MH_ZonA_Turbin', path: 'Maskinhallen/MH_ZonA_Turbin', connected: true, ipAddress: '10.0.2.11', playingBlock: 'Main/Turbin_Loop', active: true },
+    { name: 'MH_ZonA_Angmaskin', path: 'Maskinhallen/MH_ZonA_Angmaskin', connected: true, ipAddress: '10.0.2.12', playingBlock: 'Main/Angmaskin', active: true },
+    { name: 'MH_ZonB_Flyg', path: 'Maskinhallen/MH_ZonB_Flyg', connected: false, ipAddress: '10.0.2.13', playingBlock: '', active: true },
+    { name: 'MH_Infodisk', path: 'Maskinhallen/MH_Infodisk', connected: true, ipAddress: '10.0.2.14', playingBlock: 'Main/Info', active: true },
+    { name: 'TH_Sag', path: 'Trähallen/TH_Sag', connected: true, ipAddress: '10.0.3.11', playingBlock: 'Main/Sag', active: true }
+  ]),
+  'Script.user.DreamlandRPiMonitor.dreamlandStatus': JSON.stringify({
+    updated: Date.now(), total: 3,
+    pis: [
+      { ip: '10.0.5.21', mac: 'aa:bb:01', points: 'Svampskogen', online: true, data_ok: true, service_state: 'active', rfid_healthy: true, system_temperature_celsius: 55.2, rfid_connected: 4, rfid_expected: 4, system_uptime_seconds: 340000 },
+      { ip: '10.0.5.22', mac: 'aa:bb:02', points: 'Grottan', online: true, data_ok: true, service_state: 'active', rfid_healthy: false, system_temperature_celsius: 66.8, rfid_connected: 2, rfid_expected: 3 },
+      { ip: '10.0.5.23', mac: 'aa:bb:03', points: 'Vattenfallet', online: false }
+    ]
+  }),
+  'Script.user.KontrollPanel.positions': JSON.stringify({
+    maskinhallen: {
+      'spot:Maskinhallen/MH_ZonA_Turbin': { x: 25, y: 30 },
+      'spot:Maskinhallen/MH_ZonA_Angmaskin': { x: 40, y: 45 },
+      'spot:Maskinhallen/MH_ZonB_Flyg': { x: 65, y: 25 },
+      'rpi:aa:bb:01': { x: 55, y: 60 },
+      'rpi:aa:bb:02': { x: 70, y: 70 },
+      'rpi:aa:bb:03': { x: 30, y: 75 }
+    }
+  }),
+  'Script.user.KontrollPanel.events': JSON.stringify([
+    { ts: Date.now() - 120000, type: 'spot', name: 'MH_ZonB_Flyg', text: 'Tappade anslutning', level: 'error' },
+    { ts: Date.now() - 3600000, type: 'rpi', name: 'Grottan', text: 'Varning', level: 'warn' },
+    { ts: Date.now() - 7200000, type: 'rpi', name: 'Vattenfallet', text: 'Offline', level: 'error' },
+    { ts: Date.now() - 86000000, type: 'spot', name: 'MH_Infodisk', text: 'Ansluten igen', level: 'info' }
+  ]),
+  'Script.user.KontrollPanel.selection': new URLSearchParams(location.search).get('sel') || '',
+  'Script.user.KontrollPanel.settings': JSON.stringify({ open: '10:00', close: '17:00', acked: {} }),
+  'Script.user.ScheduleManager.nextEvent': '16:00',
+  'Script.user.ScheduleManager.nextEventName': 'Teknika & Mekanika'
+};
+window.addEventListener('message', ev => {
+  if (ev.data && ev.data.type === 'pubsub-subscribe' && mock[ev.data.path] !== undefined) {
+    setTimeout(() => {
+      document.getElementById('f').contentWindow.postMessage(
+        { type: 'pubsub-data', path: ev.data.path, value: mock[ev.data.path] }, '*');
+    }, 150);
+  }
+});
+</script>
+</body>
+</html>

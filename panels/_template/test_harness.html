@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style></head>
+<body>
+<iframe id="f" src="index.html"></iframe>
+<script>
+/* Mockad pub-sub. Nycklarna maste vara EXAKT de strangar panelen
+   prenumererar pa. Stammer de inte kommer inget svar -- vilket i sig
+   ar ett bra kvitto pa att du stavat fel.
+
+   Fordrojningen pa 150 ms ar avsiktlig: den avslojar allt i panelen
+   som antar att data finns redan vid forsta renderingen.
+
+   Den har filen levereras INTE. Hall den utanfor zip:en. */
+const mock = {
+  'Realm.Studio.group.Lighting.KeyLight.running': true,
+  // 'Realm.Studio.variable.MonitorMute.value': false,   // utkommenterad = forblir okand
+};
+
+window.addEventListener('message', ev => {
+  const d = ev.data;
+  if (!d) return;
+  if (d.type === 'pubsub-subscribe' && mock[d.path] !== undefined) {
+    setTimeout(() => send(d.path, mock[d.path]), 150);
+  }
+  // Eka tillbaka skrivningar sa att kvittensmekanismen gar att testa.
+  // Kommentera bort raden nedan for att simulera en dod koppling och
+  // se att panelen faktiskt sager "Inget svar fran Blocks".
+  if (d.type === 'pubsub-set') { mock[d.path] = d.value; setTimeout(() => send(d.path, d.value), 200); }
+});
+
+function send(path, value) {
+  document.getElementById('f').contentWindow.postMessage(
+    { type: 'pubsub-data', path: path, value: value }, '*');
+}
+</script>
+</body>
+</html>

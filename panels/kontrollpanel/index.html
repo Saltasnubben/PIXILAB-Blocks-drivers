@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Kontrollpanel — karta</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Pekpanel: dolda rullningslister, allt scrollas med fingret */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden;
+    font-family: "Helvetica Neue", Arial, sans-serif; background: #1a1a1e; color: #eee; }
+  html { font-size: 16px; }
+  @media (min-width: 2000px) { html { font-size: 26px; } }
+
+  #app { display: flex; flex-direction: column; width: 100%; height: 100%; }
+
+  /* ---- Topprad: brand + hallflikar ---- */
+  #topBar {
+    flex: none; display: flex; align-items: center; gap: 2rem;
+    padding: 0 1.4rem; height: 4.2rem;
+    background: #141416; border-bottom: 1px solid #333;
+  }
+  #brand { font-size: 1.3rem; font-weight: 800; letter-spacing: .35em; color: #fff; }
+  #tabs { display: flex; gap: .5rem; height: 100%; }
+  .tab {
+    padding: 0 1.8rem; background: none; border: none; cursor: pointer;
+    color: #999; font-size: 1rem; text-transform: uppercase; letter-spacing: .08em;
+    border-bottom: 4px solid transparent; height: 100%;
+  }
+  .tab.active { color: #fff; border-bottom-color: #e6007e; font-weight: bold; }
+  #brandSub { color: #8a8a92; font-weight: 400; letter-spacing: .05em; }
+  #tbSpacer { flex: 1; }
+  #clock { font-size: 1.35rem; font-weight: 700; letter-spacing: .05em; }
+  #openBadge { font-size: .8rem; color: #8a8a92; text-transform: uppercase;
+    letter-spacing: .1em; white-space: nowrap; }
+  #openBadge b { color: #fff; margin-left: .3rem; }
+  .sbtn { padding: .45rem .9rem; font-size: .8rem; border-radius: 6px;
+    background: #2b2b30; border: 1px solid #3a3a40; color: #ccc; cursor: pointer; }
+  #bellBtn { position: relative; background: none; border: none; font-size: 1.4rem;
+    cursor: pointer; padding: .2rem .4rem; }
+  #bellCount { position: absolute; top: -2px; right: -4px; background: #e6007e;
+    color: #fff; border-radius: .7rem; font-size: .68rem; font-weight: 700;
+    padding: .05rem .38rem; }
+
+  #main { flex: 1; display: flex; min-height: 0; }
+  #layout { display: flex; flex-direction: column; flex: 1; min-width: 0; position: relative; }
+
+  /* ---- Hogerkolumn: schema / spots / system ---- */
+  #right {
+    flex: none; width: 34%; min-width: 380px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: #1d1d21; border-left: 1px solid #333;
+  }
+  #right section { padding: 1.1rem 1.4rem; border-bottom: 1px solid #2c2c31; }
+  #right h3 {
+    font-size: .8rem; letter-spacing: .22em; text-transform: uppercase;
+    color: #8a8a92; margin-bottom: .8rem;
+  }
+  .secHead { display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: .8rem; }
+  .secHead h3 { margin-bottom: 0; }
+  #schedNext { font-size: 1.3rem; color: #e9ff00; }
+  #schedList { max-height: 9rem; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    margin-top: .7rem; }
+  .schRow { display: flex; gap: .8rem; font-size: .9rem; padding: .22rem 0; color: #ccc; }
+  .schRow.past { color: #5c5c62; }
+  .schRow.now { color: #e6007e; font-weight: bold; }
+  .schRow.next { color: #e9ff00; }
+  .schTime { width: 3.6rem; flex: none; }
+  .schState { margin-left: auto; font-size: .72rem; font-weight: 700; letter-spacing: .05em; }
+  .schBtns { display: flex; gap: .5rem; margin-top: .7rem; }
+  #secSpots { flex: 1.6; min-height: 0; display: flex; flex-direction: column; }
+  #secSystem { flex: none; }
+  #sysCards { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin-top: .4rem; }
+  .card { background: #26262c; border-radius: 8px; padding: .6rem .4rem; text-align: center; }
+  .card .cv { font-size: 1.3rem; font-weight: 700; }
+  .card .cl { font-size: .6rem; letter-spacing: .12em; color: #8a8a92;
+    text-transform: uppercase; margin-top: .25rem; }
+  .card.clickable { cursor: pointer; }
+  .card.clickable:hover { background: #303038; }
+  /* Larmdialog */
+  #almList { max-height: 46vh; overflow-y: auto; margin: .2rem 0 1rem;
+    border-top: 1px solid #333; }
+  .almRow { display: flex; align-items: center; gap: .7rem;
+    padding: .55rem .1rem; border-bottom: 1px solid #333; }
+  .almName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; cursor: pointer; }
+  .almRight { font-size: .75rem; color: #e74c3c; flex: none; }
+  .almAck { padding: .35rem .9rem; border: none; border-radius: 5px;
+    background: #3a3a40; color: #eee; cursor: pointer; font-size: .8rem; flex: none; }
+  .almAck:hover { background: #4a4a52; }
+  .almRow.acked { opacity: .45; }
+  .almOk { font-size: .7rem; color: #8a8a92; flex: none; text-transform: uppercase;
+    letter-spacing: .05em; }
+  .teamTag { font-size: .65rem; padding: .12rem .55rem; border-radius: .7rem;
+    background: #2f2f36; color: #9a9aa2; flex: none; text-transform: uppercase;
+    letter-spacing: .05em; }
+  .spDot.warn { background: #f1c40f; }
+  .spDot.unknown { background: #888; }
+  #spotCount { color: #666; letter-spacing: 0; text-transform: none; margin-left: .6rem; }
+  #spotListEl { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .spRow {
+    display: flex; align-items: center; gap: .8rem; padding: .55rem .6rem;
+    border-bottom: 1px solid #26262b; border-radius: 6px; cursor: pointer;
+  }
+  .spRow.sel { background: #2b2b33; outline: 1px solid #4aa3ff; }
+  .spRow.problem { background: rgba(231, 76, 60, .10); }
+  .spDot { width: .8rem; height: .8rem; border-radius: 50%; flex: none; }
+  .spDot.ok { background: #2ecc71; }
+  .spDot.offline { background: #e74c3c; animation: blink 1s infinite; }
+  .spName { font-size: .95rem; font-weight: 600; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .spPlay { margin-left: auto; font-size: .8rem; color: #8a8a92; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 45%; flex: none; }
+  .spPlay.bad { color: #e74c3c; font-weight: bold; }
+  .sysRow { display: flex; justify-content: space-between; font-size: .95rem; padding: .3rem 0; }
+  .sysRow .v { font-weight: 600; }
+
+  /* ---- Filterrad ---- */
+  #filterBar {
+    display: flex; align-items: center; gap: .6rem; padding: .6rem .9rem;
+    background: #202024; border-bottom: 1px solid #333; flex: none;
+  }
+  .chip {
+    padding: .6rem 1.4rem; font-size: .95rem; border-radius: 1.3rem; cursor: pointer;
+    background: #2b2b30; border: 1px solid #3a3a40; color: #ccc;
+  }
+  .chip.active { background: #e6007e; border-color: #e6007e; color: #fff; }
+  #areaName { font-size: 1rem; font-weight: bold; margin-right: .5rem; }
+  #spacer { flex: 1; }
+  #gearBtn {
+    width: 2.75rem; height: 2.75rem; font-size: 1.25rem; border-radius: 50%;
+    background: #2b2b30; border: 1px solid #3a3a40; color: #ccc; cursor: pointer;
+  }
+  #gearBtn.active { background: #e6007e; border-color: #e6007e; color: #fff; }
+  #gearMenu {
+    position: absolute; top: 4rem; right: .75rem; z-index: 60; display: none;
+    background: #26262b; border: 1px solid #444; border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.5); overflow: hidden; min-width: 14rem;
+  }
+  #gearMenu.open { display: block; }
+  #gearMenu button {
+    display: block; width: 100%; text-align: left; padding: .9rem 1.15rem;
+    background: none; border: none; color: #eee; font-size: .9rem; cursor: pointer;
+  }
+  #gearMenu button:hover { background: #33333a; }
+  #gearMenu button.on { color: #e6007e; font-weight: bold; }
+
+  /* ---- Karta ---- */
+  #mapWrap { flex: 1; position: relative; overflow: hidden; touch-action: none; cursor: grab; }
+  #mapWrap.panning { cursor: grabbing; }
+  #mapInner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  #mapImg { display: block; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+  #noMap {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    color: #888; font-size: 18px; text-align: center; padding: 40px;
+  }
+
+  #controls {
+    position: absolute; top: 12px; left: 12px; z-index: 40;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  #controls button {
+    width: 44px; height: 44px; font-size: 20px; border-radius: 8px;
+    background: rgba(18,18,18,.92); border: 1px solid #2e2e2e; color: #d0d0d0;
+    cursor: pointer; backdrop-filter: blur(6px);
+  }
+  #controls button:active { background: #3a3a40; }
+
+  .marker {
+    position: absolute; width: 30px; height: 30px;
+    transform: translate(-50%, -50%) scale(var(--inv, 1));
+    border: 2px solid #111; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+  .marker.spot { border-radius: 50%; }
+  .marker.rpi { border-radius: 5px; }
+  .marker.ok      { background: #2ecc71; }
+  .marker.warn    { background: #f1c40f; }
+  .marker.offline { background: #e74c3c; animation: blink 1s infinite; }
+  .marker.unknown { background: #888; }
+  .marker.selected { outline: 3px solid #4aa3ff; }
+  @keyframes blink { 50% { opacity: .35; } }
+
+  .mLabel {
+    position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.75); color: #fff; font-size: 11px;
+    padding: 1px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none;
+  }
+
+  /* ---- Bottenpanel: detalj eller händelser ---- */
+  #bottom {
+    flex: none; height: 19rem; background: #232327; border-top: 1px solid #333;
+    padding: 1rem 1.25rem; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    display: flex; flex-direction: column;
+  }
+  #evList { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #bottom h2 { font-size: 1.15rem; margin-bottom: .6rem; }
+  #bottom h2 .stTag { font-size: .9rem; margin-left: .75rem; }
+  #detailTable { border-collapse: collapse; font-size: .9rem; }
+  #detailTable td { padding: .25rem 1.5rem .25rem 0; vertical-align: top; }
+  #detailTable td:first-child { color: #999; }
+  .bad { color: #e74c3c; font-weight: bold; }
+  .good { color: #2ecc71; }
+  .meh { color: #f1c40f; }
+  #detailPlaceBtn {
+    margin-top: .75rem; padding: .75rem 1.5rem; font-size: .9rem;
+    background: #4aa3ff; color: #fff; border: none; border-radius: 6px; cursor: pointer;
+  }
+  #detailPlaceBtn.armed { background: #e67e22; }
+
+  .evRow { display: flex; align-items: center; gap: .6rem; padding: .4rem 0; font-size: .9rem;
+    border-bottom: 1px solid #2c2c31; }
+  .evTime { color: #888; font-size: .78rem; width: 5.5rem; flex: none; }
+  .evDot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .evDot.info { background: #2ecc71; } .evDot.warn { background: #f1c40f; }
+  .evDot.error { background: #e74c3c; }
+  .evName { font-weight: bold; }
+  .evText { color: #bbb; }
+  .evEmpty, #evEmpty { color: #777; font-size: .9rem; padding: .6rem 0; }
+
+  #toast {
+    position: absolute; bottom: calc(19rem + 14px); left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.85); color: #fff; font-size: .85rem;
+    padding: .5rem 1.15rem; border-radius: 6px; opacity: 0; transition: opacity .3s;
+    pointer-events: none; z-index: 50;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ---- Modal (veckovy, öppettider) ---- */
+  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: none;
+    align-items: center; justify-content: center; z-index: 100; }
+  #modal.open { display: flex; }
+  #modalBox { background: #26262b; border: 1px solid #444; border-radius: 10px;
+    padding: 1.3rem 1.6rem; max-width: 85%; max-height: 85%; overflow: auto; }
+  #modalBox h2 { font-size: 1.1rem; margin-bottom: .9rem; }
+  /* Bred modal startar under toppraden sa loggan aldrig kapas */
+  #modal.wide { padding-top: 4.2rem; }
+  #modalBox.wide { max-width: 96%; max-height: 94%; padding: 1rem 1.1rem; }
+  /* Schema-editorn körs i iframe. Den har egen 16 px-bas och blir pytteliten
+     på 2560-plattan, sa vi zoomar upp den i stallet for att bara gora rutan storre. */
+  #schedWrap { width: 92vw; height: calc(100vh - 13rem); overflow: hidden;
+    border-radius: 6px; background: #1a1a1e; }
+  #schedWrap iframe { width: 100%; height: 100%; border: 0; display: block;
+    transform-origin: top left; }
+  /* 1.75 x 15 px = 26 px, samma optiska storlek som panelens egen rem-bas */
+  @media (min-width: 2000px) {
+    #schedWrap iframe { width: 57.15%; height: 57.15%; transform: scale(1.75); }
+  }
+  .wkTable { border-collapse: collapse; font-size: .85rem; }
+  .wkTable th, .wkTable td { padding: .35rem .8rem; border: 1px solid #333; text-align: left; }
+  .wkTable th { color: #8a8a92; text-transform: uppercase; font-size: .7rem; letter-spacing: .1em; }
+  .timeInp { background: #1a1a1e; color: #fff; border: 1px solid #444; border-radius: 6px;
+    padding: .4rem .6rem; font-size: 1rem; }
+
+  /* ---- Skärmbild bredvid spotdetaljen ----
+     Detaljtexten är smal och lämnar halva bottenpanelen tom, så bilden
+     får ta den ytan i stället för att panelen växer. */
+  .split { flex: 1; min-height: 0; display: flex; gap: 1.4rem; align-items: stretch; }
+  .splitMain { flex: 1; min-width: 0; overflow-y: auto; }
+  .snap { flex: none; width: 26rem; max-width: 42vw;
+    display: flex; flex-direction: column; min-height: 0; }
+  .snapImgWrap {
+    flex: 1; min-height: 0; background: #131316; border: 1px solid #333;
+    border-radius: 6px; overflow: hidden; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* Spotarna är både liggande och stående, contain hellre än beskuret */
+  .snapImgWrap img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .snapMsg { color: #777; font-size: .85rem; text-align: center; padding: 1rem; line-height: 1.5; }
+  .snapCap { flex: none; font-size: .7rem; color: #888; text-align: center;
+    margin-top: .4rem; letter-spacing: .08em; text-transform: uppercase; }
+
+  /* ---- Åtgärdssteg + åtgärdsknappar i detaljpanelen ---- */
+  .stepsHead { font-size: .75rem; letter-spacing: .18em; text-transform: uppercase;
+    color: #e6007e; margin-top: .9rem; font-weight: 700; }
+  .steps { margin: .5rem 0 0 1.3rem; font-size: .9rem; color: #ccc; }
+  .steps li { margin: .3rem 0; }
+  .actBtn { padding: .75rem 1.4rem; border: none; border-radius: 6px; cursor: pointer;
+    font-size: .9rem; margin: .75rem .6rem 0 0; }
+  .actBtn.pink { background: #e6007e; color: #fff; font-weight: 700; }
+  .actBtn.gray { background: #3a3a40; color: #eee; }
+  .actBtn.red { background: none; color: #e74c3c; border: 1px solid #e74c3c; }
+</style>
+</head>
+<body>
+<div id="app">
+<div id="topBar">
+  <div id="brand">TEKNISKA <span id="brandSub">· Kontrollpanel</span></div>
+  <div id="tabs"></div>
+  <span id="tbSpacer"></span>
+  <span id="clock"></span>
+  <span id="openBadge">Öppet <b id="openHours">–</b></span>
+  <button id="openEdit" class="sbtn">Ändra</button>
+  <button id="bellBtn" title="Larm">🔔<span id="bellCount" style="display:none"></span></button>
+</div>
+<div id="main">
+<div id="layout">
+  <div id="filterBar">
+    <span id="areaName">…</span>
+    <button class="chip active" data-filter="all">Alla</button>
+    <button class="chip" data-filter="spot">Spots</button>
+    <button class="chip" data-filter="rpi" id="chipRpi">RPi</button>
+    <span id="spacer"></span>
+    <button id="gearBtn" title="Inställningar">⚙</button>
+  </div>
+  <div id="gearMenu">
+    <button id="menuPlace">Placera markörer</button>
+    <button id="menuMap">Byt kartbild…</button>
+  </div>
+  <input type="file" id="mapFile" accept="image/*" style="display:none">
+  <div id="mapWrap">
+    <div id="mapInner">
+      <img id="mapImg" alt="">
+      <div id="markers"></div>
+    </div>
+    <div id="noMap">Ingen yta konfigurerad —<br>ladda upp kartbild via ⚙</div>
+    <div id="controls">
+      <button id="btnZoomIn" title="Zooma in">+</button>
+      <button id="btnZoomOut" title="Zooma ut">−</button>
+      <button id="btnFit" title="Anpassa">⛶</button>
+    </div>
+  </div>
+  <div id="bottom"></div>
+  <div id="toast"></div>
+</div>
+<div id="right">
+  <section id="secSchema">
+    <div class="secHead">
+      <h3>Schema — idag</h3>
+      <button class="sbtn" id="btnSchedEdit">Ändra</button>
+    </div>
+    <div id="schedNext">–</div>
+    <div id="schedList"></div>
+  </section>
+  <section id="secSpots">
+    <h3>Spots &amp; RPi — fel först <span id="spotCount"></span></h3>
+    <div id="spotListEl"></div>
+  </section>
+  <section id="secSystem">
+    <h3>System</h3>
+    <div id="sysCards"><div class="evEmpty">Väntar på data…</div></div>
+  </section>
+</div>
+</div>
+</div>
+<div id="modal"><div id="modalBox"></div></div>
+
+<script type="module">
+import PubSubWebBlock from './PubSubWebBlock.js';
+
+const SPOTLIST_PATH  = 'Script.user.SpotList.spotList';
+const RPI_PATH       = 'Script.user.DreamlandRPiMonitor.dreamlandStatus';
+const KP = 'Script.user.KontrollPanel.';
+
+const pubSub = new PubSubWebBlock();
+
+// ---- Yta från query-param ----
+let area = null;          // { key, name, map, spotPrefix, rpi }
+let spots = [];           // filtrerade spots för denna yta
+let rpiStatus = null;     // dreamlandStatus (parsed)
+let positionsAll = {};    // { areaKey: { markerKey: {x,y} } }
+let events = [];          // händelselogg, nyast först
+let selectedKey = null;   // "spot:<path>" | "rpi:<mac>"
+let filter = 'all';
+let editMode = false;
+let placeArmed = false;
+
+const areaParam = new URLSearchParams(location.search).get('area');
+
+fetch('areas.json').then(r => r.json()).then(cfg => {
+  area = cfg.areas.find(a => a.key === areaParam) || cfg.areas[0];
+  document.getElementById('areaName').textContent = area.name;
+  if (!area.rpi)
+    document.getElementById('chipRpi').style.display = 'none';
+  const tabsEl = document.getElementById('tabs');
+  for (const a of cfg.areas) {
+    const b = document.createElement('button');
+    b.className = 'tab' + (a.key === area.key ? ' active' : '');
+    b.textContent = a.name;
+    b.addEventListener('click', () => {
+      if (a.key !== area.key)
+        location.href = 'index.html?area=' + encodeURIComponent(a.key);
+    });
+    tabsEl.appendChild(b);
+  }
+  loadMapImage();
+  if (area.rpi) {
+    pubSub.subscribe(RPI_PATH, { dataReceived: v => {
+      if (!v) return;
+      try { const s = JSON.parse(v); detectRpiEvents(s); rpiStatus = s; render(); }
+      catch (e) { console.warn('Bad RPi JSON', e); }
+    }});
+  }
+}).catch(() => {
+  document.getElementById('areaName').textContent = 'areas.json saknas';
+});
+
+// ---- Kartbild: uppladdad (map_<key>.txt) före statisk fil ----
+const mapImg = document.getElementById('mapImg');
+function loadMapImage() {
+  fetch('map_' + area.key + '.txt')
+    .then(r => { if (!r.ok) throw 0; return r.text(); })
+    .then(dataUrl => {
+      if (dataUrl.indexOf('data:image/') === 0) mapImg.src = dataUrl;
+      else throw 0;
+    })
+    .catch(() => {
+      if (area.map) mapImg.src = area.map;
+      else document.getElementById('noMap').style.display = 'flex';
+    });
+}
+
+// ---- Prenumerationer ----
+let spotsReceived = false;
+pubSub.subscribe(SPOTLIST_PATH, { dataReceived: v => {
+  if (!v) return;
+  try {
+    spotsReceived = true;
+    const all = JSON.parse(v);
+    const filtered = area && area.spotPrefix
+      ? all.filter(s => s.name && s.name.indexOf(area.spotPrefix) === 0)
+      : all;
+    detectSpotEvents(filtered);
+    spots = filtered;
+    render();
+  } catch (e) { console.warn('Bad spotList JSON', e); }
+}});
+
+pubSub.subscribe(KP + 'positions', { dataReceived: v => {
+  if (!v) return;
+  try { const p = JSON.parse(v); if (p && typeof p === 'object') { positionsAll = p; render(); } }
+  catch (e) { console.warn('Bad positions JSON', e); }
+}});
+
+pubSub.subscribe(KP + 'events', { dataReceived: v => {
+  if (!v) return;
+  try { const e2 = JSON.parse(v); if (e2 instanceof Array) { events = e2; render(); } }
+  catch (e) { console.warn('Bad events JSON', e); }
+}});
+
+pubSub.subscribe(KP + 'selection', { dataReceived: v => {
+  const nv = v || null;
+  if (nv !== selectedKey) { selectedKey = nv; placeArmed = false; render(); }
+}});
+
+// ---- Inställningar (öppettider per yta, larmkvitteringar) ----
+let settings = { hours: {}, acked: {} };
+pubSub.subscribe(KP + 'settings', { dataReceived: v => {
+  if (!v) return;
+  try {
+    const s = JSON.parse(v);
+    if (s && typeof s === 'object') {
+      settings = Object.assign({ hours: {}, acked: {} }, s);
+      if (!settings.hours || typeof settings.hours !== 'object') settings.hours = {};
+      if (!settings.acked || typeof settings.acked !== 'object') settings.acked = {};
+      // Migrering från tidigare version med en global öppettid
+      if (s.open && s.close && area && !settings.hours[area.key])
+        settings.hours[area.key] = { open: s.open, close: s.close };
+      renderOpenHours(); render();
+    }
+  } catch (e) { console.warn('Bad settings JSON', e); }
+}});
+function saveSettings() { pubSub.set(KP + 'pendingSettings', JSON.stringify(settings)); }
+function areaHours() {
+  return (area && settings.hours[area.key]) || { open: '', close: '' };
+}
+/* Senaste öppningstillfället. Ronden görs efter öppning för att kontrollera
+   att allt startat, så öppning är brytpunkten för larm — inte midnatt.
+   Är öppettiden inte satt faller vi tillbaka på midnatt. */
+function lastOpeningTs() {
+  const h = areaHours();
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (!h.open) return d.getTime();
+  d.setHours(+h.open.split(':')[0], +h.open.split(':')[1], 0, 0);
+  if (now.getTime() < d.getTime()) d.setDate(d.getDate() - 1);
+  return d.getTime();
+}
+function renderOpenHours() {
+  const h = areaHours();
+  const el = document.getElementById('openHours');
+  if (!h.open || !h.close) { el.textContent = '–'; el.style.color = ''; return; }
+  el.textContent = h.open + '–' + h.close;
+  // Grön text när ytan är öppen just nu, grå när stängd
+  const t = s => (+s.split(':')[0]) * 60 + (+s.split(':')[1]);
+  const now = new Date();
+  const nowM = now.getHours() * 60 + now.getMinutes();
+  const o = t(h.open), c = t(h.close);
+  const isOpen = c > o ? (nowM >= o && nowM < c) : (nowM >= o || nowM < c);
+  el.style.color = isOpen ? '#2ecc71' : '#8a8a92';
+}
+
+// ---- Klocka ----
+let lastOpening = lastOpeningTs();
+function tickClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+  renderOpenHours();
+  // Ny öppning: gårdagens kvitteringar faller bort även om ingen data ändrats
+  const o = lastOpeningTs();
+  if (o !== lastOpening) { lastOpening = o; render(); }
+}
+tickClock(); setInterval(tickClock, 15000);
+
+// ---- Modal ----
+function openModal(html, wide) {
+  const box = document.getElementById('modalBox');
+  const m = document.getElementById('modal');
+  box.innerHTML = html;
+  box.classList.toggle('wide', !!wide);
+  m.classList.toggle('wide', !!wide);
+  m.classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') closeModal();
+});
+
+// ---- Öppettider: redigera ----
+document.getElementById('openEdit').addEventListener('click', () => {
+  const h = areaHours();
+  openModal('<h2>Öppettider — ' + (area ? area.name : '') + '</h2>' +
+    '<div style="display:flex;gap:.8rem;align-items:center">' +
+    '<input type="time" class="timeInp" id="inpOpen" value="' + (h.open || '10:00') + '">' +
+    '<span>till</span>' +
+    '<input type="time" class="timeInp" id="inpClose" value="' + (h.close || '17:00') + '">' +
+    '</div>' +
+    (area && area.openVar
+      ? '<div style="color:#8a8a92;font-size:.8rem;margin-top:.7rem;max-width:24rem">' +
+        'Sätter Realm-variabeln <b>' + area.openVar + '</b> till sant vid öppning ' +
+        'och falskt vid stängning.</div>'
+      : '') +
+    '<button class="actBtn pink" id="mSave">Spara</button>' +
+    '<button class="actBtn gray" id="mClose">Avbryt</button>');
+  document.getElementById('mSave').addEventListener('click', () => {
+    if (!area) return closeModal();
+    settings.hours[area.key] = {
+      open: document.getElementById('inpOpen').value,
+      close: document.getElementById('inpClose').value
+    };
+    saveSettings(); renderOpenHours(); closeModal(); toast('Öppettider sparade');
+  });
+  document.getElementById('mClose').addEventListener('click', closeModal);
+});
+
+// ---- Larmklocka: öppnar samma larmdialog som statuskortet ----
+document.getElementById('bellBtn').addEventListener('click', () => openAlarmModal());
+
+// ---- Schema: öppna schema-editorn i modal ----
+document.getElementById('btnSchedEdit').addEventListener('click', () => {
+  openModal(
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">' +
+    '<h2 style="margin:0">Schema-editor</h2>' +
+    '<button class="actBtn gray" id="mClose" style="margin:0">Stäng</button></div>' +
+    '<div id="schedWrap"><iframe src="/public/schedule-editor/index.html"></iframe></div>',
+    true);
+  document.getElementById('mClose').addEventListener('click', () => {
+    closeModal();
+    loadSchedule(); // hämta om schemat efter redigering
+  });
+});
+
+// ---- Schema ----
+let schedEv = '', schedName = '';
+function renderSched() {
+  document.getElementById('schedNext').textContent =
+    schedEv ? 'Nästa: ' + schedEv + (schedName ? ' ' + schedName : '') : 'Inget schemalagt';
+}
+pubSub.subscribe('Script.user.ScheduleManager.nextEvent',
+  { dataReceived: v => { schedEv = v || ''; renderSched(); } });
+pubSub.subscribe('Script.user.ScheduleManager.nextEventName',
+  { dataReceived: v => { schedName = v || ''; renderSched(); } });
+
+// ---- Dagens schema fran schedule.json (samma fil som schema-editorn) ----
+let scheduleData = null;
+function loadSchedule() {
+  fetch('/public/schedule-editor/schedule.json?ts=' + Date.now())
+    .then(r => { if (!r.ok) throw 0; return r.json(); })
+    .then(j => { scheduleData = j; renderSchedule(); })
+    .catch(() => { scheduleData = null; renderSchedule(); });
+}
+function renderSchedule() {
+  const el = document.getElementById('schedList');
+  if (!scheduleData || !(scheduleData.slots instanceof Array)) {
+    el.innerHTML = '<div class="evEmpty">Schemat kunde inte läsas</div>';
+    return;
+  }
+  const today = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+  const slots = scheduleData.slots
+    .filter(s => !s.days || s.days.indexOf(today) !== -1)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  if (!slots.length) {
+    el.innerHTML = '<div class="evEmpty">Inga händelser idag</div>';
+    return;
+  }
+  const now = new Date();
+  const nowM = now.getHours() * 60 + now.getMinutes();
+  let nextFound = false;
+  el.innerHTML = slots.map(s => {
+    const p = (s.time || '0:0').split(':');
+    const start = (+p[0]) * 60 + (+p[1]);
+    const dur = s.duration || 0;
+    let cls = '', state = '';
+    if (nowM >= start && nowM < start + dur) {
+      cls = 'now'; state = 'PÅGÅR · ' + (start + dur - nowM) + ' min kvar';
+    } else if (start > nowM && !nextFound) {
+      cls = 'next'; nextFound = true; state = 'NÄSTA';
+    } else if (start + dur <= nowM) cls = 'past';
+    return '<div class="schRow ' + cls + '"><span class="schTime">' + s.time +
+      '</span><span>' + s.name + '</span>' +
+      (state ? '<span class="schState">' + state + '</span>' : '') + '</div>';
+  }).join('');
+}
+loadSchedule();
+setInterval(loadSchedule, 5 * 60 * 1000);
+setInterval(renderSchedule, 60 * 1000);
+
+function setSelection(key) {
+  selectedKey = key;
+  placeArmed = false;
+  pubSub.set(KP + 'selection', key || '');
+  render();
+}
+
+function areaPositions() {
+  if (!area) return {};
+  if (!positionsAll[area.key]) positionsAll[area.key] = {};
+  return positionsAll[area.key];
+}
+
+function savePositions() {
+  pubSub.set(KP + 'pendingPositions', JSON.stringify(positionsAll));
+  toast('Position sparad');
+}
+
+// ---- Händelsedetektering (baseline först, sedan övergångar) ----
+let spotBaseline = null;   // { path: connected }
+let rpiBaseline = null;    // { mac: healthClass }
+
+function pushEvent(type, name, text, level) {
+  pubSub.set(KP + 'pendingEvent', JSON.stringify({ type, name, text, level, ts: Date.now() }));
+}
+
+function detectSpotEvents(list) {
+  const now = {};
+  for (const s of list) now[s.path] = !!s.connected;
+  if (spotBaseline) {
+    for (const s of list) {
+      const prev = spotBaseline[s.path];
+      if (prev !== undefined && prev !== now[s.path]) {
+        if (now[s.path]) pushEvent('spot', s.name, 'Ansluten igen', 'info');
+        else pushEvent('spot', s.name, 'Tappade anslutning', 'error');
+      }
+    }
+  }
+  spotBaseline = now;
+}
+
+function rpiHealthClass(pi) {
+  if (!pi || pi.online === undefined) return 'unknown';
+  if (!pi.online) return 'offline';
+  if (pi.data_ok === false) return 'warn';
+  const svcOk  = pi.service_state === undefined || pi.service_state === 'active';
+  const rfidOk = pi.rfid_healthy === undefined || pi.rfid_healthy === true;
+  return (svcOk && rfidOk) ? 'ok' : 'warn';
+}
+
+function detectRpiEvents(s) {
+  if (!s || !s.pis) return;
+  const now = {};
+  for (const pi of s.pis) now[pi.mac] = rpiHealthClass(pi);
+  if (rpiBaseline) {
+    for (const pi of s.pis) {
+      const prev = rpiBaseline[pi.mac], cur = now[pi.mac];
+      if (prev && prev !== 'unknown' && cur !== 'unknown' && prev !== cur) {
+        const nm = rpiName(pi);
+        if (cur === 'offline') pushEvent('rpi', nm, 'Offline', 'error');
+        else if (cur === 'warn') pushEvent('rpi', nm, 'Varning', 'warn');
+        else pushEvent('rpi', nm, 'OK igen', 'info');
+      }
+    }
+  }
+  rpiBaseline = now;
+}
+
+// ---- Rendering ----
+const mapWrap = document.getElementById('mapWrap');
+const mapInner = document.getElementById('mapInner');
+const markersEl = document.getElementById('markers');
+const bottomEl = document.getElementById('bottom');
+
+function rpiName(pi) { return (pi.points || pi.ip || pi.mac || '?').split('/')[0].trim(); }
+function spotClass(s) { return s.connected ? 'ok' : 'offline'; }
+
+function markerItems() {
+  const items = [];
+  if (filter !== 'rpi') {
+    for (const s of spots)
+      items.push({ key: 'spot:' + s.path, kind: 'spot', name: s.name, cls: spotClass(s) });
+  }
+  if (filter !== 'spot' && area && area.rpi && rpiStatus && rpiStatus.pis) {
+    for (const pi of rpiStatus.pis)
+      items.push({ key: 'rpi:' + pi.mac, kind: 'rpi', name: rpiName(pi), cls: rpiHealthClass(pi) });
+  }
+  return items;
+}
+
+function render() {
+  renderMarkers();
+  renderBottom();
+  renderList();
+  renderCards();
+  renderBell();
+}
+
+// ---- Kombinerad lista: spots + RPi, fel forst ----
+const SEV = { offline: 0, warn: 1, unknown: 2, ok: 3 };
+
+function listItems() {
+  const items = [];
+  for (const s of spots)
+    items.push({ key: 'spot:' + s.path, kind: 'spot', name: s.name,
+      cls: spotClass(s), team: 'Utställning',
+      right: s.connected ? (s.playingBlock || '–') : 'OFFLINE' });
+  if (area && area.rpi && rpiStatus && rpiStatus.pis) {
+    for (const pi of rpiStatus.pis) {
+      const cls = rpiHealthClass(pi);
+      items.push({ key: 'rpi:' + pi.mac, kind: 'rpi', name: rpiName(pi),
+        cls, team: 'Teknik',
+        right: cls === 'offline' ? 'OFFLINE'
+          : cls === 'warn' ? 'VARNING'
+          : typeof pi.system_temperature_celsius === 'number'
+            ? pi.system_temperature_celsius.toFixed(0) + ' °C' : '' });
+    }
+  }
+  return items;
+}
+
+function renderList() {
+  const listEl = document.getElementById('spotListEl');
+  let items = listItems();
+  if (filter === 'spot') items = items.filter(i => i.kind === 'spot');
+  if (filter === 'rpi') items = items.filter(i => i.kind === 'rpi');
+  items.sort((a, b) => SEV[a.cls] === SEV[b.cls]
+    ? a.name.localeCompare(b.name, 'sv') : SEV[a.cls] - SEV[b.cls]);
+  const nBad = items.filter(i => i.cls === 'offline' || i.cls === 'warn').length;
+  document.getElementById('spotCount').textContent =
+    items.length ? (nBad ? nBad + ' fel' : 'alla OK') : '';
+  if (!items.length) {
+    listEl.innerHTML = '<div class="evEmpty">' + (spotsReceived
+      ? 'Inga spots' + (area && area.spotPrefix ? ' med prefix ' + area.spotPrefix : '')
+      : 'Väntar på spotlista — kräver script/user/SpotList.js på servern') + '</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  for (const it of items) {
+    const row = document.createElement('div');
+    row.className = 'spRow' + (it.cls === 'offline' || it.cls === 'warn' ? ' problem' : '') +
+      (it.key === selectedKey ? ' sel' : '');
+    row.innerHTML =
+      '<span class="spDot ' + it.cls + '"></span>' +
+      '<span class="spName">' + it.name + '</span>' +
+      '<span class="teamTag">' + it.team + '</span>' +
+      '<span class="spPlay' + (it.cls === 'offline' || it.cls === 'warn' ? ' bad' : '') + '">' +
+      it.right + '</span>';
+    row.addEventListener('click', () =>
+      setSelection(it.key === selectedKey ? null : it.key));
+    listEl.appendChild(row);
+  }
+}
+
+// ---- Larm (offline/varning), kvitterbara ----
+function problems() {
+  return listItems().filter(i => i.cls === 'offline' || i.cls === 'warn');
+}
+/* En kvittering galler bara sedan senaste oppning. Ronden gors efter oppning
+   for att kontrollera att allt startat, sa ett fel som star kvar over natten
+   ar ett nytt larm vid nasta oppning och ska synas i raknaren igen. */
+function ackIsValid(ts) {
+  return !!ts && ts >= lastOpeningTs();
+}
+function unackedAlarms() {
+  return problems().filter(i => !ackIsValid(settings.acked[i.key]));
+}
+function renderBell() {
+  // Rensa kvitteringar fran tidigare dygn
+  const probKeys = new Set(problems().map(i => i.key));
+  let changed = false;
+  for (const k of Object.keys(settings.acked)) {
+    // ...fran fore senaste oppning
+    if (!ackIsValid(settings.acked[k])) { delete settings.acked[k]; changed = true; continue; }
+    // ...for problem som atgardats (bara for datakallor vi faktiskt fatt)
+    const haveData = k.indexOf('spot:') === 0 ? spotsReceived : !!rpiStatus;
+    if (haveData && !probKeys.has(k)) { delete settings.acked[k]; changed = true; }
+  }
+  if (changed) saveSettings();
+  const un = unackedAlarms().length;
+  const b = document.getElementById('bellCount');
+  b.style.display = un ? '' : 'none';
+  b.textContent = un;
+}
+
+// ---- SYSTEM: statuskort ----
+function renderCards() {
+  const el = document.getElementById('sysCards');
+  const cards = [];
+  const card = (v, l, cls, id) => cards.push('<div class="card' +
+    (id ? ' clickable" id="' + id + '"' : '"') + '><div class="cv ' +
+    (cls || '') + '">' + v + '</div><div class="cl">' + l + '</div></div>');
+  if (spots.length) {
+    const ok = spots.filter(s => s.connected).length;
+    card(ok + ' / ' + spots.length, 'Spots online', ok === spots.length ? 'good' : 'bad');
+  }
+  if (area && area.rpi && rpiStatus && rpiStatus.pis) {
+    const pis = rpiStatus.pis;
+    const online = pis.filter(p => p.online).length;
+    card(online + ' / ' + pis.length, 'RPi online', online === pis.length ? 'good' : 'bad');
+    const temps = pis.map(p => p.system_temperature_celsius).filter(t => typeof t === 'number');
+    if (temps.length) {
+      const mx = Math.max(...temps);
+      card(mx.toFixed(0) + '°', 'Max RPi-temp', mx > 70 ? 'bad' : mx > 60 ? 'meh' : 'good');
+    }
+    const rc = pis.reduce((a, p) => a + (p.rfid_connected || 0), 0);
+    const re = pis.reduce((a, p) => a + (p.rfid_expected || 0), 0);
+    if (re) card(rc + ' / ' + re, 'RFID-läsare', rc === re ? 'good' : 'bad');
+    const disks = pis.map(p => p.system_root_used_percent).filter(t => typeof t === 'number');
+    if (disks.length) {
+      const dx = Math.max(...disks);
+      card(dx + '%', 'Max disk', dx > 85 ? 'bad' : dx > 70 ? 'meh' : 'good');
+    }
+  }
+  const un = unackedAlarms().length;
+  card(String(un), 'Okvitterade larm', un ? 'bad' : 'good', 'cardAlarms');
+  el.innerHTML = cards.length ? cards.join('')
+    : '<div class="evEmpty">Väntar på data…</div>';
+  const ca = document.getElementById('cardAlarms');
+  if (ca) ca.addEventListener('click', openAlarmModal);
+}
+
+// ---- Larmdialog: kvittera enskilt eller alla ----
+function openAlarmModal() {
+  // Visa ALLA aktiva fel, kvitterade sist och nedtonade, sa antalet aldrig
+  // ser ut att sakna nagot jamfort med listan.
+  const all = problems().slice().sort((a, b) => {
+    const aa = ackIsValid(settings.acked[a.key]) ? 1 : 0;
+    const ba = ackIsValid(settings.acked[b.key]) ? 1 : 0;
+    return aa === ba ? a.name.localeCompare(b.name, 'sv') : aa - ba;
+  });
+  const un = all.filter(i => !ackIsValid(settings.acked[i.key]));
+  let html = '<div style="display:flex;justify-content:space-between;' +
+    'align-items:baseline;gap:1rem;margin-bottom:.6rem">' +
+    '<h2 style="margin:0">Aktiva larm (' + all.length + ')</h2>' +
+    '<span style="color:#8a8a92;font-size:.8rem">' + un.length +
+    ' okvitterade</span></div>';
+  if (!all.length) {
+    html += '<div class="evEmpty" style="margin-bottom:1rem">Inga aktiva larm</div>' +
+      '<div><button class="actBtn gray" id="mClose">Stäng</button></div>';
+    openModal(html);
+    document.getElementById('mClose').addEventListener('click', closeModal);
+    return;
+  }
+  html += '<div id="almList" style="min-width:28rem">';
+  for (const it of all) {
+    const acked = ackIsValid(settings.acked[it.key]);
+    html += '<div class="almRow' + (acked ? ' acked' : '') + '">' +
+      '<span class="spDot ' + it.cls + '"></span>' +
+      '<span class="almName" data-key="' + it.key + '">' + it.name + '</span>' +
+      '<span class="teamTag">' + it.team + '</span>' +
+      '<span class="almRight">' + it.right + '</span>' +
+      (acked
+        ? '<span class="almOk">kvitterad ' + hhmm(settings.acked[it.key]) + '</span>' +
+          '<button class="almAck" data-unack="' + it.key + '">Ångra</button>'
+        : '<button class="almAck" data-ack="' + it.key + '">Kvittera</button>') +
+      '</div>';
+  }
+  html += '</div><div>' +
+    (un.length
+      ? '<button class="actBtn pink" id="ackAll">Kvittera alla (' + un.length + ')</button>'
+      : '') +
+    '<button class="actBtn gray" id="mClose">Stäng</button></div>';
+  openModal(html);
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  for (const b of document.querySelectorAll('.almAck')) {
+    b.addEventListener('click', () => {
+      if (b.dataset.ack) settings.acked[b.dataset.ack] = Date.now();
+      else delete settings.acked[b.dataset.unack];
+      saveSettings(); render(); openAlarmModal();
+    });
+  }
+  for (const n of document.querySelectorAll('.almName')) {
+    n.addEventListener('click', () => { closeModal(); setSelection(n.dataset.key); });
+  }
+  const aa = document.getElementById('ackAll');
+  if (aa) aa.addEventListener('click', () => confirmAckAll(un));
+}
+
+function hhmm(ts) {
+  return new Date(ts).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function confirmAckAll(list) {
+  openModal('<h2>Kvittera alla larm?</h2>' +
+    '<div style="color:#c8c8d0;max-width:26rem;margin-bottom:1rem">Är du säker? ' +
+    list.length + ' larm kvitteras och försvinner ur larmräknaren. ' +
+    'Felen finns kvar tills de är åtgärdade.</div>' +
+    '<div><button class="actBtn pink" id="mYes">Ja, kvittera alla</button>' +
+    '<button class="actBtn gray" id="mNo">Avbryt</button></div>');
+  document.getElementById('mYes').addEventListener('click', () => {
+    const now = Date.now();
+    for (const it of list) settings.acked[it.key] = now;
+    saveSettings(); render(); closeModal();
+    toast(list.length + ' larm kvitterade');
+  });
+  document.getElementById('mNo').addEventListener('click', () => openAlarmModal());
+}
+
+function renderMarkers() {
+  markersEl.innerHTML = '';
+  const pos = areaPositions();
+  for (const it of markerItems()) {
+    const p = pos[it.key];
+    if (!p) continue;
+    const m = document.createElement('div');
+    m.className = 'marker ' + it.kind + ' ' + it.cls;
+    if (it.key === selectedKey) m.classList.add('selected');
+    m.style.left = p.x + '%';
+    m.style.top = p.y + '%';
+    const lbl = document.createElement('div');
+    lbl.className = 'mLabel';
+    lbl.textContent = it.name;
+    m.appendChild(lbl);
+    m.addEventListener('click', e => {
+      e.stopPropagation();
+      if (tr.moved) return;
+      setSelection(it.key === selectedKey ? null : it.key);
+      if (editMode && selectedKey) toast('Tryck på kartan för ny position');
+    });
+    markersEl.appendChild(m);
+  }
+}
+
+function fmtTime(ts) {
+  return new Date(ts).toLocaleString('sv-SE', {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderBottom() {
+  // Lämnar vi spotdetaljen ska bildhämtningen upphöra.
+  // renderSpotDetail startar om den direkt om det ändå är en spot.
+  stopSnap();
+  if (selectedKey) {
+    if (selectedKey.indexOf('spot:') === 0) {
+      const s = spots.find(x => 'spot:' + x.path === selectedKey);
+      if (s) return renderSpotDetail(s);
+    } else if (selectedKey.indexOf('rpi:') === 0 && rpiStatus && rpiStatus.pis) {
+      const pi = rpiStatus.pis.find(x => 'rpi:' + x.mac === selectedKey);
+      if (pi) return renderRpiDetail(pi);
+    }
+  }
+  renderEvents();
+}
+
+function placeBtnHtml(key) {
+  const placed = !!areaPositions()[key];
+  return '<button id="detailPlaceBtn"' + (placeArmed ? ' class="armed"' : '') + '>' +
+    (placeArmed ? 'Tryck på kartan…' : (placed ? 'Flytta på kartan' : 'Placera på kartan')) +
+    '</button>';
+}
+
+function hookPlaceBtn(name) {
+  document.getElementById('detailPlaceBtn').addEventListener('click', () => {
+    placeArmed = !placeArmed;
+    if (placeArmed) toast('Tryck på kartan där "' + name + '" ska stå');
+    renderBottom();
+  });
+}
+
+// ---- Fjärråtgärder + larmkvittering ----
+function sendCommand(action, target) {
+  pubSub.set(KP + 'command', JSON.stringify({ action, target, ts: Date.now() }));
+}
+// Kvittens från servern — visas som toast så knappen aldrig känns död
+let lastResultTs = 0;
+pubSub.subscribe(KP + 'commandResult', { dataReceived: v => {
+  if (!v) return;
+  try {
+    const r = JSON.parse(v);
+    if (!r || !r.ts || r.ts === lastResultTs) return;
+    lastResultTs = r.ts;
+    toast((r.ok ? '✓ ' : '✗ ') + r.text);
+  } catch (e) { console.warn('Bad commandResult JSON', e); }
+}});
+
+function stepsHtml(title, steps) {
+  return '<div class="stepsHead">' + title + '</div><ol class="steps">' +
+    steps.map(s => '<li>' + s + '</li>').join('') + '</ol>';
+}
+
+function ackBtnHtml(key) {
+  const isProblem = problems().some(i => i.key === key);
+  if (!isProblem) return '';
+  return ackIsValid(settings.acked[key])
+    ? '<button class="actBtn gray" disabled>Larm kvitterat</button>'
+    : '<button class="actBtn gray" id="ackBtn">Kvittera larm</button>';
+}
+
+function hookAckBtn(key) {
+  const b = document.getElementById('ackBtn');
+  if (!b) return;
+  b.addEventListener('click', () => {
+    settings.acked[key] = Date.now();
+    saveSettings(); render(); toast('Larm kvitterat');
+  });
+}
+
+/* ---- Skärmbild av spoten ----
+   Blocks-spelaren lägger en aktuell jpeg under pixilab-player-screenshot,
+   namngiven efter spoten. Sökvägen är relativ och inte hårdkodad till
+   192.168.146.10, så panelen fungerar oavsett hur servern nås.
+   ts-parametern tvingar förbi webbläsarens cache — utan den skulle
+   allra första bilden ligga kvar för alltid. */
+const SNAP_BASE = '/public/pixilab-player-screenshot/';
+const SNAP_INTERVAL = 20000;
+let snapTimer = null;
+let snapSpot  = null;   // spoten som den cachade bilden hör till
+let snapImg   = null;   // senast lyckade bild
+let snapTaken = null;   // när den hämtades
+
+function stopSnap() {
+  if (snapTimer) { clearInterval(snapTimer); snapTimer = null; }
+}
+
+function paintSnap() {
+  const wrap = document.getElementById('snapWrap');
+  if (!wrap || !snapImg) return;
+  wrap.innerHTML = '';
+  wrap.appendChild(snapImg);
+  const cap = document.getElementById('snapCap');
+  if (cap) cap.textContent = 'Skärmbild ' + new Date(snapTaken)
+    .toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fetchSnap(name) {
+  const img = new Image();
+  img.onload = () => {
+    // Hann man byta spot medan bilden laddade hör den till fel spot nu
+    if (snapSpot !== name) return;
+    snapImg = img; snapTaken = Date.now();
+    paintSnap();
+  };
+  img.onerror = () => {
+    if (snapSpot !== name) return;
+    // Ingen bild betyder att spelaren inte lämnat någon, inte att allt är bra.
+    // En kvarhängande gammal bild vore värre än att säga att den saknas.
+    snapImg = null; snapTaken = null;
+    const wrap = document.getElementById('snapWrap');
+    if (wrap) wrap.innerHTML = '<div class="snapMsg">Ingen skärmbild<br>tillgänglig</div>';
+    const cap = document.getElementById('snapCap');
+    if (cap) cap.textContent = 'Skärmbild';
+  };
+  img.src = SNAP_BASE + encodeURIComponent(name) + '.jpeg?ts=' + Date.now();
+}
+
+function hookSnap(s) {
+  const wrap = document.getElementById('snapWrap');
+  if (!wrap) return;
+  const fresh = snapSpot === s.name && snapTaken && Date.now() - snapTaken < SNAP_INTERVAL;
+  if (snapSpot !== s.name) { snapImg = null; snapTaken = null; }
+  snapSpot = s.name;
+  // Ritas panelen bara om av annan anledning återanvänds bilden i stället
+  // för att hämtas på nytt, annars blinkar den vid varje spotlist-uppdatering.
+  paintSnap();
+  if (!fresh) fetchSnap(s.name);
+  wrap.addEventListener('click', () => fetchSnap(s.name));
+  stopSnap();
+  snapTimer = setInterval(() => {
+    if (!document.getElementById('snapWrap')) { stopSnap(); return; }
+    fetchSnap(s.name);
+  }, SNAP_INTERVAL);
+}
+
+function renderSpotDetail(s) {
+  const st = s.connected
+    ? '<span class="good">ANSLUTEN</span>'
+    : '<span class="bad">OFFLINE</span>';
+  const key = 'spot:' + s.path;
+  const rows = [];
+  const add = (k, v) => rows.push('<tr><td>' + k + '</td><td>' + v + '</td></tr>');
+  add('Team', 'Utställning');
+  add('IP', s.ipAddress || '–');
+  add('Spelar block', s.playingBlock || '–');
+  add('Sökväg', s.path || '–');
+  add('Aktiv', s.active ? 'ja' : 'nej');
+  let html = '<h2>' + s.name + '<span class="stTag">' + st + '</span></h2>' +
+    '<table id="detailTable">' + rows.join('') + '</table>';
+  if (!s.connected)
+    html += stepsHtml('Åtgärdssteg — spot offline', [
+      'Prova "Väck spot" nedan — spelaren kan vara nedsläckt',
+      'Kontrollera att spelaren har ström',
+      'Kontrollera nätverkskabel och anslutning',
+      'Kvarstår felet — notera IP (' + (s.ipAddress || '?') + ') och kontakta teknik'
+    ]);
+  // Ansluten spot: ladda om eller stäng av. Frånkopplad: försök väcka.
+  const act = s.connected
+    ? { id: 'reloadSpot', label: 'Ladda om spot' }
+    : { id: 'wakeSpot', label: 'Väck spot' };
+  html += '<div>' +
+    '<button class="actBtn pink" id="actionBtn">' + act.label + '</button>' +
+    (s.connected ? '<button class="actBtn red" id="offBtn">Stäng av spot</button>' : '') +
+    ackBtnHtml(key) + placeBtnHtml(key) + '</div>';
+  bottomEl.innerHTML =
+    '<div class="split"><div class="splitMain">' + html + '</div>' +
+    '<div class="snap">' +
+      '<div class="snapImgWrap" id="snapWrap"><div class="snapMsg">Hämtar bild…</div></div>' +
+      '<div class="snapCap" id="snapCap">Skärmbild</div>' +
+    '</div></div>';
+  hookSnap(s);
+  hookPlaceBtn(s.name);
+  hookAckBtn(key);
+  document.getElementById('actionBtn').addEventListener('click', () => {
+    sendCommand(act.id, s.path);
+    toast('Skickar…');
+  });
+  const offBtn = document.getElementById('offBtn');
+  if (offBtn) offBtn.addEventListener('click', () => {
+    // Bekräfta — avstängning är lätt att trycka på av misstag på en pekpanel
+    openModal('<h2>Stänga av ' + s.name + '?</h2>' +
+      '<div style="color:#bbb;font-size:.9rem;max-width:26rem">Spoten förblir avstängd ' +
+      'tills den väcks igen härifrån. Den visas som frånkopplad under tiden.</div>' +
+      '<button class="actBtn red" id="mYes">Stäng av</button>' +
+      '<button class="actBtn gray" id="mClose">Avbryt</button>');
+    document.getElementById('mYes').addEventListener('click', () => {
+      sendCommand('powerOffSpot', s.path);
+      closeModal(); toast('Skickar…');
+    });
+    document.getElementById('mClose').addEventListener('click', closeModal);
+  });
+}
+
+function fmtUptime(sec) {
+  if (typeof sec !== 'number') return '–';
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+  return (d ? d + 'd ' : '') + h + 'h ' + m + 'min';
+}
+
+function renderRpiDetail(pi) {
+  const cls = rpiHealthClass(pi);
+  const st = { ok: '<span class="good">OK</span>', warn: '<span class="meh">VARNING</span>',
+               offline: '<span class="bad">OFFLINE</span>', unknown: '<span>okänd</span>' }[cls];
+  const rows = [];
+  const add = (k, v) => rows.push('<tr><td>' + k + '</td><td>' + v + '</td></tr>');
+  add('IP', pi.ip || '–');
+  add('MAC', pi.mac || '–');
+  if (pi.online) {
+    if (pi.service_state !== undefined)
+      add('Tjänst', pi.service_state === 'active'
+        ? '<span class="good">active</span>' : '<span class="bad">' + pi.service_state + '</span>');
+    if (pi.rfid_connected !== undefined || pi.rfid_expected !== undefined)
+      add('RFID-läsare', (pi.rfid_connected ?? '?') + ' / ' + (pi.rfid_expected ?? '?') +
+        (pi.rfid_healthy === false ? ' <span class="bad">✗</span>' : ' <span class="good">✓</span>'));
+    if (pi.system_temperature_celsius !== undefined) {
+      const t = pi.system_temperature_celsius;
+      add('CPU-temp', (t > 70 ? '<span class="bad">' : t > 60 ? '<span class="meh">' : '<span class="good">')
+        + t.toFixed(1) + ' °C</span>');
+    }
+    if (pi.system_uptime_seconds !== undefined) add('Upptid', fmtUptime(pi.system_uptime_seconds));
+    if (pi.system_root_used_percent !== undefined) add('Disk', pi.system_root_used_percent + ' % använt');
+    if (pi.system_memory_used_percent !== undefined) add('Minne', pi.system_memory_used_percent + ' % använt');
+    if (pi.service_error) add('Tjänstefel', '<span class="bad">' + pi.service_error + '</span>');
+    if (pi.rfid_error) add('RFID-fel', '<span class="bad">' + pi.rfid_error + '</span>');
+  }
+  const key = 'rpi:' + pi.mac;
+  let html = '<h2>' + rpiName(pi) + '<span class="stTag">' + st + '</span></h2>' +
+    '<table id="detailTable">' + rows.join('') + '</table>';
+  if (cls === 'offline')
+    html += stepsHtml('Åtgärdssteg — RPi offline', [
+      'Kontrollera strömförsörjningen till Pi:n',
+      'Kontrollera nätverk och switch',
+      'Starta om Pi:n: dra strömmen, vänta 10 s, sätt i igen',
+      'Kvarstår felet — notera IP (' + (pi.ip || '?') + ') och kontakta teknik'
+    ]);
+  else if (cls === 'warn')
+    html += stepsHtml('Åtgärdssteg — varning', [
+      'Kontrollera RFID-läsarnas kablage vid stationen',
+      'Starta om Pi:n: dra strömmen, vänta 10 s, sätt i igen',
+      'Kvarstår varningen — kontakta teknik'
+    ]);
+  html += '<div>' + ackBtnHtml(key) + placeBtnHtml(key) + '</div>';
+  bottomEl.innerHTML = html;
+  hookPlaceBtn(rpiName(pi));
+  hookAckBtn(key);
+}
+
+function renderEvents() {
+  let html = '<h2>Senaste händelser</h2><div id="evList">';
+  if (!events.length) {
+    html += '<div id="evEmpty">Inga händelser ännu.</div>';
+  } else {
+    for (const ev of events.slice(0, 50)) {
+      html += '<div class="evRow"><span class="evTime">' + fmtTime(ev.ts) + '</span>' +
+        '<span class="evDot ' + (ev.level || 'info') + '"></span>' +
+        '<span class="evName">' + ev.name + '</span>' +
+        '<span class="evText">' + ev.text + '</span></div>';
+    }
+  }
+  bottomEl.innerHTML = html + '</div>';
+}
+
+// ---- Filter ----
+for (const chip of document.querySelectorAll('.chip')) {
+  chip.addEventListener('click', () => {
+    filter = chip.dataset.filter;
+    for (const c of document.querySelectorAll('.chip')) c.classList.toggle('active', c === chip);
+    render();
+  });
+}
+
+// ---- Kugghjulsmeny ----
+const gearBtn = document.getElementById('gearBtn');
+const gearMenu = document.getElementById('gearMenu');
+gearBtn.addEventListener('click', () => gearMenu.classList.toggle('open'));
+document.addEventListener('click', e => {
+  if (!e.target.closest('#gearMenu') && !e.target.closest('#gearBtn'))
+    gearMenu.classList.remove('open');
+});
+
+document.getElementById('menuPlace').addEventListener('click', () => {
+  editMode = !editMode;
+  document.getElementById('menuPlace').classList.toggle('on', editMode);
+  gearBtn.classList.toggle('active', editMode);
+  gearMenu.classList.remove('open');
+  toast(editMode ? 'Placeringsläge på — välj markör, tryck på kartan' : 'Placeringsläge av');
+});
+
+document.getElementById('menuMap').addEventListener('click', () => {
+  gearMenu.classList.remove('open');
+  document.getElementById('mapFile').click();
+});
+
+document.getElementById('mapFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file || !area) return;
+  if (file.size > 4 * 1024 * 1024) { toast('Bilden är för stor (max 4 MB)'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    mapImg.src = dataUrl;
+    document.getElementById('noMap').style.display = 'none';
+    pubSub.set(KP + 'pendingMap', JSON.stringify({ area: area.key, dataUrl }));
+    toast('Kartbild sparad');
+  };
+  reader.readAsDataURL(file);
+});
+
+// ============================================================
+//  PAN / ZOOM / PINCH (samma som dreamland v9)
+// ============================================================
+const tr = { x: 0, y: 0, s: 1, moved: false };
+const MIN_S = 0.08, MAX_S = 10;
+
+function applyTr() {
+  mapInner.style.transform = `translate(${tr.x}px,${tr.y}px) scale(${tr.s})`;
+  markersEl.style.setProperty('--inv', 1 / tr.s);
+}
+
+function fitToScreen() {
+  if (!mapImg.naturalWidth) return;
+  const aw = mapWrap.clientWidth, ah = mapWrap.clientHeight;
+  const s = Math.min(aw / mapImg.naturalWidth, ah / mapImg.naturalHeight);
+  tr.s = s;
+  tr.x = (aw - mapImg.naturalWidth * s) / 2;
+  tr.y = (ah - mapImg.naturalHeight * s) / 2;
+  applyTr();
+}
+
+function zoomBy(delta, cx, cy) {
+  const old = tr.s, nw = Math.min(MAX_S, Math.max(MIN_S, old * delta));
+  const rect = mapWrap.getBoundingClientRect();
+  const mx = (cx ?? rect.left + rect.width / 2) - rect.left;
+  const my = (cy ?? rect.top + rect.height / 2) - rect.top;
+  tr.x = mx - (mx - tr.x) * (nw / old);
+  tr.y = my - (my - tr.y) * (nw / old);
+  tr.s = nw;
+  applyTr();
+}
+
+mapWrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoomBy(e.deltaY < 0 ? 1.13 : 1 / 1.13, e.clientX, e.clientY);
+}, { passive: false });
+
+const pointers = new Map();
+let panStart = null, pinchStart = null;
+
+mapWrap.addEventListener('pointerdown', e => {
+  if (e.target.closest('#controls')) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  mapWrap.setPointerCapture(e.pointerId);
+  tr.moved = false;
+  if (pointers.size === 1) {
+    panStart = { ox: e.clientX - tr.x, oy: e.clientY - tr.y };
+    mapWrap.classList.add('panning');
+  } else if (pointers.size === 2) {
+    panStart = null;
+    const [a, b] = [...pointers.values()];
+    const rect = mapWrap.getBoundingClientRect();
+    pinchStart = {
+      dist: Math.hypot(a.x - b.x, a.y - b.y),
+      s: tr.s, x: tr.x, y: tr.y,
+      cx: (a.x + b.x) / 2 - rect.left,
+      cy: (a.y + b.y) / 2 - rect.top
+    };
+  }
+});
+
+mapWrap.addEventListener('pointermove', e => {
+  const prev = pointers.get(e.pointerId);
+  if (!prev) return;
+  if (Math.abs(e.clientX - prev.x) > 3 || Math.abs(e.clientY - prev.y) > 3) tr.moved = true;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2 && pinchStart) {
+    const [a, b] = [...pointers.values()];
+    const rect = mapWrap.getBoundingClientRect();
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    const ns = Math.min(MAX_S, Math.max(MIN_S, pinchStart.s * (dist / pinchStart.dist)));
+    const cx = (a.x + b.x) / 2 - rect.left;
+    const cy = (a.y + b.y) / 2 - rect.top;
+    tr.s = ns;
+    tr.x = cx - (pinchStart.cx - pinchStart.x) * (ns / pinchStart.s);
+    tr.y = cy - (pinchStart.cy - pinchStart.y) * (ns / pinchStart.s);
+    applyTr();
+  } else if (panStart && pointers.size === 1) {
+    tr.x = e.clientX - panStart.ox;
+    tr.y = e.clientY - panStart.oy;
+    applyTr();
+  }
+});
+
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchStart = null;
+  if (pointers.size === 1) {
+    const [a] = [...pointers.values()];
+    panStart = { ox: a.x - tr.x, oy: a.y - tr.y };
+  } else if (pointers.size === 0) {
+    panStart = null;
+    mapWrap.classList.remove('panning');
+  }
+}
+mapWrap.addEventListener('pointerup', endPointer);
+mapWrap.addEventListener('pointercancel', endPointer);
+
+document.getElementById('btnZoomIn').addEventListener('click', () => zoomBy(1.3));
+document.getElementById('btnZoomOut').addEventListener('click', () => zoomBy(1 / 1.3));
+document.getElementById('btnFit').addEventListener('click', fitToScreen);
+
+mapImg.addEventListener('load', fitToScreen);
+window.addEventListener('resize', fitToScreen);
+fitToScreen();
+
+// ---- Placering: tryck på kartan ----
+mapWrap.addEventListener('click', e => {
+  if (tr.moved) return;
+  if (e.target.closest('#controls')) return;
+  if (!(placeArmed || editMode) || !selectedKey) return;
+  const rect = mapImg.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width) * 100;
+  const y = ((e.clientY - rect.top) / rect.height) * 100;
+  if (x < 0 || x > 100 || y < 0 || y > 100) return;
+  areaPositions()[selectedKey] = { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+  placeArmed = false;
+  savePositions();
+  render();
+});
+
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Startvy: händelselogg
+renderEvents();
+</script>
+</body>
+</html>

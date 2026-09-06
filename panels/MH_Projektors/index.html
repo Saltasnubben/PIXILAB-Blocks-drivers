@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>MH Projektorer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Pekpanel: inga rullningslister */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  html, body {
+    width: 1080px; height: 675px; overflow: hidden;
+    background: #1a1a1e; color: #eeeef2;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px; -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- Topprad ---- */
+  .top {
+    height: 50px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; border-bottom: 1px solid #303038;
+  }
+  .top h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; }
+  .top .sub { color: #8a8a92; font-size: 12px; margin-left: 10px; font-weight: 400; }
+  .top .clock { font-size: 15px; color: #c8c8d0; font-variant-numeric: tabular-nums; }
+
+  /* ---- Kortrad ---- */
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    padding: 14px 16px; height: 625px;
+  }
+  .card {
+    background: #26262c; border-radius: 8px; padding: 14px 15px;
+    display: flex; flex-direction: column; border: 1px solid #303038;
+  }
+  .card.off   { border-color: #4a3a3a; }
+  .card.probl { border-color: #e74c3c; }
+
+  .cHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .cName { font-size: 16px; font-weight: 600; }
+  .cIp   { font-size: 11.5px; color: #8a8a92; font-variant-numeric: tabular-nums; }
+  .cLabel { font-size: 11.5px; color: #8a8a92; margin-top: 1px; }
+
+  /* ---- Stor statusbricka ---- */
+  .badge {
+    margin: 14px 0 14px; border-radius: 6px; padding: 18px 14px;
+    background: #1f1f24; display: flex; align-items: center; gap: 10px;
+  }
+  .dot { width: 15px; height: 15px; border-radius: 50%; flex: none; background: #6a6a72; }
+  .dot.on { background: #2ecc71; }
+  .dot.warm, .dot.cool { background: #f0a132; }
+  .dot.err { background: #e74c3c; }
+  .badgeTxt { font-size: 24px; font-weight: 600; letter-spacing: .03em; }
+  .badgeTxt.on   { color: #2ecc71; }
+  .badgeTxt.warm { color: #f0a132; }
+  .badgeTxt.off  { color: #9a9aa2; }
+  .badgeTxt.err  { color: #e74c3c; }
+
+  /* ---- Nyckeltal ---- */
+  .rows { border-top: 1px solid #303038; }
+  .row {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    padding: 11px 1px; border-bottom: 1px solid #303038; font-size: 15px;
+  }
+  .rl { color: #8a8a92; flex: none; }
+  .rv { text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        font-variant-numeric: tabular-nums; }
+  .rv.good { color: #2ecc71; }
+  .rv.warn { color: #f0a132; }
+  .rv.bad  { color: #e74c3c; }
+  .rv.dim  { color: #6a6a72; }
+  /* Tatt lage: fyra lampor ger atta rader som annars inte far plats */
+  .card.dense .row    { padding: 6px 1px; font-size: 14px; }
+  .card.dense .badge  { margin: 12px 0; padding: 14px; }
+  .card.dense .pill   { padding: 11px 4px; }
+
+  /* ---- Felrutor ---- */
+  .errTitle {
+    font-size: 10px; color: #8a8a92; text-transform: uppercase; letter-spacing: .09em;
+    margin: 16px 0 8px;
+  }
+  .pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pill {
+    background: #1f1f24; border-radius: 5px; padding: 13px 4px; text-align: center;
+    font-size: 12.5px; color: #8a8a92; border: 1px solid transparent;
+  }
+  .pill.ok   { color: #6f8f78; }
+  .pill.warn { background: #3a2f1c; color: #f0a132; border-color: #6a5326; }
+  .pill.bad  { background: #3a2020; color: #e74c3c; border-color: #6a2f2f; }
+  .pill.unk  { color: #55555c; }
+
+  /* ---- Fot ---- */
+  .foot {
+    margin-top: auto; padding-top: 12px; border-top: 1px solid #303038;
+    font-size: 11.5px; color: #6a6a72; line-height: 1.5;
+  }
+  .foot span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Maskinhallen — Projektorer <span class="sub">MH_Show</span></h1>
+  <div class="clock" id="clock">–</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script type="module">
+import PubSubWebBlock from './PubSubWebBlock.js';
+
+/* ---------------------------------------------------------------
+   Konfiguration. Byt namn/IP har om nagot dops om i Blocks.
+   --------------------------------------------------------------- */
+const DEVICES = [
+  { name: 'MH_Proj_V',    label: 'Vänster', ip: '192.168.146.23' },
+  { name: 'MH_Proj_H',    label: 'Höger',   ip: '192.168.146.24' },
+  { name: 'MH_Proj_Wall', label: 'Vägg',    ip: '192.168.146.25' }
+];
+
+// Tröskelvärden för gul/röd på drifttimmar. Justera efter projektormodell.
+const LAMP_WARN_H = 1800, LAMP_ALARM_H = 2200;
+const FILTER_WARN_H = 800, FILTER_ALARM_H = 1000;
+
+/* Egenskaper vi prenumererar pa. Drivrutinen pollar de dynamiska
+   (POWR, INPT, AVMT, ERST, LAMP, IRES, FILT) var 20:e sekund.
+   De statiska (modell, serienr, mjukvara) hamtas en gang och cachas. */
+const FIELDS = [
+  'isOnline', 'powerStatus',
+  'hasError', 'hasWarning', 'errorStatus',
+  'input', 'inputResolution',
+  'muteVideo', 'muteAudio',
+  'lampCount',
+  'lampOneHours', 'lampTwoHours', 'lampThreeHours', 'lampFourHours',
+  'lampOneActive', 'lampTwoActive', 'lampThreeActive', 'lampFourActive',
+  'hasFilter', 'filterUsageTime',
+  'productName', 'serialNumber', 'softwareVersion', 'lampReplacementModelNumber'
+];
+
+const pubSub = new PubSubWebBlock();
+const state = {};
+for (const d of DEVICES) state[d.name] = {};
+
+for (const d of DEVICES) {
+  for (const f of FIELDS) {
+    pubSub.subscribe('Network.' + d.name + '.' + f, {
+      dataReceived: v => { state[d.name][f] = v; scheduleRender(); }
+    });
+  }
+}
+
+/* ---------------------------------------------------------------
+   Rendering
+   --------------------------------------------------------------- */
+let pending = false;
+function scheduleRender() {
+  if (pending) return;
+  pending = true;
+  requestAnimationFrame(() => { pending = false; render(); });
+}
+
+const POWER_TEXT = ['AVSTÄNGD', 'PÅ', 'KYLER NER', 'STARTAR'];
+const POWER_CLS  = ['off', 'on', 'warm', 'warm'];
+const INPUT_TYPE = { 1: 'RGB', 2: 'Video', 3: 'Digital', 4: 'Lagring', 5: 'Nätverk', 6: 'Intern' };
+const ERR_LABELS = ['Fläkt', 'Lampa', 'Temp', 'Lucka', 'Filter', 'Övrigt'];
+
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const num = n => Number(n).toLocaleString('sv-SE');
+const has = v => v !== undefined && v !== null && v !== '';
+
+function hoursCell(h, warn, alarm) {
+  if (!has(h)) return { txt: '–', cls: 'dim' };
+  const v = Number(h);
+  return { txt: num(v) + ' tim', cls: v >= alarm ? 'bad' : (v >= warn ? 'warn' : '') };
+}
+
+function inputText(st) {
+  if (!has(st.input)) return { txt: '–', cls: 'dim' };
+  const s = String(st.input);
+  const t = INPUT_TYPE[parseInt(s[0], 10)];
+  return { txt: t ? t + ' ' + s.slice(1) : s, cls: '' };
+}
+
+function resolutionText(st) {
+  const r = st.inputResolution;
+  if (!has(r)) return { txt: '–', cls: 'dim' };
+  if (r === '-')  return { txt: 'Ingen signal', cls: 'bad' };
+  if (r === '*')  return { txt: 'Okänd signal', cls: 'warn' };
+  return { txt: r, cls: '' };
+}
+
+function muteText(st) {
+  const v = st.muteVideo === true || st.muteVideo === 'true';
+  const a = st.muteAudio === true || st.muteAudio === 'true';
+  if (!has(st.muteVideo) && !has(st.muteAudio)) return { txt: '–', cls: 'dim' };
+  if (v && a) return { txt: 'Bild + ljud', cls: 'warn' };
+  if (v) return { txt: 'Bild', cls: 'warn' };
+  if (a) return { txt: 'Ljud', cls: 'warn' };
+  return { txt: 'Av', cls: '' };
+}
+
+function row(label, cell) {
+  return '<div class="row"><span class="rl">' + label + '</span>' +
+         '<span class="rv ' + cell.cls + '">' + esc(cell.txt) + '</span></div>';
+}
+
+function cardHtml(d) {
+  const st = state[d.name];
+  const online = st.isOnline === true || st.isOnline === 'true';
+  const pwr = has(st.powerStatus) ? parseInt(st.powerStatus, 10) : -1;
+  const hasErr  = st.hasError === true || st.hasError === 'true';
+  const hasWarn = st.hasWarning === true || st.hasWarning === 'true';
+
+  // Ingen kontakt trumfar allt annat: da vet vi inget om projektorn.
+  let bTxt, bCls, dCls;
+  if (!has(st.isOnline))   { bTxt = 'VÄNTAR…';  bCls = 'off';  dCls = ''; }
+  else if (!online)        { bTxt = 'OFFLINE';  bCls = 'err';  dCls = 'err'; }
+  else if (pwr < 0)        { bTxt = 'VÄNTAR…';  bCls = 'off';  dCls = ''; }
+  else                     { bTxt = POWER_TEXT[pwr] || 'OKÄND';
+                             bCls = POWER_CLS[pwr] || 'off';
+                             dCls = POWER_CLS[pwr] || ''; }
+  if (online && hasErr) { bCls = 'err'; dCls = 'err'; }
+
+  const rows = [];
+  rows.push(row('Ingång', inputText(st)));
+  rows.push(row('Upplösning', resolutionText(st)));
+  rows.push(row('A/V-mute', muteText(st)));
+
+  // Lampor: visa bara sa manga projektorn faktiskt rapporterar
+  const lc = has(st.lampCount) ? parseInt(st.lampCount, 10) : 0;
+  const lampFields = [
+    ['lampOneHours', 'lampOneActive'], ['lampTwoHours', 'lampTwoActive'],
+    ['lampThreeHours', 'lampThreeActive'], ['lampFourHours', 'lampFourActive']
+  ];
+  if (lc > 0) {
+    for (let i = 0; i < Math.min(lc, 4); i++) {
+      const c = hoursCell(st[lampFields[i][0]], LAMP_WARN_H, LAMP_ALARM_H);
+      const active = st[lampFields[i][1]] === true || st[lampFields[i][1]] === 'true';
+      rows.push(row('Lampa ' + (i + 1) + (lc > 1 ? (active ? ' ●' : ' ○') : ''), c));
+    }
+  } else {
+    rows.push(row('Lampa', { txt: has(st.lampCount) ? 'Laser / ingen' : '–',
+                             cls: has(st.lampCount) ? '' : 'dim' }));
+  }
+
+  const hasFilter = st.hasFilter === true || st.hasFilter === 'true';
+  rows.push(row('Filter', hasFilter
+    ? hoursCell(st.filterUsageTime, FILTER_WARN_H, FILTER_ALARM_H)
+    : { txt: has(st.hasFilter) ? 'Saknas' : '–', cls: 'dim' }));
+
+  /* Kortet rymmer sex rader i normalt lage. En projektor med fyra lampor ger
+     atta rader, sa da krymper vi radhojden i stallet for att klippa foten. */
+  const dense = rows.length > 6;
+
+  let h = '<div class="card' + (dense ? ' dense' : '') +
+          (!online && has(st.isOnline) ? ' off' : '') +
+          (online && hasErr ? ' probl' : '') + '">';
+  h += '<div class="cHead"><span class="cName">' + esc(d.name) + '</span>' +
+       '<span class="cIp">' + esc(d.ip) + '</span></div>' +
+       '<div class="cLabel">' + esc(d.label) + '</div>';
+
+  h += '<div class="badge"><span class="dot ' + dCls + '"></span>' +
+       '<span class="badgeTxt ' + bCls + '">' + bTxt + '</span></div>';
+
+  h += '<div class="rows">' + rows.join('') + '</div>';
+
+  // ERST: 6 siffror, 0 = ok, 1 = varning, 2 = fel
+  h += '<div class="errTitle">Fel och varningar</div><div class="pills">';
+  const es = has(st.errorStatus) ? String(st.errorStatus) : '';
+  for (let i = 0; i < 6; i++) {
+    const c = es.length === 6 ? es[i] : null;
+    const cls = c === '0' ? 'ok' : c === '1' ? 'warn' : c === '2' ? 'bad' : 'unk';
+    h += '<div class="pill ' + cls + '">' + ERR_LABELS[i] + '</div>';
+  }
+  h += '</div>';
+
+  h += '<div class="foot">' +
+       '<span>' + esc(has(st.productName) ? st.productName : 'Modell okänd') + '</span>' +
+       '<span>S/N ' + esc(has(st.serialNumber) ? st.serialNumber : '–') +
+       '  ·  FW ' + esc(has(st.softwareVersion) ? st.softwareVersion : '–') + '</span>' +
+       (has(st.lampReplacementModelNumber)
+         ? '<span>Lampa: ' + esc(st.lampReplacementModelNumber) + '</span>' : '') +
+       '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+function render() {
+  document.getElementById('grid').innerHTML = DEVICES.map(cardHtml).join('');
+}
+
+/* ---- Klocka ---- */
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+tick(); setInterval(tick, 15000);
+render();
+
+/* ---- Demolage for forhandsgranskning utanfor Blocks: ?demo=1 ---- */
+if (new URLSearchParams(location.search).get('demo') === '1') {
+  Object.assign(state['MH_Proj_V'], {
+    isOnline: true, powerStatus: 1, hasError: false, hasWarning: false,
+    errorStatus: '000000', input: '31', inputResolution: '1920x1080',
+    muteVideo: false, muteAudio: false, lampCount: 2,
+    lampOneHours: 1243, lampTwoHours: 1198, lampOneActive: true, lampTwoActive: true,
+    hasFilter: true, filterUsageTime: 412,
+    productName: 'PT-RZ970', serialNumber: 'SW1234567', softwareVersion: '3.05',
+    lampReplacementModelNumber: 'ET-LAD70'
+  });
+  Object.assign(state['MH_Proj_H'], {
+    isOnline: true, powerStatus: 3, hasError: false, hasWarning: true,
+    errorStatus: '001000', input: '31', inputResolution: '*',
+    muteVideo: true, muteAudio: false, lampCount: 2,
+    lampOneHours: 2310, lampTwoHours: 1890, lampOneActive: true, lampTwoActive: false,
+    hasFilter: true, filterUsageTime: 940,
+    productName: 'PT-RZ970', serialNumber: 'SW1234568', softwareVersion: '3.05',
+    lampReplacementModelNumber: 'ET-LAD70'
+  });
+  Object.assign(state['MH_Proj_Wall'], { isOnline: false });
+  render();
+}
+</script>
+</body>
+</html>
